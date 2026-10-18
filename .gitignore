@@ -85,3 +85,6 @@ crashlytics-build.properties
 
 # ---- Raw downloads (sound bundles, asset packs) live outside the project ----
 /_Downloads/
+
+# Temporarily gitignore docs
+docs
