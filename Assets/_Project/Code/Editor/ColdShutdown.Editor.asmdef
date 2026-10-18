@@ -1,0 +1,19 @@
+{
+    "name": "ColdShutdown.Editor",
+    "rootNamespace": "ColdShutdown.Editor",
+    "references": [
+        "ColdShutdown.Core",
+        "ColdShutdown.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
