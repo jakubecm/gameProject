@@ -45,6 +45,11 @@ All code and tests must live under `Assets/` — Unity does not compile anything
   Keep the "1000 seeds" EditMode test green.
 - Rooms: every room prefab follows the room contract below (same footprint, an opening on all four
   sides); the builder closes unused openings with wall plugs.
+- **Map data:** `MapGenerator.Generate(seed, width, height)` returns a `MapData` (Core). Cells are
+  `(column, row)`, column 0 / row 0 is the south-west corner, North = +row = +Z, East = +column = +X.
+  Every cell is a room; `MapData.IsConnected(column, row, Direction)` says which sides are open.
+  Connections are symmetric. Room types, entry, gateway and the rogue rack are added on top of this
+  later (tasks 2.1+); the generator itself must stay deterministic for a given seed and size.
 - Systems communicate through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references
   between unrelated components.
 - Texts (lore, AI messages, briefing) are data in `Assets/_Project/Data`, never hard-coded strings.
