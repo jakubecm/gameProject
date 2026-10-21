@@ -3,7 +3,8 @@
     "rootNamespace": "ColdShutdown.Runtime",
     "references": [
         "ColdShutdown.Core",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
