@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c378849b05d408a43b3703548276ed96, type: 3}
+  m_Name: RoomDefinition_ServerAisle
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RoomDefinition
+  type: 1
+  prefab: {fileID: 4381334435627585088, guid: 86ea94861a3ed48888562a054a846907, type: 3}

@@ -3,7 +3,8 @@
     "rootNamespace": "ColdShutdown.Editor",
     "references": [
         "ColdShutdown.Core",
-        "ColdShutdown.Runtime"
+        "ColdShutdown.Runtime",
+        "Unity.ProBuilder"
     ],
     "includePlatforms": [
         "Editor"

@@ -46,7 +46,7 @@ namespace ColdShutdown.Editor
             Debug.Log($"Sandbox scene saved to {ScenePath}. Press Play: look with the mouse, walk with WASD, press E on the left cube, hold E on the right one.");
         }
 
-        private static void CreatePlayer()
+        internal static GameObject CreatePlayer()
         {
             var player = new GameObject("Player");
             var controller = player.AddComponent<CharacterController>();
@@ -66,6 +66,7 @@ namespace ColdShutdown.Editor
             var serialized = new SerializedObject(playerController);
             serialized.FindProperty("cameraPivot").objectReferenceValue = cameraObject.transform;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            return player;
         }
 
         private static void CreateTestCube(string cubeName, Vector3 position, string prompt, float holdDuration)
