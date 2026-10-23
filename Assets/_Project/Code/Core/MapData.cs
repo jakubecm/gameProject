@@ -102,6 +102,47 @@ namespace ColdShutdown.Core
             return reached;
         }
 
+        /// <summary>
+        /// Draws the map as text, north at the top. Walls are '+', '-' and '|', open passages are gaps,
+        /// and each room shows the character from <paramref name="roomLabel"/> (a space when omitted):
+        /// <code>
+        /// +---+---+
+        /// | C   S |
+        /// +   +---+
+        /// | O | O |
+        /// +---+---+
+        /// </code>
+        /// </summary>
+        public string ToText(Func<int, int, char> roomLabel = null)
+        {
+            var text = new System.Text.StringBuilder();
+            AppendHorizontalWalls(text, Height - 1, Direction.North);
+
+            for (int row = Height - 1; row >= 0; row--)
+            {
+                text.Append('|');
+                for (int column = 0; column < Width; column++)
+                {
+                    text.Append(' ').Append(roomLabel != null ? roomLabel(column, row) : ' ').Append(' ');
+                    text.Append(IsConnected(column, row, Direction.East) ? ' ' : '|');
+                }
+                text.Append('\n');
+                AppendHorizontalWalls(text, row, Direction.South);
+            }
+
+            return text.ToString().TrimEnd('\n');
+        }
+
+        private void AppendHorizontalWalls(System.Text.StringBuilder text, int row, Direction side)
+        {
+            text.Append('+');
+            for (int column = 0; column < Width; column++)
+            {
+                text.Append(IsConnected(column, row, side) ? "   " : "---").Append('+');
+            }
+            text.Append('\n');
+        }
+
         private int Index(int column, int row) => row * Width + column;
     }
 }
