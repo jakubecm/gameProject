@@ -29,6 +29,8 @@ Assets/
     Scenes/     Main.unity, Sandbox_A.unity, Sandbox_B.unity
     Tests/
       EditMode/ tests for ColdShutdown.Core — asmdef ColdShutdown.Tests.EditMode
+        Rooms/  tests of the room prefabs against the room contract — asmdef ColdShutdown.Tests.EditMode.Rooms
+                (references Runtime, so the Core tests stay free of it)
   ThirdParty/   downloaded assets, one folder per source (see CREDITS.md)
 ```
 
@@ -105,8 +107,12 @@ Change both together.
 - **Walls:** 0.2 m thick, inside the cell (neighbouring rooms' walls stand back to back), so the
   walkable interior is 11.6 × 11.6 m.
 - **Openings:** one in the middle of each side, 2.4 m wide and 2.6 m high, always in the same place.
-  A separate wall-plug prefab fills exactly one opening.
-- **Keep-clear cross:** a 2.4 m wide walkway from every opening to the center must stay empty.
+  A separate wall-plug prefab fills exactly one opening. `RoomContract.GetOpeningPose(Direction)` returns
+  the pose of an opening (middle of the wall thickness, on the floor, facing into the room, room-local);
+  a wall plug placed with that pose fills it exactly. `LevelBuilder` (task 1.5) uses it for the plugs.
+- **Keep-clear cross:** a 2.4 m wide walkway from every opening to the center must stay empty, from the
+  floor up to the opening height (`RoomContract.KeepClearHeight` = 2.6 m). Ceiling fittings above it
+  (lights, detectors, cable trays over a door) are allowed. Agreed as a clarification for realistic ceilings.
 - **Rotation:** the generator may rotate rooms by 0/90/180/270° (yaw around +Y). Everything inside a
   prefab rotates with it.
 - **Slots:** racks and terminals stand on marker components (`RackSlot`, `TerminalSlot`) placed in the
@@ -122,6 +128,84 @@ Change both together.
 - **Room types:** `RoomType` in `Core`. Values are explicit; only append new ones.
   `RoomDefinition` (ScriptableObject in Runtime) links a room type to its prefab.
 - Terminal size is not fixed yet (decide when the terminal model exists, task 2.10).
+
+## Room prefabs
+
+- `Prefabs/Rooms/RoomShell.prefab` (floor, ceiling, four walls with openings, corner pillars) and
+  `WallPlug.prefab` are built from ProBuilder boxes by `Tools/Cold Shutdown/Create Room Shell`, with every
+  size taken from `RoomContract`. The wall plug's pivot is the opening pose.
+- `Room_<RoomType>.prefab` are **prefab variants** of the shell, so a change to the shell reaches every
+  room. `Tools/Cold Shutdown/Create Graybox Rooms` makes one for every `RoomType` plus
+  `Data/RoomDefinition_<RoomType>.asset`, and adds only the room's **game logic**: the 12 `RackSlot`s in
+  the server aisle, the `TerminalSlot` in the office.
+- **Logic and look are separate.** Slots sit directly in the room; everything that is only looks
+  (furniture, fittings, building services, partition walls) sits in the room's `Dressing` child, built by
+  `Tools/Cold Shutdown/Dress Graybox Rooms`. The same tool gives the shell its door frames
+  (`Shell/Wall_<Dir>/DoorFrame`), its suspended ceiling (`Shell/SuspendedCeiling`) and its surface
+  materials. Code never looks inside `Dressing`; the generator and level builder only use the slots. Racks
+  and terminals are not dressing: they are placed on the slots at runtime (tasks 2.9, 2.10).
+- **Suspended ceiling:** an exposed 600 mm T-bar grid hanging 12 mm below the 3 m ceiling plane (the slab
+  above is the tile surface), so the room height does not change. Grid lines run at multiples of 0.6 m from
+  the room center, which keeps the grid identical under 90° rotations. Every ceiling fitting sits in the
+  grid: 600 fittings, detectors, sprinklers and nozzles on a tile center (odd multiples of 0.3 m), 1200
+  fittings across two tiles (centered on a grid line along their length).
+- **Lighting:** lay-in louvered fluorescent fittings (`Troffer600` 4 x T5, `Troffer1200` 3 x T5), each with
+  its own realtime spot light pointing down, no shadows (task 1.10 keeps shadows for one or two lights).
+  The intensity is set once in the prop. No room has a central light. Office: 4 x 4 grid of 600 fittings;
+  server aisle: 1200 fittings over the rack fronts and the aisle; corridor: 1200 fittings across the arms.
+  Bounce light is not baked; `Sandbox_B` uses a trilight ambient (brighter from below) to stand in for it,
+  the real scene lighting is decided in task 1.10.
+- **Building services** (built by `RoomInfrastructure`), all running floor-to-ceiling, wall-to-wall or into
+  the ceiling, so every run leads somewhere and rooms stay independent modules:
+  - pipes: risers clamped to the walls every metre, with rosettes at floor and ceiling and valves; fire water
+    red (with a D25 hose cabinet), water green, gas yellow. Sprinklers are fed from above the ceiling;
+  - power: distribution boards with trunking up into the ceiling, power trays over the rack rows, flush
+    230 V outlets, desk-height parapet trunking in the office. **All electrical trunking uses one profile**
+    (`GrayboxPropsTool.TrunkingWidth` x `TrunkingDepth`, 120 x 60 mm);
+  - data: yellow wire trays over the rack rows plus a cross-connect tray between the rows, RJ45 outlets.
+  - Fire safety: smoke detectors in every room, sprinklers in the corridor and office, inert-gas nozzles
+    (no water) in the server aisle, extinguishers.
+- **Props** live in `Prefabs/Props/<Name>.prefab` (`GrayboxProp` enum, built by
+  `Tools/Cold Shutdown/Create Graybox Props`) and rooms hold instances of them, so replacing a graybox
+  prop with a final model (task 4.7) is one prefab edit. Pivot rules: floor props on the floor, centered,
+  +Z = the side people use; wall props on the floor at the wall surface, +Z away from the wall; sockets at
+  the center of their back plate; ceiling props on the ceiling surface, hanging down, long side along Z;
+  desk-top props on the desk surface. Props have one `BoxCollider` (or none, if out of reach) instead of a
+  mesh collider per part.
+- **Surface materials** are shared assets `Art/Materials/M_<SurfaceMaterial>.mat` (`SurfaceMaterial` enum),
+  plain URP Lit greys plus the real service colours (fire red, water green, gas yellow, yellow data trays,
+  blue data cables, emissive tubes). Final textures (task 4.6) go into these materials and datacenter
+  profiles (task 4.4) swap them, so no mesh needs to be re-assigned. Agree on any new slot with the other
+  developer.
+- Current graybox layouts: **corridor** = a 3 m wide cross between four partition blocks (skirting, fire
+  water riser with hose cabinet, water and gas risers, distribution board with outlet, extinguisher);
+  **server aisle** = perforated floor tiles in front of every rack run, power and data trays over the rows,
+  data cross-connect, distribution board, gas nozzles, detectors, extinguisher; **office** = two
+  workstations on a parapet trunking with outlets (NW), meeting table with whiteboard and outlets (NE),
+  filing cabinets and shelving (SE), terminal corner with its outlets kept free (SW), radiator.
+- Task 1.9 says "by hand, starting from the generated shells". The three graybox rooms were generated by
+  the tool instead; the result is the same kind of editable ProBuilder prefab. From now on the prefabs are
+  edited by hand (ProBuilder), not through the tool.
+- **The room tools only create what is missing and never replace existing work**, so hand edits are safe:
+  existing prefabs, materials and `Dressing` groups are skipped. To regenerate something, delete it first
+  (a `Dressing` group, a prop prefab, a material). Regenerating the shell breaks the variants, so delete
+  them too. Order on a fresh project: Create Room Shell, Create Graybox Rooms, Dress Graybox Rooms.
+- `Tools/Cold Shutdown/Rebuild Graybox Dressing` is the one destructive tool: it rebuilds all props (same
+  GUIDs), resets the material settings, and rebuilds door frames, suspended ceilings and `Dressing` groups.
+  Use it only while the rooms are still pure graybox output; once someone dresses a room by hand, use the
+  additive Dress Graybox Rooms instead.
+- New room type (task 3.8): append a value to `RoomType`, run Create Graybox Rooms (prefab, definition,
+  slots), then dress the new variant by hand in a `Dressing` child, or add a dresser to `RoomDressingTool`.
+- The tests in `Tests/EditMode/Rooms` check every `RoomType` has a prefab and definition, every opening has
+  a door frame, the shell's suspended ceiling hangs at the ceiling plane, lights are realtime without shadows, and
+  that nothing outside the shell blocks the openings, the keep-clear walkway, a rack slot
+  or the space in front of a terminal slot (placeholder 0.8 x 2 x 0.6 m plus 1 m to stand), or sticks out
+  of the room interior. Run them after every hand edit of a room.
+- `Tools/Cold Shutdown/Create Room Preview Scene` rebuilds `Scenes/Sandbox_B.unity` (Corridor, ServerAisle,
+  Office in a row, unused openings plugged, placeholder boxes on the rack slots, sandbox player, no scene
+  lights: the rooms are lit by their own fittings) — a hand-made stand-in for the level builder. The
+  placeholder racks exist only in that scene.
+  `SandboxSceneTool.CreatePlayer()` is `internal` and returns the player so both sandbox scenes share it.
 
 ## Working rules for Claude
 
