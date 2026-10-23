@@ -25,7 +25,7 @@ Assets/
       Runtime/  MonoBehaviours, level builder, run director, terminals, UI — asmdef ColdShutdown.Runtime
       Editor/   editor tools and generators (menu: Tools/Cold Shutdown/...) — asmdef ColdShutdown.Editor
     Data/       ScriptableObjects, JSON/CSV texts (lore, AI messages, briefing)
-    Prefabs/    Rooms/, Props/, Terminals/
+    Prefabs/    Rooms/, Props/, Terminals/, Player/
     Scenes/     Main.unity, Sandbox_A.unity, Sandbox_B.unity
     Tests/
       EditMode/ tests for ColdShutdown.Core — asmdef ColdShutdown.Tests.EditMode
@@ -56,6 +56,45 @@ All code and tests must live under `Assets/` — Unity does not compile anything
   between unrelated components.
 - Texts (lore, AI messages, briefing) are data in `Assets/_Project/Data`, never hard-coded strings.
 - Lighting is realtime (Forward+). No baked lightmaps — the map is generated at runtime.
+
+## Player
+
+The player is one prefab, `Prefabs/Player/Player.prefab`, built by `Tools/Cold Shutdown/Create Player Prefab`
+(`PlayerPrefabTool`). Every scene uses that prefab; `Create Sandbox Scene` places it, and
+`Use Player Prefab In Sandbox Scenes` swaps it into older sandbox scenes. Code is in `Code/Runtime/Player/`,
+tests in `Tests/EditMode/Player/` (asmdef `ColdShutdown.Tests.EditMode.Player`).
+
+- **Structure:** `Player` (CharacterController, `PlayerInputReader`, `FirstPersonController`, AudioSource,
+  `FootstepAudio`) → `CameraPivot` (pitch, eye height) → `Main Camera` (`HeadBob`, `Interactor`,
+  `InteractionPrompt`). Capsule 1.8 m tall, radius 0.3 m, steps up to 0.35 m, slopes up to 45°.
+- **Input:** `PlayerInputReader` turns Input System actions into a `PlayerCommand` (move, look, crouch,
+  sprint); the controller only sees the command, so tests drive it with `FirstPersonController.Simulate`.
+  The actions are serialized on the prefab and can be rebound in the Inspector. While the cursor is free
+  (Escape; a click locks it again) or `InputEnabled` is false, the player stands still — terminals and
+  menus (tasks 2.4, 3.2) set `InputEnabled = false` instead of disabling components.
+- **Movements and default controls:**
+
+  | Movement | Keyboard / mouse | Gamepad | Behaviour |
+  |---|---|---|---|
+  | Walk | WASD, arrows | left stick | 2.6 m/s, accelerates at 14 m/s², stops at 18 m/s², slides along walls |
+  | Look | mouse | right stick | 0.08°/pixel, 140°/s; pitch limited to ±85°; optional invert Y |
+  | Sprint | Left Shift (hold) | left stick click | 4.4 m/s, only walking forward and upright; 6 s of stamina, refills in 5 s after a 1 s pause; once empty, sprint again from 30 % |
+  | Crouch | C or Left Ctrl (hold) | right face button | body 1.8 → 1.05 m in 0.2 s, eyes 1.66 → 0.91 m, 1.3 m/s; stays down while there is no headroom; wins over sprint |
+  | Fall / land | — | — | gravity 18 m/s², `Landed` with the impact speed, short camera dip |
+
+  Crouch and sprint can each be switched to toggle mode (`PlayerInputReader.ButtonMode`).
+- **Head bob** (`HeadBob` on the camera): a dip on every footstep, sideways sway with slight roll once per
+  two steps, 60 % when crouching, up to 140 % when sprinting, +5° field of view while sprinting, landing
+  dip. It moves the camera, never the view direction. `BobEnabled` is the settings switch (task 5.6).
+- **Footsteps:** `StrideModel` is the one walking rhythm: step length 0.85 m walking, 0.6 m crouching,
+  1.15 m sprinting. `FirstPersonController.Footstep` fires on every foot contact with position, speed,
+  crouch/sprint flags and the ground collider (its physics material picks the surface sound, task 4.10).
+  Head bob dips exactly on these steps. `FootstepAudio` plays assigned clips (none yet: silent).
+- **Events for other systems:** `Footstep`, `Landed`, `CrouchChanged`, `SprintChanged`; state for UI and
+  sound: `IsGrounded`, `IsCrouching`, `IsSprinting`, `Stamina` (0–1), `IsExhausted`, `HorizontalSpeed`.
+- **Settings hooks (task 5.6):** `PlayerInputReader.MouseSensitivity`, `StickSensitivity`, `InvertY`,
+  `Crouching` / `Sprinting` (hold or toggle), `HeadBob.BobEnabled`.
+- All numbers are serialized fields on the prefab; tune them there in Play mode ("walking feels right").
 
 ## Room contract
 

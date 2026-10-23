@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 
 namespace ColdShutdown.Editor
 {
-    /// <summary>Creates Sandbox_A: a flat floor, a throwaway player and two test cubes for the interaction system.</summary>
+    /// <summary>Creates Sandbox_A: a flat floor, the player prefab and two test cubes for the interaction system.</summary>
     public static class SandboxSceneTool
     {
         private const string ScenePath = "Assets/_Project/Scenes/Sandbox_A.unity";
@@ -43,30 +43,15 @@ namespace ColdShutdown.Editor
             CreateTestCube("Hold Cube", new Vector3(1.5f, 0.5f, 3f), "Podržet", 1.5f);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
-            Debug.Log($"Sandbox scene saved to {ScenePath}. Press Play: look with the mouse, walk with WASD, press E on the left cube, hold E on the right one.");
+            Debug.Log($"Sandbox scene saved to {ScenePath}. Press Play: look with the mouse, walk with WASD, Shift to sprint, C to crouch, press E on the left cube, hold E on the right one.");
         }
 
+        /// <summary>Places an instance of the player prefab (created first if missing) at the origin.</summary>
         internal static GameObject CreatePlayer()
         {
-            var player = new GameObject("Player");
-            var controller = player.AddComponent<CharacterController>();
-            controller.height = 1.8f;
-            controller.radius = 0.3f;
-            controller.center = new Vector3(0f, 0.9f, 0f);
-
-            var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
-            cameraObject.transform.SetParent(player.transform, false);
-            cameraObject.transform.localPosition = new Vector3(0f, 1.6f, 0f);
-            cameraObject.AddComponent<Camera>();
-            cameraObject.AddComponent<AudioListener>();
-            cameraObject.AddComponent<Interactor>();
-            cameraObject.AddComponent<InteractionPrompt>();
-
-            var playerController = player.AddComponent<SandboxPlayerController>();
-            var serialized = new SerializedObject(playerController);
-            serialized.FindProperty("cameraPivot").objectReferenceValue = cameraObject.transform;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            return player;
+            PlayerPrefabTool.CreatePlayerPrefab();
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabTool.PrefabPath);
+            return (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         }
 
         private static void CreateTestCube(string cubeName, Vector3 position, string prompt, float holdDuration)
