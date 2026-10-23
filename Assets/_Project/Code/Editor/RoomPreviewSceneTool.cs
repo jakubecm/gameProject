@@ -37,12 +37,7 @@ namespace ColdShutdown.Editor
             }
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            // The rooms are lit only by their own light fittings. Without baked bounce light, a trilight
-            // ambient stands in for it: surfaces facing down (the ceiling) get the light the floor reflects.
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.06f, 0.06f, 0.065f);
-            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.13f, 0.135f);
-            RenderSettings.ambientGroundColor = new Color(0.3f, 0.29f, 0.28f);
+            ApplyRoomAmbientLight();
 
             var placeholderRacks = new GameObject("PlaceholderRacks (preview only)").transform;
             for (int column = 0; column < Row.Length; column++)
@@ -84,6 +79,18 @@ namespace ColdShutdown.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"Room preview scene saved to {ScenePath}. Press Play and walk east from the corridor through the server aisle into the office.");
+        }
+
+        /// <summary>
+        /// The rooms are lit only by their own light fittings. Without baked bounce light, a trilight
+        /// ambient stands in for it: surfaces facing down (the ceiling) get the light the floor reflects.
+        /// </summary>
+        internal static void ApplyRoomAmbientLight()
+        {
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.06f, 0.06f, 0.065f);
+            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.13f, 0.135f);
+            RenderSettings.ambientGroundColor = new Color(0.3f, 0.29f, 0.28f);
         }
 
         /// <summary>The scene is a throwaway sandbox, so it may be replaced, but only after asking; batch mode always replaces.</summary>

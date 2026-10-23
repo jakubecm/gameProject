@@ -207,6 +207,28 @@ Change both together.
   placeholder racks exist only in that scene.
   `SandboxSceneTool.CreatePlayer()` is `internal` and returns the player so both sandbox scenes share it.
 
+## Level builder and debug menu
+
+- `Scenes/Main.unity` is built by `Tools/Cold Shutdown/Create Main Scene`: the player prefab, a `Level Builder`
+  (`LevelBuilder`, Runtime) wired to the three `RoomDefinition` assets and `WallPlug.prefab`, and a `Debug Menu`.
+  Press Play and a random map is built around the player (start cell = middle of the map). Default size 6 x 6,
+  set on the builder.
+- **Data flow:** `MapGenerator.Generate(seed, w, h)` → `MapData` → `RoomLayout.Generate(map, seed, types)` (a
+  `PlacedRoom` per cell: type + quarter turns) → `LevelBuilder.Build(seed, w, h)` instantiates. Everything before
+  the builder is plain Core data and deterministic. `RoomLayout.Generate` is a **placeholder** (random type and
+  turn per cell) until task 2.1 adds quotas, entry, gateway and the rogue rack.
+- **Hierarchy:** `Level Builder / Level / Cell_<column>_<row> / Room_<Type>` plus `WallPlug_<Side>` for every
+  closed side. A cell object sits at `(column * 12, 0, row * 12)` and never turns; only the room inside turns, so
+  plugs stay where the map says the openings are (they use `RoomContract.GetOpeningPose`). The builder only
+  plugs openings that are not connected, including the outer edge of the map.
+- `LevelBuilder` raises `LevelBuilt` after every build; other systems listen to it instead of referencing the
+  builder. `Build` replaces the previous level; `Clear` removes it.
+- **F1 debug menu** (`DebugMenu`): seed, map size, Regenerate, random seed, FPS, and the map as text
+  (`MapData.ToText`; `@` is the player, `C`/`S`/`O` the room types). Open = player stands still and the cursor
+  is free. Active in the Editor and development builds only.
+- Tests: `Tests/EditMode/RoomLayoutTests.cs` (Core), `Tests/EditMode/Rooms/LevelBuilderTests.cs` and
+  `MainSceneTests.cs` (build real levels from the room prefabs).
+
 ## Working rules for Claude
 
 - Do **not** hand-edit `.unity`, `.prefab` or `.asset` YAML unless explicitly asked. Prefer an editor

@@ -81,6 +81,12 @@ namespace ColdShutdown.Core
         /// <summary>World Z of the room pivot for a grid row (+Z is north).</summary>
         public static float CellOriginZ(int row) => row * CellSize;
 
+        /// <summary>Grid column of the cell that contains a world X position (cells are centered on their origin).</summary>
+        public static int ColumnAt(float worldX) => (int)System.Math.Floor(worldX / CellSize + 0.5);
+
+        /// <summary>Grid row of the cell that contains a world Z position (cells are centered on their origin).</summary>
+        public static int RowAt(float worldZ) => (int)System.Math.Floor(worldZ / CellSize + 0.5);
+
         /// <summary>
         /// Room-local pose of the opening on one side: centered in the wall thickness, on the floor,
         /// facing into the room. A wall plug placed with this pose fills that opening exactly.
