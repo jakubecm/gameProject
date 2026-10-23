@@ -49,6 +49,24 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
+        public void OpeningPose_StandsInWallMiddleAndFacesCenter()
+        {
+            foreach (Direction side in System.Enum.GetValues(typeof(Direction)))
+            {
+                var pose = RoomContract.GetOpeningPose(side);
+                Assert.AreEqual(side.ColumnOffset() * RoomContract.WallCenterOffset, pose.X, Epsilon, side.ToString());
+                Assert.AreEqual(side.RowOffset() * RoomContract.WallCenterOffset, pose.Z, Epsilon, side.ToString());
+
+                // Yaw 0 faces +Z; stepping forward from the opening must move toward the center.
+                double yaw = pose.YawDegrees * System.Math.PI / 180.0;
+                double forwardX = System.Math.Sin(yaw);
+                double forwardZ = System.Math.Cos(yaw);
+                Assert.AreEqual(-side.ColumnOffset(), forwardX, Epsilon, side.ToString());
+                Assert.AreEqual(-side.RowOffset(), forwardZ, Epsilon, side.ToString());
+            }
+        }
+
+        [Test]
         public void ServerAisle_HasTwelveSlots()
         {
             Assert.AreEqual(RoomContract.ServerAisleRackSlots, RoomContract.GetServerAisleRackSlots().Length);

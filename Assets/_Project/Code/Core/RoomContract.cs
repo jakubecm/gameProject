@@ -47,6 +47,9 @@ namespace ColdShutdown.Core
         /// <summary>Width of the walkway from every opening to the center that must stay empty.</summary>
         public const float KeepClearWidth = 2.4f;
 
+        /// <summary>Distance from the room center to the middle of a wall (where a wall plug stands).</summary>
+        public const float WallCenterOffset = CellHalfSize - WallThickness / 2f;
+
         // The generator may rotate rooms in these steps
         public const int RotationStepDegrees = 90;
 
@@ -71,6 +74,21 @@ namespace ColdShutdown.Core
 
         /// <summary>World Z of the room pivot for a grid row (+Z is north).</summary>
         public static float CellOriginZ(int row) => row * CellSize;
+
+        /// <summary>
+        /// Room-local pose of the opening on one side: centered in the wall thickness, on the floor,
+        /// facing into the room. A wall plug placed with this pose fills that opening exactly.
+        /// </summary>
+        public static SlotPose GetOpeningPose(Direction side)
+        {
+            switch (side)
+            {
+                case Direction.North: return new SlotPose(0f, WallCenterOffset, 180f);
+                case Direction.East: return new SlotPose(WallCenterOffset, 0f, 270f);
+                case Direction.South: return new SlotPose(0f, -WallCenterOffset, 0f);
+                default: return new SlotPose(-WallCenterOffset, 0f, 90f);
+            }
+        }
 
         /// <summary>
         /// Room-local poses of the 12 rack slots in a server aisle. West wall racks face east
