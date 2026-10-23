@@ -102,31 +102,142 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
+        public void Shell_EveryOpeningHasADoorFrame()
+        {
+            var shell = Instantiate(ShellPath);
+            foreach (Direction side in System.Enum.GetValues(typeof(Direction)))
+            {
+                Assert.IsNotNull(shell.transform.Find($"Shell/Wall_{side}/DoorFrame"), $"{side} opening has no door frame");
+            }
+        }
+
+        [Test]
+        public void Shell_HasASuspendedCeilingAtTheCeilingPlane()
+        {
+            var shell = Instantiate(ShellPath);
+            var grid = shell.transform.Find("Shell/SuspendedCeiling");
+            Assert.IsNotNull(grid, "The shell has no suspended ceiling");
+            foreach (var renderer in grid.GetComponentsInChildren<Renderer>())
+            {
+                // The grid may not lower the room noticeably: it hangs at most 2 cm below the ceiling plane.
+                Assert.GreaterOrEqual(renderer.bounds.min.y, RoomContract.CeilingHeight - 0.02f, renderer.name);
+                Assert.LessOrEqual(renderer.bounds.max.y, RoomContract.CeilingHeight + Epsilon, renderer.name);
+            }
+        }
+
+        [Test]
+        public void EveryRoom_LightsAreRealtimeWithoutShadows()
+        {
+            // Task 1.10: the map only exists at runtime, and only one or two lights may cast shadows.
+            foreach (var type in RoomTypes)
+            {
+                var room = Instantiate(PrefabPath(type));
+                foreach (var light in room.GetComponentsInChildren<Light>())
+                {
+                    Assert.AreEqual(LightShadows.None, light.shadows, $"{type}/{light.transform.parent.name} casts shadows");
+                    Assert.AreEqual(LightmapBakeType.Realtime, light.lightmapBakeType, $"{type}/{light.transform.parent.name} is not realtime");
+                }
+            }
+        }
+
+        [Test]
+        public void GrayboxRooms_AreLitByTheirOwnFittings()
+        {
+            foreach (var type in new[] { RoomType.Corridor, RoomType.ServerAisle, RoomType.Office })
+            {
+                var room = Instantiate(PrefabPath(type));
+                Assert.GreaterOrEqual(room.GetComponentsInChildren<Light>().Length, 4, $"{type} has too few light fittings");
+            }
+        }
+
+        [Test]
+        public void GrayboxRooms_AreDressed()
+        {
+            foreach (var type in new[] { RoomType.Corridor, RoomType.ServerAisle, RoomType.Office })
+            {
+                var room = Instantiate(PrefabPath(type));
+                Assert.IsNotNull(room.transform.Find("Dressing"), $"{type} has no Dressing");
+            }
+        }
+
+        [Test]
         public void EveryRoom_KeepsTheCrossClear()
         {
             float half = RoomContract.KeepClearWidth / 2f;
             foreach (var type in RoomTypes)
             {
                 var room = Instantiate(PrefabPath(type));
-                var shell = room.transform.Find("Shell");
-                Assert.IsNotNull(shell, $"{type} has no Shell");
-
-                foreach (var renderer in room.GetComponentsInChildren<Renderer>())
+                foreach (var (name, b) in RoomContentBounds(room))
                 {
-                    if (renderer.transform.IsChildOf(shell))
+                    // The walkway reaches up to the opening height; ceiling fittings above it are allowed.
+                    if (b.min.y >= RoomContract.KeepClearHeight - Epsilon)
                     {
                         continue;
                     }
-                    var b = renderer.bounds;
                     bool hitsStripAlongX = b.min.z < half - Epsilon && b.max.z > -half + Epsilon;
                     bool hitsStripAlongZ = b.min.x < half - Epsilon && b.max.x > -half + Epsilon;
-                    Assert.IsFalse(hitsStripAlongX || hitsStripAlongZ, $"{type}/{renderer.name} blocks the keep-clear cross");
+                    Assert.IsFalse(hitsStripAlongX || hitsStripAlongZ, $"{type}/{name} blocks the keep-clear cross");
                 }
 
                 foreach (var slot in room.GetComponentsInChildren<TerminalSlot>())
                 {
                     var p = slot.transform.position;
                     Assert.IsTrue(Mathf.Abs(p.x) > half && Mathf.Abs(p.z) > half, $"{type}/{slot.name} stands in the keep-clear cross");
+                }
+            }
+        }
+
+        [Test]
+        public void EveryRoom_StaysInsideTheInterior()
+        {
+            float half = RoomContract.InteriorHalfSize + Epsilon;
+            foreach (var type in RoomTypes)
+            {
+                var room = Instantiate(PrefabPath(type));
+                foreach (var (name, b) in RoomContentBounds(room))
+                {
+                    bool inside = b.min.x >= -half && b.max.x <= half && b.min.z >= -half && b.max.z <= half &&
+                                  b.min.y >= -Epsilon && b.max.y <= RoomContract.CeilingHeight + Epsilon;
+                    Assert.IsTrue(inside, $"{type}/{name} sticks out of the room interior: {b}");
+                }
+            }
+        }
+
+        [Test]
+        public void EveryRoom_LeavesRackSlotsFree()
+        {
+            var rack = new Bounds(new Vector3(0f, RoomContract.RackHeight / 2f, 0f),
+                new Vector3(RoomContract.RackWidth, RoomContract.RackHeight, RoomContract.RackDepth));
+            foreach (var type in RoomTypes)
+            {
+                var room = Instantiate(PrefabPath(type));
+                foreach (var slot in room.GetComponentsInChildren<RackSlot>())
+                {
+                    var space = SlotSpace(slot.transform, rack);
+                    foreach (var (name, b) in RoomContentBounds(room))
+                    {
+                        Assert.IsFalse(Overlaps(b, space), $"{type}/{name} blocks {slot.name}");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void EveryRoom_LeavesSpaceToUseTerminals()
+        {
+            // The terminal itself (placeholder size until task 2.10) plus 1 m in front of it to stand in.
+            const float standDepth = 1f;
+            var terminal = new Bounds(new Vector3(0f, 1f, standDepth / 2f), new Vector3(0.8f, 2f, 0.6f + standDepth));
+            foreach (var type in RoomTypes)
+            {
+                var room = Instantiate(PrefabPath(type));
+                foreach (var slot in room.GetComponentsInChildren<TerminalSlot>())
+                {
+                    var space = SlotSpace(slot.transform, terminal);
+                    foreach (var (name, b) in RoomContentBounds(room))
+                    {
+                        Assert.IsFalse(Overlaps(b, space), $"{type}/{name} blocks {slot.name}");
+                    }
                 }
             }
         }
@@ -144,6 +255,35 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         private static string PrefabPath(RoomType type) => $"{RoomsFolder}/Room_{type}.prefab";
+
+        /// <summary>World bounds of every renderer and collider in a room except the shell itself.</summary>
+        private static IEnumerable<(string name, Bounds bounds)> RoomContentBounds(GameObject room)
+        {
+            var shell = room.transform.Find("Shell");
+            Assert.IsNotNull(shell, $"{room.name} has no Shell");
+            foreach (var renderer in room.GetComponentsInChildren<Renderer>())
+            {
+                if (!renderer.transform.IsChildOf(shell))
+                {
+                    yield return (renderer.name, renderer.bounds);
+                }
+            }
+            foreach (var collider in room.GetComponentsInChildren<Collider>())
+            {
+                if (!collider.transform.IsChildOf(shell))
+                {
+                    yield return ($"{collider.name} (collider)", collider.bounds);
+                }
+            }
+        }
+
+        /// <summary>World bounds of a slot-local box; slots only turn in 90° steps, so the box stays exact.</summary>
+        private static Bounds SlotSpace(Transform slot, Bounds local)
+        {
+            var world = new Bounds(slot.TransformPoint(local.min), Vector3.zero);
+            world.Encapsulate(slot.TransformPoint(local.max));
+            return world;
+        }
 
         private GameObject Instantiate(string path)
         {

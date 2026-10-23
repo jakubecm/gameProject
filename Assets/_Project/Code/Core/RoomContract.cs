@@ -47,6 +47,12 @@ namespace ColdShutdown.Core
         /// <summary>Width of the walkway from every opening to the center that must stay empty.</summary>
         public const float KeepClearWidth = 2.4f;
 
+        /// <summary>
+        /// The keep-clear cross is a walkway, so it reaches from the floor up to the opening height.
+        /// Ceiling fittings above it (lights, detectors, trays over a door) do not block it.
+        /// </summary>
+        public const float KeepClearHeight = OpeningHeight;
+
         /// <summary>Distance from the room center to the middle of a wall (where a wall plug stands).</summary>
         public const float WallCenterOffset = CellHalfSize - WallThickness / 2f;
 

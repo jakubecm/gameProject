@@ -42,8 +42,8 @@ namespace ColdShutdown.Editor
             var shell = GrayboxUtility.CreateGroup("Shell", root.transform);
 
             var slabSize = new Vector3(RoomContract.CellSize, SlabThickness, RoomContract.CellSize);
-            GrayboxUtility.CreateBox("Floor", shell, new Vector3(0f, -SlabThickness / 2f, 0f), slabSize);
-            GrayboxUtility.CreateBox("Ceiling", shell, new Vector3(0f, RoomContract.CeilingHeight + SlabThickness / 2f, 0f), slabSize);
+            GrayboxUtility.CreateBox("Floor", shell, new Vector3(0f, -SlabThickness / 2f, 0f), slabSize, SurfaceMaterial.Floor);
+            GrayboxUtility.CreateBox("Ceiling", shell, new Vector3(0f, RoomContract.CeilingHeight + SlabThickness / 2f, 0f), slabSize, SurfaceMaterial.Ceiling);
 
             for (int i = 0; i < DirectionExtensions.Count; i++)
             {

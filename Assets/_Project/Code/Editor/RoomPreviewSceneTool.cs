@@ -1,5 +1,6 @@
 using System.IO;
 using ColdShutdown.Core;
+using ColdShutdown.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -10,7 +11,9 @@ namespace ColdShutdown.Editor
     /// <summary>
     /// Creates Sandbox_B: the three graybox rooms in a row (Corridor, ServerAisle, Office) joined
     /// through their east/west openings, every other opening closed with a wall plug, and the
-    /// sandbox player in the corridor. A hand-made stand-in for the level builder.
+    /// sandbox player in the corridor. A hand-made stand-in for the level builder. Every rack slot gets a
+    /// plain placeholder box in the scene (not in the room prefab) so the server aisle can be judged
+    /// with racks in it before the rack generator (task 2.9) exists.
     /// </summary>
     public static class RoomPreviewSceneTool
     {
@@ -34,9 +37,14 @@ namespace ColdShutdown.Editor
             }
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.35f, 0.35f, 0.4f);
+            // The rooms are lit only by their own light fittings. Without baked bounce light, a trilight
+            // ambient stands in for it: surfaces facing down (the ceiling) get the light the floor reflects.
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.06f, 0.06f, 0.065f);
+            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.13f, 0.135f);
+            RenderSettings.ambientGroundColor = new Color(0.3f, 0.29f, 0.28f);
 
+            var placeholderRacks = new GameObject("PlaceholderRacks (preview only)").transform;
             for (int column = 0; column < Row.Length; column++)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(GrayboxRoomsTool.PrefabPath(Row[column]));
@@ -62,12 +70,12 @@ namespace ColdShutdown.Editor
                     }
                 }
 
-                var lightObject = new GameObject($"Light_{Row[column]}");
-                lightObject.transform.position = origin + new Vector3(0f, RoomContract.CeilingHeight - 0.3f, 0f);
-                var light = lightObject.AddComponent<Light>();
-                light.type = LightType.Point;
-                light.range = RoomContract.CellSize;
-                light.intensity = 3f;
+                foreach (var slot in room.GetComponentsInChildren<RackSlot>())
+                {
+                    var rack = GrayboxUtility.CreateStandingBox($"Rack_{Row[column]}_{slot.name}", placeholderRacks, Vector3.zero,
+                        new Vector3(RoomContract.RackWidth, RoomContract.RackHeight, RoomContract.RackDepth), SurfaceMaterial.Upholstery);
+                    rack.transform.SetPositionAndRotation(slot.transform.position + new Vector3(0f, RoomContract.RackHeight / 2f, 0f), slot.transform.rotation);
+                }
             }
 
             var player = SandboxSceneTool.CreatePlayer();

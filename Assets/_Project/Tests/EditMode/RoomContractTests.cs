@@ -22,6 +22,12 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
+        public void KeepClearHeight_IsTheOpeningHeight()
+        {
+            Assert.AreEqual(RoomContract.OpeningHeight, RoomContract.KeepClearHeight, Epsilon);
+        }
+
+        [Test]
         public void InteriorSize_IsCellMinusTwoWalls()
         {
             Assert.AreEqual(11.6f, RoomContract.InteriorSize, Epsilon);
