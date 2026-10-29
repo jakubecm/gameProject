@@ -210,7 +210,7 @@ namespace ColdShutdown.Runtime
             mapPlayerColumn = column;
             mapPlayerRow = row;
             var layout = levelBuilder.Layout;
-            mapText = layout.Map.ToText((c, r) => c == column && r == row ? '@' : layout.GetRoom(c, r).Type.ToString()[0]);
+            mapText = layout.Map.ToText((c, r) => c == column && r == row ? '@' : layout.GetRoom(c, r).Type.Symbol());
         }
 
         // Walls are drawn with characters, so the font must have equal widths to line up.

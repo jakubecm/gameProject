@@ -37,6 +37,26 @@ namespace ColdShutdown.Editor
             return Finish(mesh, name, parent, localCenter, surface, collider);
         }
 
+        /// <summary>
+        /// Creates a ProBuilder half sphere (a dome) whose flat side lies at <paramref name="localCenter"/>: the lower half
+        /// of an icosphere, bulging down along -Y. Turn the returned transform to point it another way.
+        /// </summary>
+        public static ProBuilderMesh CreateDome(string name, Transform parent, Vector3 localCenter, float radius, SurfaceMaterial surface)
+        {
+            var mesh = ShapeGenerator.GenerateIcosahedron(PivotLocation.Center, radius, 2);
+            var positions = mesh.positions;
+            var upper = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < mesh.faceCount; i++)
+            {
+                float y = 0f;
+                var indexes = mesh.faces[i].indexes;
+                foreach (int index in indexes) y += positions[index].y;
+                if (y / indexes.Count > 0f) upper.Add(i);
+            }
+            mesh.DeleteFaces(upper);
+            return Finish(mesh, name, parent, localCenter, surface, false);
+        }
+
         /// <summary>Creates a box spanning two opposite corners (room-local), for runs of trunking, trays and rails.</summary>
         public static ProBuilderMesh CreateBoxBetween(string name, Transform parent, Vector3 cornerA, Vector3 cornerB,
             SurfaceMaterial surface, bool collider = false)

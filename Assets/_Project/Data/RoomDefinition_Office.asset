@@ -14,3 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RoomDefinition
   type: 2
   prefab: {fileID: 6941692456578832140, guid: 6439f3e9223124a0597b5d451fe01081, type: 3}
+  otherLayouts:
+  - {fileID: 1221641133606847896, guid: af5ac28b2217e473cad0378a1da8e89c, type: 3}
+  - {fileID: 6527161558622755805, guid: 44aef999843ad410cb23c0f7e92e601a, type: 3}
+  - {fileID: 4673557023973461653, guid: e2886329da1034c34817833ad89c863c, type: 3}

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1d57aef7dcc649f6addfa33ab453fc7, type: 3}
+  m_Name: HallKit
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.HallKit
+  sideOpen: {fileID: 7266638854849685827, guid: dffcd40d4b5ec490081b9fbeeb242542, type: 3}
+  sideClosed: {fileID: 9083228719806648218, guid: c3cd5a4e41e3342d582da0caf39b1c57, type: 3}
+  sideDoor: {fileID: 3935673247569529775, guid: 2fd798fc027c748bb8cb4d83215a1317, type: 3}
+  sideWall: {fileID: 3972350682756086337, guid: ddab6792868ef4a089550c555ac38834, type: 3}
+  cornerInner: {fileID: 2026003691001034587, guid: fb2b225f05b1444edaee151ec229c250, type: 3}
+  cornerConcave: {fileID: 5323890662133580692, guid: f27478327b05f473483b44dc7b71be7e, type: 3}
+  cornerEdgeFirst: {fileID: 2554416813880046983, guid: 4c7e462c9d1364ddaa601d15f7d136c9, type: 3}
+  cornerEdgeSecond: {fileID: 3285160762861267958, guid: 56aa8ab9b772648cbae6728748030239, type: 3}
+  cornerOuter: {fileID: 3234711438608902671, guid: 98ac80d485c9f4a80a58860119b92dfb, type: 3}

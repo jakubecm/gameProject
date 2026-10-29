@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c378849b05d408a43b3703548276ed96, type: 3}
+  m_Name: RoomDefinition_SmallOffice
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RoomDefinition
+  type: 5
+  prefab: {fileID: 2973697592576050923, guid: 27125ac4a6bb944d8b8ff3ede122e1c5, type: 3}
+  otherLayouts:
+  - {fileID: 4133047289981607602, guid: 84649814a7fb745508d9ed48ae2fa051, type: 3}
+  - {fileID: 2779777622297538167, guid: 1953d99ee398942998e65220016b4165, type: 3}
+  - {fileID: 3396518752873488324, guid: e0bcb9f6a2f6a4eb8b2b4e10804c656f, type: 3}

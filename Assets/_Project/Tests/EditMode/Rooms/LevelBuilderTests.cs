@@ -84,6 +84,41 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
+        public void Build_WallsUpPluggedOpeningsWithoutADoorFrame()
+        {
+            var builder = CreateBuilder();
+            builder.Build(5, 6, 6);
+            var map = builder.Map;
+            foreach (var room in builder.Layout.Rooms)
+            {
+                if (room.Type == RoomType.Hall) continue;
+                var instance = LevelRoot(builder).Find($"Cell_{room.Column}_{room.Row}/Room_{room.Type}");
+                foreach (Direction side in System.Enum.GetValues(typeof(Direction)))
+                {
+                    // The room's wall on this map side, wherever the room is turned.
+                    var local = (Direction)((((int)side - room.QuarterTurns) % 4 + 4) % 4);
+                    var frame = instance.Find($"Shell/Wall_{local}/DoorFrame");
+                    Assert.IsNotNull(frame, $"{room.Type} has no door frame on its {local} wall");
+                    bool plugged = !map.IsConnected(room.Column, room.Row, side);
+                    Assert.AreEqual(!plugged, frame.gameObject.activeSelf, $"({room.Column}, {room.Row}) {side}: the frame should {(plugged ? "be hidden" : "show")}");
+                }
+            }
+        }
+
+        [Test]
+        public void Build_UsesEveryLayoutOfTheRooms()
+        {
+            var builder = CreateBuilder();
+            var used = new HashSet<int>();
+            for (int seed = 0; seed < 20; seed++)
+            {
+                builder.Build(seed, 6, 6);
+                foreach (var room in builder.Layout.Rooms.Where(r => RoomRules.LayoutCount(r.Type) > 1)) used.Add(room.Layout);
+            }
+            Assert.AreEqual(RoomRules.RoomLayouts, used.Count, "Not every layout is used");
+        }
+
+        [Test]
         public void Build_PlugsFillTheirOpeningsExactly()
         {
             var builder = CreateBuilder();
@@ -168,16 +203,24 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void Build_MovesThePlayerToTheMiddleOfTheMap()
+        public void Build_PutsThePlayerIntoTheLiftCar_FacingItsDoor()
         {
             var builder = CreateBuilder(withPlayer: true);
             builder.Build(1, 7, 5);
 
+            Assert.IsTrue(builder.Layout.HasLift);
             var (column, row) = builder.StartCell;
-            Assert.AreEqual((3, 2), (column, row));
-            Assert.AreEqual(RoomContract.CellOriginX(3), builder.Player.position.x, Epsilon);
-            Assert.AreEqual(RoomContract.CellOriginZ(2), builder.Player.position.z, Epsilon);
+            Assert.AreEqual(RoomType.Elevator, builder.Layout.GetRoom(column, row).Type);
             Assert.IsTrue(builder.Player.GetComponent<CharacterController>().enabled);
+            Assert.AreEqual(0f, Vector3.Distance(builder.StartPose.position, builder.Player.position), Epsilon);
+
+            // Inside the car: between its walls, behind its door, looking at the door (room-local -Z).
+            var room = LevelRoot(builder).Find($"Cell_{column}_{row}/Room_{RoomType.Elevator}");
+            var local = room.InverseTransformPoint(builder.Player.position);
+            Assert.Less(Mathf.Abs(local.x), RoomContract.LiftCarWidth / 2f - 0.3f, "The player is not between the car walls");
+            Assert.Greater(local.z, RoomContract.LiftCarFront + 0.3f, "The player is not behind the lift door");
+            Assert.Less(local.z, RoomContract.LiftCarFront + RoomContract.LiftCarDepth - 0.3f, "The player is behind the car");
+            Assert.Greater(Vector3.Dot(builder.Player.forward, -room.forward), 0.99f, "The player does not face the lift door");
         }
 
         [Test]
@@ -205,6 +248,46 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             Assert.IsFalse(builder.Build(1, 0, 3));
         }
 
+        [Test]
+        public void Build_PutsAnAutomaticDoorIntoEveryOpeningOfARoom()
+        {
+            var builder = CreateBuilder();
+            builder.Build(21, 6, 6);
+            var layout = builder.Layout;
+            var level = LevelRoot(builder);
+            int expected = 0;
+            foreach (var room in layout.Rooms)
+            {
+                foreach (var side in new[] { Direction.East, Direction.North })
+                {
+                    if (!layout.Map.IsConnected(room.Column, room.Row, side)) continue;
+                    var other = layout.GetRoom(room.Column + side.ColumnOffset(), room.Row + side.RowOffset());
+                    var placement = RoomRules.DoorBetween(room.Type, other.Type);
+                    if (placement == DoorPlacement.First)
+                    {
+                        expected++;
+                        Assert.IsNotNull(level.Find($"Cell_{room.Column}_{room.Row}/Door_{side}"), $"No door in ({room.Column}, {room.Row}) {side}");
+                    }
+                    else if (placement == DoorPlacement.Second)
+                    {
+                        expected++;
+                        Assert.IsNotNull(level.Find($"Cell_{other.Column}_{other.Row}/Door_{side.Opposite()}"), $"No door in ({other.Column}, {other.Row}) {side.Opposite()}");
+                    }
+                }
+            }
+            // The doors of the openings, not the lift's own door inside its room.
+            var doors = level.GetComponentsInChildren<AutoSlidingDoor>().Where(d => d.name.StartsWith("Door_")).ToArray();
+            Assert.AreEqual(expected, doors.Length);
+            Assert.Greater(expected, 0, "This seed should have rooms with doors");
+            foreach (var door in doors)
+            {
+                // The door stands in its opening: on the cell edge, in the middle of the side.
+                var local = door.transform.localPosition;
+                Assert.AreEqual(RoomContract.WallCenterOffset, Mathf.Max(Mathf.Abs(local.x), Mathf.Abs(local.z)), Epsilon);
+                Assert.AreEqual(0f, Mathf.Min(Mathf.Abs(local.x), Mathf.Abs(local.z)), Epsilon);
+            }
+        }
+
         private LevelBuilder CreateBuilder(bool withPlug = true, bool withDefinitions = true, bool withPlayer = false)
         {
             var host = new GameObject("LevelBuilderTest");
@@ -229,6 +312,9 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 var plug = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Rooms/WallPlug.prefab");
                 Assert.IsNotNull(plug, "WallPlug.prefab is missing");
                 serialized.FindProperty("wallPlugPrefab").objectReferenceValue = plug;
+                var door = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Props/AutoSlidingDoor.prefab");
+                Assert.IsNotNull(door, "AutoSlidingDoor.prefab is missing");
+                serialized.FindProperty("doorPrefab").objectReferenceValue = door;
             }
             if (withPlayer)
             {

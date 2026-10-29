@@ -10,8 +10,8 @@ using UnityEngine;
 namespace ColdShutdown.Editor
 {
     /// <summary>
-    /// Creates Main.unity: the player, a <see cref="LevelBuilder"/> wired to the room definitions and the
-    /// wall plug, and the F1 <see cref="DebugMenu"/>. Press Play and the builder makes a random map and
+    /// Creates Main.unity: the player, a <see cref="LevelBuilder"/> wired to the room definitions, the
+    /// wall plug, the automatic door and the hall kit, and the F1 <see cref="DebugMenu"/>. Press Play and the builder makes a random map and
     /// puts the player in its middle. Run Create Room Shell, Create Graybox Rooms and Create Player Prefab
     /// first (the sandbox scene tools do the last one).
     /// </summary>
@@ -45,6 +45,8 @@ namespace ColdShutdown.Editor
             // Load the assets only now: creating a scene unloads assets nothing references yet, and an
             // asset loaded before it would be saved into the scene as an empty reference.
             var plug = AssetDatabase.LoadAssetAtPath<GameObject>(RoomShellTool.WallPlugPath);
+            var hallKit = AssetDatabase.LoadAssetAtPath<HallKit>(HallKitTool.KitPath);
+            var door = AssetDatabase.LoadAssetAtPath<GameObject>(GrayboxPropsTool.PathOf(GrayboxProp.AutoSlidingDoor));
             var definitions = Enum.GetValues(typeof(RoomType)).Cast<RoomType>()
                 .Select(type => AssetDatabase.LoadAssetAtPath<RoomDefinition>(GrayboxRoomsTool.DefinitionPath(type)))
                 .ToArray();
@@ -61,6 +63,8 @@ namespace ColdShutdown.Editor
                 definitionsProperty.GetArrayElementAtIndex(i).objectReferenceValue = definitions[i];
             }
             serialized.FindProperty("wallPlugPrefab").objectReferenceValue = plug;
+            serialized.FindProperty("doorPrefab").objectReferenceValue = door;
+            serialized.FindProperty("hallKit").objectReferenceValue = hallKit;
             serialized.FindProperty("player").objectReferenceValue = player.transform;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 

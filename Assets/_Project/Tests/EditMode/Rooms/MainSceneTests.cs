@@ -1,3 +1,4 @@
+using ColdShutdown.Core;
 using ColdShutdown.Runtime;
 using NUnit.Framework;
 using UnityEditor;
@@ -46,9 +47,11 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             Assert.IsTrue(builder.HasLevel);
             Assert.AreEqual(builder.Width * builder.Height, builder.Layout.Rooms.Count);
 
+            // The player starts in the lift car, in the start cell.
             var (column, row) = builder.StartCell;
-            Assert.AreEqual(column * 12f, builder.Player.position.x, 0.001f);
-            Assert.AreEqual(row * 12f, builder.Player.position.z, 0.001f);
+            Assert.AreEqual(0f, Vector3.Distance(builder.StartPose.position, builder.Player.position), 0.001f);
+            Assert.AreEqual(column, RoomContract.ColumnAt(builder.Player.position.x));
+            Assert.AreEqual(row, RoomContract.RowAt(builder.Player.position.z));
             builder.Clear();
         }
 

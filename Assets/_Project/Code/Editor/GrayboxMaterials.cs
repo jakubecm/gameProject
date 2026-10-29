@@ -31,6 +31,16 @@ namespace ColdShutdown.Editor
         DataTray,
         PipeWater,
         PipeGas,
+        HallFloor,
+        HallWall,
+        Steel,
+        RoofDeck,
+        SafetyYellow,
+        SafetyGreen,
+        Glass,
+        SignFace,
+        WireMesh,
+        LedRed,
     }
 
     /// <summary>
@@ -48,6 +58,9 @@ namespace ColdShutdown.Editor
             public readonly float Metallic;
             public readonly float Smoothness;
             public readonly Color Emission;
+
+            /// <summary>Below 1 the material is transparent (alpha blended).</summary>
+            public float Alpha => Color.a;
 
             public Look(float grey, float metallic, float smoothness) : this(new Color(grey, grey, grey), metallic, smoothness) { }
 
@@ -83,6 +96,20 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.DataTray, new Look(new Color(0.9f, 0.72f, 0.1f), 0.3f, 0.5f) },
             { SurfaceMaterial.PipeWater, new Look(new Color(0.15f, 0.5f, 0.25f), 0.2f, 0.6f) },
             { SurfaceMaterial.PipeGas, new Look(new Color(0.92f, 0.78f, 0.1f), 0.2f, 0.6f) },
+            // Server hall: sealed epoxy floor, painted block walls, grey steel structure, metal roof deck.
+            { SurfaceMaterial.HallFloor, new Look(new Color(0.36f, 0.38f, 0.4f), 0f, 0.55f) },
+            { SurfaceMaterial.HallWall, new Look(new Color(0.78f, 0.79f, 0.8f), 0f, 0.15f) },
+            { SurfaceMaterial.Steel, new Look(new Color(0.3f, 0.33f, 0.37f), 0.6f, 0.45f) },
+            { SurfaceMaterial.RoofDeck, new Look(0.5f, 0.5f, 0.3f) },
+            { SurfaceMaterial.SafetyYellow, new Look(new Color(0.95f, 0.75f, 0.05f), 0f, 0.4f) },
+            { SurfaceMaterial.SafetyGreen, new Look(new Color(0.1f, 0.6f, 0.25f), 0f, 0.5f, new Color(0.1f, 0.8f, 0.3f) * 1.2f) },
+            { SurfaceMaterial.Glass, new Look(new Color(0.6f, 0.7f, 0.75f, 0.25f), 0f, 0.9f) },
+            // Sign faces glow a little so the codes stay readable from far away.
+            { SurfaceMaterial.SignFace, new Look(new Color(0.95f, 0.95f, 0.95f), 0f, 0.3f, new Color(0.35f, 0.35f, 0.35f)) },
+            // Steel wire mesh of the cage partitions in the hall: see-through, so the hall stays readable.
+            { SurfaceMaterial.WireMesh, new Look(new Color(0.35f, 0.37f, 0.4f, 0.45f), 0.6f, 0.4f) },
+            // Red status LED (locked access reader); the green one is SafetyGreen.
+            { SurfaceMaterial.LedRed, new Look(new Color(0.8f, 0.05f, 0.04f), 0f, 0.5f, new Color(1f, 0.08f, 0.05f) * 1.5f) },
         };
 
         public static string PathOf(SurfaceMaterial surface) => $"{Folder}/M_{surface}.mat";
@@ -117,6 +144,7 @@ namespace ColdShutdown.Editor
 
         private static void ApplyLook(Material material, Look look)
         {
+            ApplyTransparency(material, look.Alpha < 1f);
             material.SetColor("_BaseColor", look.Color);
             material.SetFloat("_Metallic", look.Metallic);
             material.SetFloat("_Smoothness", look.Smoothness);
@@ -131,6 +159,20 @@ namespace ColdShutdown.Editor
                 material.DisableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor", Color.black);
             }
+        }
+
+        /// <summary>Switches a URP Lit material between opaque and alpha-blended transparent.</summary>
+        private static void ApplyTransparency(Material material, bool transparent)
+        {
+            material.SetFloat("_Surface", transparent ? 1f : 0f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", transparent ? (float)UnityEngine.Rendering.BlendMode.SrcAlpha : (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_DstBlend", transparent ? (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha : (float)UnityEngine.Rendering.BlendMode.Zero);
+            material.SetFloat("_ZWrite", transparent ? 0f : 1f);
+            material.SetOverrideTag("RenderType", transparent ? "Transparent" : "Opaque");
+            material.renderQueue = transparent ? (int)UnityEngine.Rendering.RenderQueue.Transparent : -1;
+            if (transparent) material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            else material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
         }
     }
 }

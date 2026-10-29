@@ -18,8 +18,8 @@ namespace ColdShutdown.Editor
         Shelf,
         FilingCabinet,
         Whiteboard,
-        Troffer600,
-        Troffer1200,
+        LedPanel600,
+        LedPanel1200,
         FloorVentTile,
         FireExtinguisher,
         ElectricalPanel,
@@ -30,6 +30,56 @@ namespace ColdShutdown.Editor
         PowerSocket,
         DataSocket,
         Radiator,
+        PendantLight,
+        HallSignCube,
+        SecurityDome,
+        SecurityWallDome,
+        SecurityPendant,
+        VideoScreen,
+        EquipmentCabinet,
+        FloorBox,
+        ExitSign,
+        AutoSlidingDoor,
+        AisleDoor,
+        WallVentGrille,
+        CeilingDiffuser,
+        FireCallPoint,
+        GasReleaseStation,
+        EmergencyLight,
+        LedBatten,
+        AisleLight,
+        RackCompute,
+        RackGpu,
+        RackJbod,
+        RackNetwork,
+        PcTower,
+        DualWorkstation,
+        WallTv,
+        CoffeeCounter,
+        CoffeeMachine,
+        Mug,
+        Locker,
+        LockerBench,
+        Binders,
+        PaperStack,
+        PhotoFrame,
+        Transformer,
+        SwitchgearCabinet,
+        AnalogMeterPanel,
+        PipeGauge,
+        AirHandlingUnit,
+        CirculationPump,
+        FloorVentGrille,
+        Printer,
+        Fridge,
+        CoffeeTable,
+        BufferTank,
+        LightSwitch,
+        CeilingSpeaker,
+        FreightLift,
+        StorageCrate,
+        PlateHeatExchanger,
+        PassengerLift,
     }
 
     /// <summary>
@@ -46,7 +96,7 @@ namespace ColdShutdown.Editor
     /// - desk-top props: pivot on the desk surface; forward is the way the screen faces;
     /// - door frame: pivot is the opening pose (<see cref="RoomContract.GetOpeningPose"/>).
     /// </summary>
-    public static class GrayboxPropsTool
+    public static partial class GrayboxPropsTool
     {
         public const string PropsFolder = "Assets/_Project/Prefabs/Props";
 
@@ -62,8 +112,8 @@ namespace ColdShutdown.Editor
         /// <summary>Height of the suspended-ceiling T-bars below the ceiling plane; ceiling fittings cover it.</summary>
         public const float CeilingGridDepth = 0.012f;
 
-        // Fluorescent fittings: 4000 K, no shadows (task 1.10 allows shadows on one or two lights only).
-        private static readonly Color FluorescentColor = new Color(1f, 0.95f, 0.88f);
+        // LED panels and battens: 4000 K, no shadows (task 1.10 allows shadows on one or two lights only).
+        private static readonly Color LedPanelColor = new Color(1f, 0.95f, 0.88f);
 
         private static readonly Dictionary<GrayboxProp, Action<Transform>> Builders = new Dictionary<GrayboxProp, Action<Transform>>
         {
@@ -75,11 +125,11 @@ namespace ColdShutdown.Editor
             { GrayboxProp.Shelf, BuildShelf },
             { GrayboxProp.FilingCabinet, BuildFilingCabinet },
             { GrayboxProp.Whiteboard, BuildWhiteboard },
-            { GrayboxProp.Troffer600, root => BuildTroffer(root, 0.6f, 4, 2.2f) },
-            { GrayboxProp.Troffer1200, root => BuildTroffer(root, 1.2f, 3, 3.2f) },
+            { GrayboxProp.LedPanel600, root => BuildLedPanel(root, 0.6f, 3.0f) },
+            { GrayboxProp.LedPanel1200, root => BuildLedPanel(root, 1.2f, 5.0f) },
             { GrayboxProp.FloorVentTile, BuildFloorVentTile },
             { GrayboxProp.FireExtinguisher, BuildFireExtinguisher },
-            { GrayboxProp.ElectricalPanel, BuildElectricalPanel },
+            { GrayboxProp.ElectricalPanel, root => BuildElectricalPanel(root, RoomContract.CeilingHeight) },
             { GrayboxProp.HydrantCabinet, BuildHydrantCabinet },
             { GrayboxProp.SmokeDetector, BuildSmokeDetector },
             { GrayboxProp.Sprinkler, BuildSprinkler },
@@ -87,6 +137,56 @@ namespace ColdShutdown.Editor
             { GrayboxProp.PowerSocket, BuildPowerSocket },
             { GrayboxProp.DataSocket, BuildDataSocket },
             { GrayboxProp.Radiator, BuildRadiator },
+            { GrayboxProp.PendantLight, BuildPendantLight },
+            { GrayboxProp.HallSignCube, root => BuildHallSign(root, SurfaceMaterial.SignFace) },
+            { GrayboxProp.SecurityDome, BuildSecurityDome },
+            { GrayboxProp.SecurityWallDome, BuildSecurityWallDome },
+            { GrayboxProp.SecurityPendant, BuildSecurityPendant },
+            { GrayboxProp.VideoScreen, BuildVideoScreen },
+            { GrayboxProp.EquipmentCabinet, BuildEquipmentCabinet },
+            { GrayboxProp.FloorBox, BuildFloorBox },
+            { GrayboxProp.ExitSign, BuildExitSign },
+            { GrayboxProp.AutoSlidingDoor, BuildRoomSlidingDoor },
+            { GrayboxProp.AisleDoor, BuildAisleSlidingDoor },
+            { GrayboxProp.WallVentGrille, BuildWallVentGrille },
+            { GrayboxProp.CeilingDiffuser, BuildCeilingDiffuser },
+            { GrayboxProp.FireCallPoint, BuildFireCallPoint },
+            { GrayboxProp.GasReleaseStation, BuildGasReleaseStation },
+            { GrayboxProp.EmergencyLight, BuildEmergencyLight },
+            { GrayboxProp.LedBatten, BuildLedBatten },
+            { GrayboxProp.AisleLight, BuildAisleLight },
+            { GrayboxProp.RackCompute, root => BuildRack(root, RackKind.Compute) },
+            { GrayboxProp.RackGpu, root => BuildRack(root, RackKind.Gpu) },
+            { GrayboxProp.RackJbod, root => BuildRack(root, RackKind.Jbod) },
+            { GrayboxProp.RackNetwork, root => BuildRack(root, RackKind.Network) },
+            { GrayboxProp.PcTower, BuildPcTower },
+            { GrayboxProp.DualWorkstation, BuildDualWorkstation },
+            { GrayboxProp.WallTv, BuildWallTv },
+            { GrayboxProp.CoffeeCounter, BuildCoffeeCounter },
+            { GrayboxProp.CoffeeMachine, BuildCoffeeMachine },
+            { GrayboxProp.Mug, BuildMug },
+            { GrayboxProp.Locker, BuildLocker },
+            { GrayboxProp.LockerBench, BuildLockerBench },
+            { GrayboxProp.Binders, BuildBinders },
+            { GrayboxProp.PaperStack, BuildPaperStack },
+            { GrayboxProp.PhotoFrame, BuildPhotoFrame },
+            { GrayboxProp.Transformer, BuildTransformer },
+            { GrayboxProp.SwitchgearCabinet, BuildSwitchgearCabinet },
+            { GrayboxProp.AnalogMeterPanel, BuildAnalogMeterPanel },
+            { GrayboxProp.PipeGauge, BuildPipeGauge },
+            { GrayboxProp.AirHandlingUnit, BuildAirHandlingUnit },
+            { GrayboxProp.CirculationPump, BuildCirculationPump },
+            { GrayboxProp.FloorVentGrille, BuildFloorVentGrille },
+            { GrayboxProp.Printer, BuildPrinter },
+            { GrayboxProp.Fridge, BuildFridge },
+            { GrayboxProp.CoffeeTable, BuildCoffeeTable },
+            { GrayboxProp.BufferTank, BuildBufferTank },
+            { GrayboxProp.LightSwitch, BuildLightSwitch },
+            { GrayboxProp.CeilingSpeaker, BuildCeilingSpeaker },
+            { GrayboxProp.FreightLift, BuildFreightLift },
+            { GrayboxProp.StorageCrate, BuildStorageCrate },
+            { GrayboxProp.PlateHeatExchanger, BuildPlateHeatExchanger },
+            { GrayboxProp.PassengerLift, BuildPassengerLift },
         };
 
         public static string PathOf(GrayboxProp prop) => $"{PropsFolder}/{prop}.prefab";
@@ -130,7 +230,7 @@ namespace ColdShutdown.Editor
         }
 
         /// <summary>One box collider over the whole prop, instead of a mesh collider on every small part.</summary>
-        private static void AddBoxCollider(Transform root, Vector3 center, Vector3 size)
+        internal static void AddBoxCollider(Transform root, Vector3 center, Vector3 size)
         {
             var collider = root.gameObject.AddComponent<BoxCollider>();
             collider.center = center;
@@ -198,13 +298,24 @@ namespace ColdShutdown.Editor
             AddBoxCollider(root, new Vector3(0f, 0.53f, 0f), new Vector3(0.6f, 1.06f, 0.6f));
         }
 
-        /// <summary>Monitor with a keyboard in front of it; stands on a desk top, the screen faces +Z.</summary>
+        /// <summary>
+        /// Monitor with a keyboard in front of it and the mouse to the right of the keyboard (as seen by the user, who
+        /// faces the screen); stands on a desk top, the screen faces +Z.
+        /// </summary>
         private static void BuildWorkstation(Transform root)
         {
             GrayboxUtility.CreateStandingBox("Foot", root, new Vector3(0f, 0f, -0.12f), new Vector3(0.22f, 0.015f, 0.18f), SurfaceMaterial.Metal, false);
             GrayboxUtility.CreateStandingBox("Neck", root, new Vector3(0f, 0.015f, -0.15f), new Vector3(0.04f, 0.14f, 0.025f), SurfaceMaterial.Metal, false);
             GrayboxUtility.CreateStandingBox("Screen", root, new Vector3(0f, 0.11f, -0.13f), new Vector3(0.62f, 0.37f, 0.025f), SurfaceMaterial.Screen, false);
             GrayboxUtility.CreateStandingBox("Keyboard", root, new Vector3(0f, 0f, 0.16f), new Vector3(0.44f, 0.02f, 0.14f), SurfaceMaterial.Screen, false);
+            BuildMouse(root, new Vector3(-0.3f, 0f, 0.17f));
+        }
+
+        /// <summary>A mouse on its pad; the user faces -Z, so their right hand is at -X.</summary>
+        private static void BuildMouse(Transform root, Vector3 position)
+        {
+            GrayboxUtility.CreateStandingBox("MousePad", root, position, new Vector3(0.2f, 0.003f, 0.17f), SurfaceMaterial.Upholstery, false);
+            GrayboxUtility.CreateStandingBox("Mouse", root, position + new Vector3(0f, 0.003f, 0f), new Vector3(0.06f, 0.035f, 0.1f), SurfaceMaterial.Screen, false);
         }
 
         /// <summary>Meeting table 1.8 x 0.9 m on two pedestal legs; the long side runs along X.</summary>
@@ -271,73 +382,78 @@ namespace ColdShutdown.Editor
             AddBoxCollider(root, new Vector3(0f, height / 2f, 0.01f), new Vector3(width, height, depth + 0.02f));
         }
 
-        /// <summary>Wall-mounted whiteboard 1.5 x 1.0 m with a marker tray.</summary>
+        /// <summary>
+        /// Wall-mounted whiteboard 1.5 x 1.0 m with a marker tray. Its center is at <see cref="WallScreenCenter"/>, the
+        /// same height as the wall TV's screen, so the two line up in a meeting room.
+        /// </summary>
         private static void BuildWhiteboard(Transform root)
         {
-            GrayboxUtility.CreateStandingBox("Frame", root, new Vector3(0f, 0.95f, 0.015f), new Vector3(1.54f, 1.04f, 0.03f), SurfaceMaterial.Metal, false);
-            GrayboxUtility.CreateStandingBox("Board", root, new Vector3(0f, 0.97f, 0.031f), new Vector3(1.5f, 1.0f, 0.002f), SurfaceMaterial.Whiteboard, false);
-            GrayboxUtility.CreateStandingBox("Tray", root, new Vector3(0f, 0.93f, 0.05f), new Vector3(0.6f, 0.02f, 0.06f), SurfaceMaterial.Metal, false);
+            float bottom = WallScreenCenter - 0.5f;
+            GrayboxUtility.CreateStandingBox("Frame", root, new Vector3(0f, bottom - 0.02f, 0.015f), new Vector3(1.54f, 1.04f, 0.03f), SurfaceMaterial.Metal, false);
+            GrayboxUtility.CreateStandingBox("Board", root, new Vector3(0f, bottom, 0.031f), new Vector3(1.5f, 1.0f, 0.002f), SurfaceMaterial.Whiteboard, false);
+            GrayboxUtility.CreateStandingBox("Tray", root, new Vector3(0f, bottom - 0.04f, 0.05f), new Vector3(0.6f, 0.02f, 0.06f), SurfaceMaterial.Metal, false);
         }
 
+        /// <summary>Height of the middle of a wall TV's screen and of a whiteboard.</summary>
+        public const float WallScreenCenter = 1.6f;
+
         /// <summary>
-        /// Lay-in louvered fluorescent luminaire for the 600 mm ceiling grid: 0.6 m wide, <paramref name="length"/>
-        /// long (along Z), with T5 tubes running along Z behind parabolic louvers. It sits in one grid cell
-        /// (600) or two (1200) and covers the T-bars under it. The light is a downward spot with no shadows.
+        /// Lay-in LED panel for the 600 mm ceiling grid: 0.6 m wide, <paramref name="length"/> long (along Z), a slim
+        /// aluminium frame around an opal diffuser flush with the T-bars. It sits in one grid cell (600) or two (1200)
+        /// and covers the T-bars under it. The light is a wide downward spot with no shadows.
         /// </summary>
-        private static void BuildTroffer(Transform root, float length, int tubes, float intensity)
+        private static void BuildLedPanel(Transform root, float length, float intensity)
         {
             const float width = 0.6f;
-            const float depth = 0.035f;
-            const float rim = 0.02f;
-            const float blade = 0.004f;
+            const float rim = 0.015f;
+            float frameY = -(CeilingGridDepth + 0.004f);
+            GrayboxUtility.CreateBox("Frame", root, new Vector3(0f, frameY, 0f), new Vector3(width, 0.008f, length), SurfaceMaterial.CeilingGrid, false);
+            GrayboxUtility.CreateBox("Diffuser", root, new Vector3(0f, frameY - 0.0055f, 0f), new Vector3(width - 2f * rim, 0.003f, length - 2f * rim), SurfaceMaterial.LightPanel, false);
+            AddSpotLight(root, new Vector3(0f, frameY - 0.03f, 0f), 150f, 100f, 6.5f, intensity, LedPanelColor);
+        }
 
-            // The reflector hangs just below the T-bars, so the grid line under a 1200 fitting is hidden.
-            float reflectorY = -(CeilingGridDepth + 0.0015f);
-            GrayboxUtility.CreateBox("Reflector", root, new Vector3(0f, reflectorY, 0f), new Vector3(width, 0.003f, length), SurfaceMaterial.CeilingGrid, false);
-            GrayboxUtility.CreateBox("Rim_Left", root, new Vector3(-(width - rim) / 2f, -depth / 2f, 0f), new Vector3(rim, depth, length), SurfaceMaterial.CeilingGrid, false);
-            GrayboxUtility.CreateBox("Rim_Right", root, new Vector3((width - rim) / 2f, -depth / 2f, 0f), new Vector3(rim, depth, length), SurfaceMaterial.CeilingGrid, false);
-            GrayboxUtility.CreateBox("Rim_Front", root, new Vector3(0f, -depth / 2f, (length - rim) / 2f), new Vector3(width - 2f * rim, depth, rim), SurfaceMaterial.CeilingGrid, false);
-            GrayboxUtility.CreateBox("Rim_Back", root, new Vector3(0f, -depth / 2f, -(length - rim) / 2f), new Vector3(width - 2f * rim, depth, rim), SurfaceMaterial.CeilingGrid, false);
-
-            float pitch = (width - 2f * rim) / tubes;
-            for (int i = 0; i < tubes; i++)
-            {
-                float x = -width / 2f + rim + pitch * (i + 0.5f);
-                var tube = GrayboxUtility.CreateCylinder($"Tube_{i}", root, new Vector3(x, -0.024f, 0f), 0.009f, length - 2f * rim - 0.02f, SurfaceMaterial.LightPanel);
-                tube.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                if (i > 0)
-                {
-                    float between = x - pitch / 2f;
-                    GrayboxUtility.CreateBox($"Louver_Long_{i}", root, new Vector3(between, -depth / 2f, 0f), new Vector3(blade, depth, length - 2f * rim), SurfaceMaterial.CeilingGrid, false);
-                }
-            }
-
-            int blades = Mathf.RoundToInt(length / 0.1f) - 1;
-            for (int i = 1; i < blades; i++)
-            {
-                float z = -length / 2f + i * (length / blades);
-                GrayboxUtility.CreateBox($"Louver_Cross_{i}", root, new Vector3(0f, -depth * 0.7f, z), new Vector3(width - 2f * rim, depth * 0.6f, blade), SurfaceMaterial.CeilingGrid, false);
-            }
-
+        /// <summary>A downward spot light without shadows (task 1.10 allows shadows on one or two lights only).</summary>
+        internal static Light AddSpotLight(Transform root, Vector3 position, float angle, float innerAngle, float range, float intensity, Color color)
+        {
             var lightObject = new GameObject("Light");
             lightObject.transform.SetParent(root, false);
-            lightObject.transform.localPosition = new Vector3(0f, -depth - 0.01f, 0f);
+            lightObject.transform.localPosition = position;
             lightObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             var light = lightObject.AddComponent<Light>();
             light.type = LightType.Spot;
-            light.spotAngle = 150f;
-            light.innerSpotAngle = 90f;
-            light.range = 6f;
+            light.spotAngle = angle;
+            light.innerSpotAngle = innerAngle;
+            light.range = range;
             light.intensity = intensity;
-            light.color = FluorescentColor;
+            light.color = color;
             light.shadows = LightShadows.None;
             light.lightmapBakeType = LightmapBakeType.Realtime;
+            return light;
         }
 
-        /// <summary>Perforated raised-floor tile 0.6 x 0.6 m (cold aisle air supply), lying on the floor.</summary>
+        /// <summary>
+        /// Perforated raised-floor tile 0.6 x 0.6 m (cold aisle air supply), lying on the floor: a steel grating of
+        /// 100 mm meshes in a frame over the dark plenum, so the cold aisle floor reads as a grid.
+        /// </summary>
         private static void BuildFloorVentTile(Transform root)
         {
-            GrayboxUtility.CreateStandingBox("Tile", root, Vector3.zero, new Vector3(0.6f, 0.008f, 0.6f), SurfaceMaterial.FloorVent, false);
+            const float size = 0.6f;
+            const float height = 0.01f;
+            const float frame = 0.025f;
+            const float bar = 0.012f;
+            const float mesh = 0.1f;
+            GrayboxUtility.CreateStandingBox("Plenum", root, Vector3.zero, new Vector3(size - 0.01f, 0.002f, size - 0.01f), SurfaceMaterial.Upholstery, false);
+            foreach (int side in new[] { -1, 1 })
+            {
+                GrayboxUtility.CreateStandingBox(side < 0 ? "Frame_S" : "Frame_N", root, new Vector3(0f, 0f, side * (size - frame) / 2f), new Vector3(size, height, frame), SurfaceMaterial.FloorVent, false);
+                GrayboxUtility.CreateStandingBox(side < 0 ? "Frame_W" : "Frame_E", root, new Vector3(side * (size - frame) / 2f, 0f, 0f), new Vector3(frame, height, size - 2f * frame), SurfaceMaterial.FloorVent, false);
+            }
+            float inner = size - 2f * frame;
+            for (float at = -size / 2f + mesh; at < size / 2f - 0.01f; at += mesh)
+            {
+                GrayboxUtility.CreateStandingBox($"Bar_X_{at:0.0}", root, new Vector3(0f, 0f, at), new Vector3(inner, height - 0.002f, bar), SurfaceMaterial.FloorVent, false);
+                GrayboxUtility.CreateStandingBox($"Bar_Z_{at:0.0}", root, new Vector3(at, 0f, 0f), new Vector3(bar, height - 0.002f, inner), SurfaceMaterial.FloorVent, false);
+            }
         }
 
         /// <summary>Wall-mounted 6 kg fire extinguisher, top at about 1.1 m.</summary>
@@ -351,13 +467,13 @@ namespace ColdShutdown.Editor
         /// <summary>
         /// Wall-mounted distribution board 0.6 x 0.8 x 0.22 m. Its cables leave upward in trunking of the
         /// standard profile and disappear into the suspended ceiling, like every other cable run.
+        /// <paramref name="ceiling"/> is where the trunking ends: the room ceiling, or the roof of the hall.
         /// </summary>
-        private static void BuildElectricalPanel(Transform root)
+        private static void BuildElectricalPanel(Transform root, float ceiling)
         {
             const float depth = 0.22f;
             const float bottom = 1.0f;
             const float height = 0.8f;
-            float ceiling = RoomContract.CeilingHeight;
 
             GrayboxUtility.CreateStandingBox("Cabinet", root, new Vector3(0f, bottom, depth / 2f), new Vector3(0.6f, height, depth), SurfaceMaterial.Trim, false);
             GrayboxUtility.CreateStandingBox("Door", root, new Vector3(0f, bottom + 0.02f, depth + 0.005f), new Vector3(0.56f, height - 0.04f, 0.01f), SurfaceMaterial.Trim, false);
