@@ -153,9 +153,9 @@ namespace ColdShutdown.Tests.EditMode.Player
             Run(new PlayerCommand { Crouch = true }, 0.5f);
 
             Assert.IsTrue(controller.IsCrouching);
-            Assert.That(controller.Height, Is.EqualTo(1.05f).Within(0.001f));
-            Assert.That(controller.GetComponent<CharacterController>().height, Is.EqualTo(1.05f).Within(0.001f));
-            Assert.That(controller.CameraPivot.localPosition.y, Is.LessThan(standingEyes - 0.6f));
+            Assert.That(controller.Height, Is.EqualTo(controller.CrouchingHeight).Within(0.001f));
+            Assert.That(controller.GetComponent<CharacterController>().height, Is.EqualTo(controller.CrouchingHeight).Within(0.001f));
+            Assert.That(controller.CameraPivot.localPosition.y, Is.LessThan(standingEyes - 0.45f));
             Assert.That(controller.CrouchAmount, Is.EqualTo(1f).Within(0.001f));
         }
 
@@ -230,6 +230,161 @@ namespace ColdShutdown.Tests.EditMode.Player
             Assert.AreEqual(1, impacts.Count);
             Assert.That(impacts[0], Is.GreaterThan(5f));
             Assert.IsTrue(controller.IsGrounded);
+        }
+
+        [Test]
+        public void Crouching_EasesInAndOut_InsteadOfMovingAtAConstantSpeed()
+        {
+            Run(default, FrameTime); // initialises the controller: standing, full height
+            var heights = new List<float> { controller.Height };
+            for (int i = 0; i < 18; i++)
+            {
+                controller.Simulate(new PlayerCommand { Crouch = true }, FrameTime);
+                heights.Add(controller.Height);
+            }
+
+            float firstStep = heights[0] - heights[1];
+            float middleStep = heights[8] - heights[9];
+            float lastStep = heights[16] - heights[17];
+            Assert.Greater(middleStep, firstStep * 2f, "starts gently");
+            Assert.Greater(middleStep, lastStep * 2f, "ends gently");
+            for (int i = 1; i < heights.Count; i++)
+            {
+                Assert.LessOrEqual(heights[i], heights[i - 1] + 0.0001f, "never goes back up while crouching");
+            }
+        }
+
+        [Test]
+        public void Crouching_TakesTheCrouchTime()
+        {
+            Run(new PlayerCommand { Crouch = true }, 0.15f);
+            Assert.That(controller.CrouchAmount, Is.InRange(0.3f, 0.7f), "halfway after half the time");
+
+            Run(new PlayerCommand { Crouch = true }, 0.2f);
+            Assert.That(controller.CrouchAmount, Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [Test]
+        public void Jumping_ReachesTheJumpHeight_AndLandsAgain()
+        {
+            Run(default, 0.3f);
+            int jumps = 0;
+            var impacts = new List<float>();
+            controller.Jumped += () => jumps++;
+            controller.Landed += impacts.Add;
+
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            float peak = 0f;
+            for (int i = 0; i < 90 && !(i > 3 && controller.IsGrounded); i++)
+            {
+                controller.Simulate(default, FrameTime);
+                peak = Mathf.Max(peak, controller.transform.position.y);
+            }
+
+            Assert.AreEqual(1, jumps);
+            Assert.That(peak, Is.EqualTo(0.6f).Within(0.08f), "feet rise about 0.6 m");
+            Assert.IsTrue(controller.IsGrounded);
+            Assert.AreEqual(1, impacts.Count);
+            Assert.That(controller.transform.position.y, Is.EqualTo(0f).Within(0.05f));
+        }
+
+        [Test]
+        public void Jumping_OnlyHappensOncePerLanding()
+        {
+            Run(default, 0.3f);
+            int jumps = 0;
+            controller.Jumped += () => jumps++;
+
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            Assert.AreEqual(1, jumps, "pressing again in the air does nothing");
+
+            // Far in the air, a press is too early for the buffer and the player is no longer on the floor.
+            Run(default, 0.2f);
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            Assert.AreEqual(1, jumps);
+        }
+
+        [Test]
+        public void Jumping_AShortWhileBeforeLanding_StillJumpsOnLanding()
+        {
+            // Dropped from 0.4 m, the player lands after about 0.21 s.
+            controller.transform.position = new Vector3(0f, 0.4f, 0f);
+            Physics.SyncTransforms();
+            int jumps = 0;
+            controller.Jumped += () => jumps++;
+
+            // Falling for 8 frames (0.13 s) is past the coyote time, so the press cannot be used yet...
+            Run(default, 8 * FrameTime);
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            Assert.IsFalse(controller.IsGrounded, "still in the air");
+            Assert.AreEqual(0, jumps);
+
+            // ...but it is remembered, and the jump happens on landing.
+            Run(default, 0.3f);
+            Assert.AreEqual(1, jumps);
+        }
+
+        [Test]
+        public void Jumping_IsNotPossibleWhileCrouching()
+        {
+            Run(new PlayerCommand { Crouch = true }, 0.5f);
+            int jumps = 0;
+            controller.Jumped += () => jumps++;
+
+            controller.Simulate(new PlayerCommand { Crouch = true, Jump = true }, FrameTime);
+            Run(new PlayerCommand { Crouch = true }, 0.3f);
+
+            Assert.AreEqual(0, jumps);
+            Assert.IsTrue(controller.IsGrounded);
+        }
+
+        [Test]
+        public void Jumping_AgainstALowCeiling_StopsTheRise()
+        {
+            Run(default, 0.3f);
+            CreateBox("Ceiling", new Vector3(0f, 2.2f, 0f), new Vector3(4f, 0.2f, 4f));
+
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            float highest = 0f;
+            for (int i = 0; i < 60; i++)
+            {
+                controller.Simulate(default, FrameTime);
+                highest = Mathf.Max(highest, controller.transform.position.y + controller.Height);
+            }
+
+            Assert.That(highest, Is.LessThanOrEqualTo(2.1f + 0.05f), "the head stops at the ceiling (its bottom is at 2.1 m)");
+            Assert.IsTrue(controller.IsGrounded, "falls back down instead of sticking to the ceiling");
+        }
+
+        [Test]
+        public void Jumping_KeepsTheSpeedAndTheSprint()
+        {
+            Run(new PlayerCommand { Move = Vector2.up, Sprint = true }, 1f);
+            Assert.IsTrue(controller.IsSprinting);
+
+            controller.Simulate(new PlayerCommand { Move = Vector2.up, Sprint = true, Jump = true }, FrameTime);
+            for (int i = 0; i < 12; i++)
+            {
+                controller.Simulate(new PlayerCommand { Move = Vector2.up, Sprint = true }, FrameTime);
+            }
+
+            Assert.IsFalse(controller.IsGrounded);
+            Assert.IsTrue(controller.IsSprinting, "a sprint carries through a jump");
+            Assert.That(controller.HorizontalSpeed, Is.GreaterThan(controller.SprintSpeed - 0.3f));
+        }
+
+        [Test]
+        public void InTheAir_SteeringIsWeakerThanOnTheGround()
+        {
+            Run(default, 0.3f);
+            controller.Simulate(new PlayerCommand { Jump = true }, FrameTime);
+            Run(new PlayerCommand { Move = Vector2.up }, 0.2f);
+            float inAir = controller.HorizontalSpeed;
+
+            Assert.IsFalse(controller.IsGrounded);
+            Assert.That(inAir, Is.LessThan(controller.WalkSpeed * 0.8f), "full walking speed takes longer to reach in the air");
         }
 
         private float EyesAfter(PlayerCommand command)

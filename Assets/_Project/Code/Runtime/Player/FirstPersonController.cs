@@ -42,13 +42,23 @@ namespace ColdShutdown.Runtime
         [Tooltip("Only sprint when the stick or keys point at least this much forward (0..1).")]
         [SerializeField, Range(0f, 1f)] private float sprintForwardThreshold = 0.5f;
 
+        [Header("Jump")]
+        [Tooltip("How high the feet rise, in metres. Kept below desk height so desks are not a platform.")]
+        [SerializeField] private float jumpHeight = 0.6f;
+        [Tooltip("A jump pressed this many seconds before landing still happens on landing.")]
+        [SerializeField] private float jumpBufferTime = 0.12f;
+        [Tooltip("A jump pressed this many seconds after walking off an edge still happens.")]
+        [SerializeField] private float coyoteTime = 0.1f;
+        [Tooltip("Share of the ground acceleration that works in the air (0..1). Speed is kept in the air.")]
+        [SerializeField, Range(0f, 1f)] private float airControl = 0.35f;
+
         [Header("Body")]
         [SerializeField] private float standingHeight = 1.8f;
-        [SerializeField] private float crouchingHeight = 1.05f;
+        [SerializeField] private float crouchingHeight = 1.3f;
         [Tooltip("Eyes are this far below the top of the head.")]
         [SerializeField] private float eyeBelowTop = 0.14f;
-        [Tooltip("Seconds to go fully down or up.")]
-        [SerializeField] private float crouchTime = 0.2f;
+        [Tooltip("Seconds to go fully down or up. The movement eases in and out.")]
+        [SerializeField] private float crouchTime = 0.3f;
 
         [Header("Footsteps")]
         [SerializeField] private float walkStepLength = 0.85f;
@@ -78,6 +88,11 @@ namespace ColdShutdown.Runtime
         private float staminaRecoveryTimer;
         private bool wasGrounded = true;
         private bool initialized;
+        private float crouchBlend;
+        private float jumpBuffer;
+        private float timeSinceGrounded;
+        private bool jumpedSinceGrounded;
+        private float currentStepLength;
 
         /// <summary>A foot touched the floor.</summary>
         public event Action<FootstepEvent> Footstep;
@@ -90,6 +105,9 @@ namespace ColdShutdown.Runtime
 
         /// <summary>The player started (true) or stopped (false) sprinting.</summary>
         public event Action<bool> SprintChanged;
+
+        /// <summary>The player left the ground with a jump.</summary>
+        public event Action Jumped;
 
         public bool IsGrounded { get; private set; } = true;
 
@@ -108,6 +126,22 @@ namespace ColdShutdown.Runtime
 
         /// <summary>Actual horizontal speed in m/s (zero when walking into a wall).</summary>
         public float HorizontalSpeed { get; private set; }
+
+        /// <summary>Speed at take-off, from the jump height and gravity.</summary>
+        public float JumpSpeed => Mathf.Sqrt(2f * gravity * Mathf.Max(0f, jumpHeight));
+
+        /// <summary>Up (positive) or down (negative) speed in m/s; for animation.</summary>
+        public float VerticalSpeed => verticalSpeed;
+
+        /// <summary>Walking velocity in the player's own space: x = right, y = forward, in m/s.</summary>
+        public Vector2 LocalVelocity => new Vector2(Vector3.Dot(horizontalVelocity, transform.right), Vector3.Dot(horizontalVelocity, transform.forward));
+
+        /// <summary>Length of one step at the current speed, in metres; the distance between two foot contacts.</summary>
+        public float CurrentStepLength => currentStepLength > 0f ? currentStepLength : walkStepLength;
+
+        public float StandingHeight => standingHeight;
+
+        public float CrouchingHeight => crouchingHeight;
 
         public float WalkSpeed => walkSpeed;
 
@@ -140,7 +174,7 @@ namespace ColdShutdown.Runtime
             Look(command.Look);
             UpdateCrouch(command.Crouch, deltaTime);
             UpdateSprint(command, deltaTime);
-            Move(command.Move, deltaTime);
+            Move(command.Move, command.Jump, deltaTime);
             cameraPivot.localPosition = new Vector3(0f, height - eyeBelowTop, 0f);
         }
 
@@ -173,6 +207,7 @@ namespace ColdShutdown.Runtime
             yaw = transform.eulerAngles.y;
             pitch = 0f;
             height = standingHeight;
+            crouchBlend = 0f;
             ApplyHeight();
             ApplyView();
         }
@@ -192,22 +227,26 @@ namespace ColdShutdown.Runtime
             cameraPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
+        /// <summary>Body height for a crouch progress from 0 (standing) to 1 (crouched); eased, so it starts and ends gently.</summary>
+        private float HeightAt(float blend) => Mathf.Lerp(standingHeight, crouchingHeight, Mathf.SmoothStep(0f, 1f, blend));
+
         private void UpdateCrouch(bool wantsCrouch, float deltaTime)
         {
             // Releasing crouch under something low keeps the player down until there is room.
-            bool shouldCrouch = wantsCrouch || (height < standingHeight - 0.001f && !HasHeadroom(standingHeight));
+            bool shouldCrouch = wantsCrouch || (crouchBlend > 0f && !HasHeadroom(standingHeight));
             if (shouldCrouch != crouched)
             {
                 crouched = shouldCrouch;
                 CrouchChanged?.Invoke(crouched);
             }
 
-            float target = crouched ? crouchingHeight : standingHeight;
-            float rate = (standingHeight - crouchingHeight) / Mathf.Max(crouchTime, 0.01f);
-            float next = Mathf.MoveTowards(height, target, rate * deltaTime);
-            if (next > height && !HasHeadroom(next)) return;
+            float targetBlend = crouched ? 1f : 0f;
+            float nextBlend = Mathf.MoveTowards(crouchBlend, targetBlend, deltaTime / Mathf.Max(crouchTime, 0.01f));
+            float nextHeight = HeightAt(nextBlend);
+            if (nextHeight > height && !HasHeadroom(nextHeight)) return;
 
-            height = next;
+            crouchBlend = nextBlend;
+            height = nextHeight;
             ApplyHeight();
         }
 
@@ -220,7 +259,8 @@ namespace ColdShutdown.Runtime
         {
             bool unlimited = sprintDuration <= 0f;
             bool upright = !crouched && height >= standingHeight - 0.001f;
-            bool wantsSprint = command.Sprint && command.Move.y >= sprintForwardThreshold && upright && IsGrounded;
+            // A sprint that began on the ground carries through a jump or a fall; it cannot start in the air.
+            bool wantsSprint = command.Sprint && command.Move.y >= sprintForwardThreshold && upright && (IsGrounded || sprinting);
             bool canSprint = unlimited || (!exhausted && stamina > 0f);
             SetSprinting(wantsSprint && canSprint);
 
@@ -281,25 +321,31 @@ namespace ColdShutdown.Runtime
             return !Physics.SphereCast(origin, radius, Vector3.up, out _, rise + body.skinWidth, environmentMask, QueryTriggerInteraction.Ignore);
         }
 
-        private void Move(Vector2 move, float deltaTime)
+        private void Move(Vector2 move, bool jumpPressed, float deltaTime)
         {
             move = Vector2.ClampMagnitude(move, 1f);
             float maxSpeed = sprinting ? sprintSpeed : Mathf.Lerp(walkSpeed, crouchSpeed, CrouchAmount);
+            // In the air the speed from the ground is kept, and steering is weaker.
+            if (!IsGrounded) maxSpeed = Mathf.Max(maxSpeed, horizontalVelocity.magnitude);
             var desired = (transform.right * move.x + transform.forward * move.y) * maxSpeed;
             float rate = desired.sqrMagnitude > horizontalVelocity.sqrMagnitude ? acceleration : deceleration;
+            if (!IsGrounded) rate *= airControl;
             horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, desired, rate * deltaTime);
 
-            if (IsGrounded && verticalSpeed < 0f)
-            {
-                verticalSpeed = -GroundStick;
-            }
+            UpdateJump(jumpPressed, deltaTime);
             verticalSpeed -= gravity * deltaTime;
             float fallSpeed = -verticalSpeed;
 
             var before = transform.position;
-            body.Move((horizontalVelocity + Vector3.up * verticalSpeed) * deltaTime);
+            var flags = body.Move((horizontalVelocity + Vector3.up * verticalSpeed) * deltaTime);
             var moved = transform.position - before;
             moved.y = 0f;
+
+            // Hitting the ceiling ends the rise instead of sticking to it.
+            if ((flags & CollisionFlags.Above) != 0 && verticalSpeed > 0f)
+            {
+                verticalSpeed = 0f;
+            }
 
             // Walking into a wall must not build up speed that would shoot the player off along it later.
             float actualSpeed = moved.magnitude / deltaTime;
@@ -327,13 +373,40 @@ namespace ColdShutdown.Runtime
             if (!IsGrounded) return;
 
             // Longer strides when running, shorter when crouching; the cadence rises a little with speed.
-            float stepLength = actualSpeed > walkSpeed
+            currentStepLength = actualSpeed > walkSpeed
                 ? Mathf.Lerp(walkStepLength, sprintStepLength, Mathf.InverseLerp(walkSpeed, sprintSpeed, actualSpeed))
                 : Mathf.Lerp(walkStepLength, crouchStepLength, CrouchAmount);
-            int steps = stride.Advance(moved.magnitude, stepLength);
+            int steps = stride.Advance(moved.magnitude, currentStepLength);
             for (int i = 0; i < steps; i++)
             {
                 Footstep?.Invoke(new FootstepEvent(transform.position, actualSpeed, crouched, sprinting, FindGround()));
+            }
+        }
+
+        /// <summary>
+        /// Starts a jump when the button was pressed shortly before (buffer) while on the ground or just after
+        /// leaving it (coyote time), standing up, and not already jumped since the last landing.
+        /// Otherwise keeps the player pressed onto the floor.
+        /// </summary>
+        private void UpdateJump(bool jumpPressed, float deltaTime)
+        {
+            jumpBuffer = jumpPressed ? jumpBufferTime : Mathf.Max(0f, jumpBuffer - deltaTime);
+            timeSinceGrounded = IsGrounded ? 0f : timeSinceGrounded + deltaTime;
+            if (IsGrounded) jumpedSinceGrounded = false;
+
+            bool canJump = !jumpedSinceGrounded && timeSinceGrounded <= coyoteTime && !crouched;
+            if (jumpBuffer > 0f && canJump)
+            {
+                verticalSpeed = JumpSpeed;
+                IsGrounded = false;
+                wasGrounded = false;
+                jumpedSinceGrounded = true;
+                jumpBuffer = 0f;
+                Jumped?.Invoke();
+            }
+            else if (IsGrounded && verticalSpeed < 0f)
+            {
+                verticalSpeed = -GroundStick;
             }
         }
 
