@@ -19,5 +19,8 @@ namespace ColdShutdown.Runtime
 
         /// <summary>True while the player wants to sprint; the controller decides whether it can.</summary>
         public bool Sprint;
+
+        /// <summary>True on the frame the jump button was pressed; the controller decides whether it can jump.</summary>
+        public bool Jump;
     }
 }

@@ -16,20 +16,20 @@ namespace ColdShutdown.Runtime
         [SerializeField] private bool bobEnabled = true;
 
         [Header("Walking")]
-        [SerializeField] private float verticalAmplitude = 0.035f;
-        [SerializeField] private float lateralAmplitude = 0.022f;
+        [SerializeField] private float verticalAmplitude = 0.018f;
+        [SerializeField] private float lateralAmplitude = 0.012f;
         [Tooltip("Roll in degrees at the far end of the sway.")]
-        [SerializeField] private float rollAmplitude = 0.35f;
+        [SerializeField] private float rollAmplitude = 0.2f;
         [Tooltip("Bob size while crouched, relative to walking.")]
         [SerializeField, Range(0f, 1f)] private float crouchFactor = 0.6f;
-        [Tooltip("Bob size at full sprint, relative to walking.")]
-        [SerializeField, Range(1f, 2f)] private float sprintFactor = 1.4f;
+        [Tooltip("Bob size at full sprint, relative to walking. Below 1, because the steps already come faster.")]
+        [SerializeField, Range(0.5f, 2f)] private float sprintFactor = 0.85f;
         [Tooltip("How quickly the bob fades in and out when starting and stopping.")]
         [SerializeField] private float blendSpeed = 6f;
 
         [Header("Sprint")]
         [Tooltip("Extra field of view in degrees at full sprint; 0 turns it off.")]
-        [SerializeField] private float sprintFovIncrease = 5f;
+        [SerializeField] private float sprintFovIncrease = 3f;
         [SerializeField] private float fovBlendSpeed = 6f;
 
         [Header("Landing")]

@@ -66,9 +66,10 @@ tests in `Tests/EditMode/Player/` (asmdef `ColdShutdown.Tests.EditMode.Player`).
 
 - **Structure:** `Player` (CharacterController, `PlayerInputReader`, `FirstPersonController`, AudioSource,
   `FootstepAudio`) → `CameraPivot` (pitch, eye height) → `Main Camera` (`HeadBob`, `Interactor`,
-  `InteractionPrompt`). Capsule 1.8 m tall, radius 0.3 m, steps up to 0.35 m, slopes up to 45°.
+  `InteractionPrompt`); plus a `Body` child (`PlayerBodyAnimator`, see below). Capsule 1.8 m tall, radius
+  0.3 m, steps up to 0.35 m, slopes up to 45°.
 - **Input:** `PlayerInputReader` turns Input System actions into a `PlayerCommand` (move, look, crouch,
-  sprint); the controller only sees the command, so tests drive it with `FirstPersonController.Simulate`.
+  sprint, jump); the controller only sees the command, so tests drive it with `FirstPersonController.Simulate`.
   The actions are serialized on the prefab and can be rebound in the Inspector. While the cursor is free
   (Escape; a click locks it again) or `InputEnabled` is false, the player stands still — terminals and
   menus (tasks 2.4, 3.2) set `InputEnabled = false` instead of disabling components.
@@ -79,22 +80,65 @@ tests in `Tests/EditMode/Player/` (asmdef `ColdShutdown.Tests.EditMode.Player`).
   | Walk | WASD, arrows | left stick | 2.6 m/s, accelerates at 14 m/s², stops at 18 m/s², slides along walls |
   | Look | mouse | right stick | 0.08°/pixel, 140°/s; pitch limited to ±85°; optional invert Y |
   | Sprint | Left Shift (hold) | left stick click | 4.4 m/s, only walking forward and upright; 6 s of stamina, refills in 5 s after a 1 s pause; once empty, sprint again from 30 % |
-  | Crouch | C or Left Ctrl (hold) | right face button | body 1.8 → 1.05 m in 0.2 s, eyes 1.66 → 0.91 m, 1.3 m/s; stays down while there is no headroom; wins over sprint |
+  | Crouch | C or Left Ctrl (hold) | right face button | body 1.8 → 1.3 m in 0.3 s, eased in and out, eyes 1.66 → 1.16 m, 1.3 m/s; stays down while there is no headroom; wins over sprint |
+  | Jump | Space | bottom face button | feet rise 0.6 m (below desk height, so desks are no platform); not while crouching; jump pressed 0.12 s before landing still counts (buffer), and 0.1 s after walking off an edge (coyote time); speed is kept in the air, steering has 35 % of the ground acceleration; a sprint carries through the jump; a ceiling ends the rise |
   | Fall / land | — | — | gravity 18 m/s², `Landed` with the impact speed, short camera dip |
 
   Crouch and sprint can each be switched to toggle mode (`PlayerInputReader.ButtonMode`).
-- **Head bob** (`HeadBob` on the camera): a dip on every footstep, sideways sway with slight roll once per
-  two steps, 60 % when crouching, up to 140 % when sprinting, +5° field of view while sprinting, landing
-  dip. It moves the camera, never the view direction. `BobEnabled` is the settings switch (task 5.6).
+- **Head bob** (`HeadBob` on the camera): a dip on every footstep (1.8 cm), sideways sway (1.2 cm) with slight
+  roll (0.2°) once per two steps, 60 % when crouching, 85 % when sprinting (the steps already come faster, a
+  bigger bob felt like a rollercoaster), +3° field of view while sprinting, landing dip. It moves the camera,
+  never the view direction. `BobEnabled` is the settings switch (task 5.6).
 - **Footsteps:** `StrideModel` is the one walking rhythm: step length 0.85 m walking, 0.6 m crouching,
   1.15 m sprinting. `FirstPersonController.Footstep` fires on every foot contact with position, speed,
   crouch/sprint flags and the ground collider (its physics material picks the surface sound, task 4.10).
   Head bob dips exactly on these steps. `FootstepAudio` plays assigned clips (none yet: silent).
-- **Events for other systems:** `Footstep`, `Landed`, `CrouchChanged`, `SprintChanged`; state for UI and
-  sound: `IsGrounded`, `IsCrouching`, `IsSprinting`, `Stamina` (0–1), `IsExhausted`, `HorizontalSpeed`.
+- **Events for other systems:** `Footstep`, `Landed`, `Jumped`, `CrouchChanged`, `SprintChanged`; state for UI and
+  sound: `IsGrounded`, `IsCrouching`, `IsSprinting`, `Stamina` (0–1), `IsExhausted`, `HorizontalSpeed`,
+  `VerticalSpeed`, `LocalVelocity`, `CrouchAmount`.
+- **Body** (`Body` child, `PlayerBodyAnimator`): a mannequin of cylinders, spheres and boxes in a bone hierarchy
+  (`Pelvis` → `Chest` → arms, `Thigh_L/R` → `Shin` → `Foot`), built by `PlayerBodyBuilder` with sizes from
+  `PlayerBodyDimensions` (legs 2 × 0.5 m, 1.8 m tall), so it is visible when looking down. No Animator and no clips:
+  the pose is computed every frame from the controller. Legs: `WalkCycle` gives each foot's path from the stride
+  phase (the foot on the floor slides back under the body at exactly the walking speed, so it does not slip; the
+  left foot lands on even phases, the right on odd ones, with the footstep sound and the head bob), `LegSolver`
+  is a two-bone solver that turns the wanted ankle position into hip and knee angles. Hips hang under the eyes,
+  so they follow the crouch; the torso leans when sprinting and crouching; legs tuck in the air; arms swing
+  against the legs; hips dip after landing; the soles are snapped to the floor under the player (the
+  CharacterController floats a skin width above it). The head and the chest only cast shadows: the camera is inside the head, 14 cm above the chest, which would fill half the screen when looking down. The player sees legs and arms.
+  The body has **no colliders**. A final model can later be rigged to the same bones, or the animator replaced.
+- **Mixamo body (the real character):** a downloaded, rigged human (Adobe Mixamo, see `CREDITS.md`) in
+  `Assets/ThirdParty/PlayerBrian/`: `character.fbx` (with its skin and textures, ~55 MB) plus one
+  `Ch01_nonPBR@<Name>.fbx` per animation, downloaded from Mixamo "In Place" and "Without Skin" (a few hundred KB
+  each; with the skin each was 55 MB). Clips used, by file name: `Idle`, `Walking`, `Running`, `Male Crouch Pose` (or
+  `Crouch Idle`), `Crouched Walking`, `Jump`; only `Walking` is required. `Tools/Cold Shutdown/Set Up Mixamo Player
+  Body` (`MixamoPlayerTool`) sets the models up as Humanoid, extracts the textures (1024 px), converts the materials to
+  URP Lit in `ThirdParty/PlayerBrian/Materials`, builds `Art/Animation/PlayerBody.controller` from the clips it finds,
+  adds a `Character` child to the player prefab and switches the procedural mannequin (`Body`) off (it stays in the
+  prefab as a fallback). Import settings of the clips: root height and rotation are baked into the pose, the forward
+  travel is **not** (it stays root motion, ignored because Apply Root Motion is off; baking it makes the body walk away
+  from the camera). Run it again after adding animations; if a new FBX is not imported yet, focus Unity first.
+- **Animator Controller:** Idle ↔ Locomotion (blend tree of Walking and Running by `Speed`, thresholds = the clips' real
+  speeds) ↔ Crouch (blend tree of the crouch pose and Crouched Walking, while `Crouch` > 0.5); Jump from any state
+  by the `Jump` trigger, back to Idle or Locomotion after landing. Parameters: `Speed`, `MotionSpeed`,
+  `CrouchMotionSpeed`, `Grounded`, `Crouch`, `Jump`. A movement whose animation is missing shows the standing one.
+- **`PlayerCharacterAnimator`** (on `Character`) sets the parameters from the controller. The walk and run
+  animations play at the rate that keeps the feet from sliding (`walkClipSpeed`, `runClipSpeed`, `crouchClipSpeed`
+  on the component; the tool takes them from the clips, in-place clips fall back to defaults: tune them in Play mode
+  if the feet slide); walking backwards plays them in reverse. The head bone is scaled to nothing, hair and
+  eyelashes only cast shadows, the character stands 12 cm behind the camera, is scaled so its eyes are at the
+  camera height, and its soles are snapped to the floor (`FloorSnap`). The setup measures the crouch pose and sets the
+  player's crouched capsule height so the camera drops as low as the animation's head does.
+- **Updating an existing prefab:** `Tools/Cold Shutdown/Update Player Prefab` adds the body if it is missing and
+  moves tuning values that still have their old default to the new default (crouch height and time, head bob);
+  a value changed by hand is left alone. `Create Player Prefab` only creates a missing prefab.
 - **Settings hooks (task 5.6):** `PlayerInputReader.MouseSensitivity`, `StickSensitivity`, `InvertY`,
   `Crouching` / `Sprinting` (hold or toggle), `HeadBob.BobEnabled`.
-- All numbers are serialized fields on the prefab; tune them there in Play mode ("walking feels right").
+- All numbers are serialized fields on the prefab; tune them there in Play mode ("walking feels right"). The
+  defaults in code only apply to a new prefab; an existing prefab keeps its values (see Update Player Prefab).
+- Tests: `FirstPersonControllerTests` (movement, crouch easing, jump rules), `LegSolverTests` (solver and walk
+  cycle math), `PlayerBodyAnimationTests` (walks the real prefab: feet on the floor, planted foot does not slide),
+  `PlayerPrefabTests` (body, bones, no colliders, tuning).
 
 ## Room contract
 
