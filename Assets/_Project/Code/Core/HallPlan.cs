@@ -119,7 +119,7 @@ namespace ColdShutdown.Core
         public static HallPlan Create(RoomLayout layout)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
-            return Create(layout.Map, (column, row) => layout.GetRoom(column, row).Type == RoomType.Hall);
+            return Create(layout.Map, (column, row) => layout.HasRoom(column, row) && layout.GetRoom(column, row).Type == RoomType.Hall);
         }
 
         /// <summary>Plans every cell for which <paramref name="isHall"/> is true.</summary>

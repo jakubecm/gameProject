@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace ColdShutdown.Tests.EditMode.Rooms
 {
-    /// <summary>Checks that Main.unity (made by Tools/Cold Shutdown/Create Main Scene) is wired up and can build a level.</summary>
+    /// <summary>Checks that Main.unity (made by Tools/Cold Shutdown/Create Main Scene) is wired up and can build the world map.</summary>
     public class MainSceneTests
     {
         private const string ScenePath = "Assets/_Project/Scenes/Main.unity";
@@ -42,10 +42,11 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void Scene_BuildsALevelAroundThePlayer()
         {
             var builder = FindInScene<LevelBuilder>();
-            Assert.IsTrue(builder.Build(123));
+            Assert.IsNotNull(builder.WorldMap, "The LevelBuilder has no world map");
+            Assert.IsTrue(builder.Build());
 
             Assert.IsTrue(builder.HasLevel);
-            Assert.AreEqual(builder.Width * builder.Height, builder.Layout.Rooms.Count);
+            Assert.Greater(builder.Layout.Rooms.Count, 0);
 
             // The player starts in the lift car, in the start cell.
             var (column, row) = builder.StartCell;

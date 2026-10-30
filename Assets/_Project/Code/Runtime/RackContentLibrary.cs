@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ColdShutdown.Runtime
 {
     /// <summary>
-    /// Ready-made fillings for the 42 U of a rack (built by Tools/Cold Shutdown/Create Graybox Props from random server layouts).
+    /// Ready-made fillings for the 42 U of a rack (built by Tools/Cold Shutdown/Create Preview Scene from random server layouts).
     /// Every <see cref="Rack"/> picks one by its seed, so thousands of racks need only a dozen shared meshes: the filling of a rack
     /// costs one array lookup, not a mesh build, and the racks keep sharing their GPU data.
     /// </summary>

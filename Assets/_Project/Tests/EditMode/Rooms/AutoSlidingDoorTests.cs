@@ -6,10 +6,10 @@ using UnityEngine;
 
 namespace ColdShutdown.Tests.EditMode.Rooms
 {
-    /// <summary>Drives the automatic door prefab (Tools/Cold Shutdown/Create Graybox Props) without Play mode.</summary>
+    /// <summary>Drives the automatic door prefab (built by Tools/Cold Shutdown/Create Preview Scene) without Play mode.</summary>
     public class AutoSlidingDoorTests
     {
-        private const string DoorPath = "Assets/_Project/Prefabs/Props/AutoSlidingDoor.prefab";
+        private const string DoorPath = "Assets/_Project/Prefabs/Props/RoomDoor.prefab";
         private readonly List<GameObject> created = new List<GameObject>();
 
         [TearDown]

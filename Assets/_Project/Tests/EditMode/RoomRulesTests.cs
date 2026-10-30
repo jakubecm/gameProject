@@ -41,8 +41,8 @@ namespace ColdShutdown.Tests.EditMode
         public void Corridors_FitOnlyTheirExactShape()
         {
             // A cross fits every way round; the turn picks its fire arm.
-            Assert.AreEqual(new[] { 0, 1, 2, 3 }, RoomRules.FittingTurns(RoomType.Corridor, RoomRules.AllSides).ToArray());
-            Assert.IsEmpty(RoomRules.FittingTurns(RoomType.Corridor, RoomRules.North | RoomRules.South));
+            Assert.AreEqual(new[] { 0, 1, 2, 3 }, RoomRules.FittingTurns(RoomType.CorridorCross, RoomRules.AllSides).ToArray());
+            Assert.IsEmpty(RoomRules.FittingTurns(RoomType.CorridorCross, RoomRules.North | RoomRules.South));
             Assert.AreEqual(new[] { 0, 2 }, RoomRules.FittingTurns(RoomType.CorridorStraight, RoomRules.North | RoomRules.South).ToArray());
             Assert.AreEqual(new[] { 2 }, RoomRules.FittingTurns(RoomType.CorridorT, RoomRules.North | RoomRules.East | RoomRules.West).ToArray());
             Assert.AreEqual(new[] { 3 }, RoomRules.FittingTurns(RoomType.CorridorCorner, RoomRules.North | RoomRules.East).ToArray());
@@ -53,7 +53,7 @@ namespace ColdShutdown.Tests.EditMode
         [Test]
         public void SmallRooms_HaveOneDoorAndTurnToIt()
         {
-            foreach (var type in new[] { RoomType.SmallOffice, RoomType.SecurityOffice, RoomType.PowerRoom, RoomType.HvacRoom, RoomType.StorageRoom })
+            foreach (var type in new[] { RoomType.Office, RoomType.SecurityOffice, RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom })
             {
                 Assert.IsTrue(RoomRules.IsSmallRoom(type));
                 Assert.AreEqual(RoomRules.South, RoomRules.DoorSides(type), type.ToString());
@@ -66,12 +66,12 @@ namespace ColdShutdown.Tests.EditMode
         [Test]
         public void Doors_BelongToTheRoomNotTheCorridor()
         {
-            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.CorridorT, RoomType.SmallOffice));
+            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.CorridorT, RoomType.Office));
             Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.SecurityOffice, RoomType.CorridorStraight));
-            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.SmallOffice, RoomType.PowerRoom));
-            Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Corridor, RoomType.CorridorDeadEnd));
-            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Corridor, RoomType.Hall));
-            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Hall, RoomType.SmallOffice));
+            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.Office, RoomType.PowerRoom));
+            Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.CorridorCross, RoomType.CorridorDeadEnd));
+            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.CorridorCross, RoomType.Hall));
+            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Hall, RoomType.Office));
             Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Hall, RoomType.Hall));
         }
 
@@ -79,15 +79,15 @@ namespace ColdShutdown.Tests.EditMode
         public void LiftEnd_IsACorridorTile()
         {
             // The lift opens straight onto the corridor: the lift end is a corridor tile with one arm, like a dead end.
-            Assert.IsTrue(RoomRules.IsCorridor(RoomType.Elevator));
-            Assert.IsFalse(RoomRules.IsSmallRoom(RoomType.Elevator));
-            Assert.AreEqual(RoomRules.South, RoomRules.DoorSides(RoomType.Elevator));
-            Assert.AreEqual(new[] { 1 }, RoomRules.FittingTurns(RoomType.Elevator, RoomRules.West).ToArray());
-            Assert.IsFalse(RoomRules.HasAutomaticDoors(RoomType.Elevator));
-            Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Elevator, RoomType.CorridorStraight));
+            Assert.IsTrue(RoomRules.IsCorridor(RoomType.LiftEnd));
+            Assert.IsFalse(RoomRules.IsSmallRoom(RoomType.LiftEnd));
+            Assert.AreEqual(RoomRules.South, RoomRules.DoorSides(RoomType.LiftEnd));
+            Assert.AreEqual(new[] { 1 }, RoomRules.FittingTurns(RoomType.LiftEnd, RoomRules.West).ToArray());
+            Assert.IsFalse(RoomRules.HasAutomaticDoors(RoomType.LiftEnd));
+            Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.LiftEnd, RoomType.CorridorStraight));
             // Next to a room with doors, that room's door closes the opening.
-            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.Elevator, RoomType.SmallOffice));
-            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.StorageRoom, RoomType.Elevator));
+            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.LiftEnd, RoomType.Office));
+            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.StorageRoom, RoomType.LiftEnd));
         }
 
         [Test]
@@ -120,11 +120,9 @@ namespace ColdShutdown.Tests.EditMode
             {
                 int expected = type == RoomType.CorridorCorner ? 2
                     : type == RoomType.CorridorT ? 4
-                    : RoomRules.IsCorridor(type) || type == RoomType.Hall ? 1
-                    : RoomRules.RoomLayouts;
+                    : 1;
                 Assert.AreEqual(expected, RoomRules.LayoutCount(type), type.ToString());
             }
-            Assert.AreEqual(1, RoomRules.RoomLayouts);
         }
     }
 }

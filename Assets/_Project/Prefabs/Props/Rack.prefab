@@ -325,6 +325,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7706461658843870447}
   - component: {fileID: 9118836691407419113}
+  - component: {fileID: 7928755105586339298}
   m_Layer: 0
   m_Name: DoorHinge
   m_TagString: Untagged
@@ -374,6 +375,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.596, y: 1.9100001, z: 0.024}
   m_Center: {x: 0.298, y: 1.015, z: 0}
+--- !u!114 &7928755105586339298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3206586966621782489}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3ee74a5267fe484fac12a34f73facd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RackDoor
+  hinge: {fileID: 7706461658843870447}
+  ajarAngle: 22
+  openAngle: 112
+  swingSpeed: 130
+  openPrompt: "Otev\u0159\xEDt dve\u0159e racku"
+  closePrompt: "Zav\u0159\xEDt dve\u0159e racku"
 --- !u!1 &4160144794083482601
 GameObject:
   m_ObjectHideFlags: 0
@@ -1006,7 +1025,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6745695567231787844}
   - component: {fileID: 2702164781348590783}
-  - component: {fileID: 9026820875301577773}
   - component: {fileID: 3382130345272458159}
   m_Layer: 0
   m_Name: Rack
@@ -1053,26 +1071,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.6, y: 2, z: 1.2}
-  m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &9026820875301577773
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7976019672909385509}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3ee74a5267fe484fac12a34f73facd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RackDoor
-  hinge: {fileID: 7706461658843870447}
-  ajarAngle: 22
-  openAngle: 112
-  swingSpeed: 130
-  openPrompt: "Otev\u0159\xEDt dve\u0159e racku"
-  closePrompt: "Zav\u0159\xEDt dve\u0159e racku"
+  m_Size: {x: 0.6, y: 2, z: 1.1760001}
+  m_Center: {x: 0, y: 1, z: -0.0119999945}
 --- !u!114 &3382130345272458159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1088,7 +1088,7 @@ MonoBehaviour:
   library: {fileID: 11400000, guid: e4829038ae7ee4cfb926f22a0d3fb02e, type: 2}
   contentsFilter: {fileID: 3944713670697750546}
   contentsRenderer: {fileID: 7208598327413843914}
-  door: {fileID: 9026820875301577773}
+  door: {fileID: 7928755105586339298}
   doorCollider: {fileID: 9118836691407419113}
   flushHandle: {fileID: 2064603328676197551}
   leverHandle: {fileID: 7741120944675651496}

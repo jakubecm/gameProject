@@ -255,29 +255,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 025591779811ced4b89f97e424fc1964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.LevelBuilder
+  worldMap: {fileID: 11400000, guid: a5720a09019444975938b1bf0a7fe0a4, type: 2}
   roomDefinitions:
-  - {fileID: 11400000, guid: 5fc6d056807b34908a169a8e3ecc1262, type: 2}
-  - {fileID: 11400000, guid: ac7ce0b85cfdf4aeb852c257bcc67d15, type: 2}
+  - {fileID: 11400000, guid: 1219e77edc659492f9c5b2deb9f3c87e, type: 2}
   - {fileID: 11400000, guid: df5bdba970e0b41bca7699ae92f2c255, type: 2}
   - {fileID: 11400000, guid: eda99f6d7d3b44f609caf562b9849089, type: 2}
-  - {fileID: 11400000, guid: a75ccb1fea95a42deaccd3f2e52acd34, type: 2}
+  - {fileID: 11400000, guid: 0b9492a6fa39a4046ab85247f4fe6023, type: 2}
   - {fileID: 11400000, guid: b19b2adec15e14a06b524bc635a5622b, type: 2}
-  - {fileID: 11400000, guid: d95b7438603ce4146b715e9f256cb9f3, type: 2}
+  - {fileID: 11400000, guid: 4f4630cf031074924a71703537ae12b4, type: 2}
   - {fileID: 11400000, guid: 4725ce64db51e467cbeccec28bda7c24, type: 2}
   - {fileID: 11400000, guid: 1bfaa920da3024b618d766205f541ca4, type: 2}
   - {fileID: 11400000, guid: 3d8b35a393fbc42089f4b6839796d823, type: 2}
   - {fileID: 11400000, guid: b0f1517debf4d4620b108c8cb356c0b3, type: 2}
   - {fileID: 11400000, guid: aacad149ccde14eac8d064a196a26330, type: 2}
-  - {fileID: 11400000, guid: 786cf1738186e417a8e68a2a8321c279, type: 2}
+  - {fileID: 11400000, guid: f457466bc67a940feb1258fdf03be17b, type: 2}
   wallPlugPrefab: {fileID: 3498673069866737210, guid: b29197d90487248998c687c0637ef16c, type: 3}
-  doorPrefab: {fileID: 5013703225603540036, guid: 5f785e2297aa049dbbdeb528f6455974, type: 3}
-  hallKit: {fileID: 11400000, guid: 16a904655f98644fe8ab55ffdfc1270f, type: 2}
+  doorPrefab: {fileID: 8067425985237854123, guid: f6078d10b0db940af898b600c05399b7, type: 3}
+  rackPrefab: {fileID: 7976019672909385509, guid: c3a7fffb8fd7c406b8839da978952481, type: 3}
   player: {fileID: 1672627980}
-  width: 6
-  height: 6
   buildOnStart: 1
-  randomSeedOnStart: 1
-  startSeed: 12345
+  levelRoot: {fileID: 0}
 --- !u!4 &1902180378
 Transform:
   m_ObjectHideFlags: 0

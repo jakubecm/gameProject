@@ -5,7 +5,7 @@ namespace ColdShutdown.Runtime
 {
     /// <summary>
     /// Links a room type to its prefabs: <see cref="Prefab"/> is the first layout, <c>otherLayouts</c> the rest
-    /// (rooms have <see cref="RoomRules.RoomLayouts"/> fixed layouts, corridors and hall tiles one). The level builder
+    /// (one per room, several only for corridors whose fire arm differs, see <see cref="RoomRules.LayoutCount"/>). The level builder
     /// looks prefabs up here; rack and terminal slots are read from the prefab's RackSlot and TerminalSlot components.
     /// </summary>
     [CreateAssetMenu(fileName = "RoomDefinition", menuName = "Cold Shutdown/Room Definition")]

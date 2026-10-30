@@ -7,8 +7,9 @@ namespace ColdShutdown.Runtime
     /// The door of an attackable rack. It starts ajar; the rack-door key (F) swings it fully open, and the key on an open
     /// door shuts it completely. The <see cref="Rack"/> disables this component on every other rack (the interactor skips disabled ones).
     ///
-    /// Put it on the rack's root (the one with the collider, so the interactor finds it); <see cref="hinge"/> is the
-    /// pivot the door leaf hangs on, turned about its local Y axis (negative angles swing the leaf towards the front, +Z).
+    /// Put it on the door's hinge, next to the door's own collider: the interactor finds it only when the player looks at the
+    /// door, never at the rack's sides or back (the body's collider has no interactable). <see cref="hinge"/> is the pivot the
+    /// door leaf hangs on, turned about its local Y axis (negative angles swing the leaf towards the front, +Z).
     /// Other systems listen to <see cref="OpenChanged"/> instead of referencing the rack.
     /// </summary>
     public class RackDoor : MonoBehaviour, IInteractable

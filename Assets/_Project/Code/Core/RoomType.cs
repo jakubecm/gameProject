@@ -1,32 +1,32 @@
 namespace ColdShutdown.Core
 {
     /// <summary>
-    /// Kind of room a cell can hold. Values are explicit so serialized assets stay valid
-    /// when types are added; only ever append new values. Value 1 was the old server aisle room (racks now
-    /// stand only in the hall and the security office) and value 2 the full-size office (removed: every room is a small room now); never reuse them.
+    /// Kind of room a cell holds. Values are explicit so serialized assets stay valid when types are added; only ever append
+    /// new values. Value 1 was the old server aisle room and value 2 the full-size office; never reuse them.
+    /// Every room is one cell (12 x 12 m); the hall is one room over a rectangle of cells. Contents of every type: ROOMS.md.
     /// </summary>
     public enum RoomType
     {
         /// <summary>Corridor crossing: arms to all four sides.</summary>
-        Corridor = 0,
+        CorridorCross = 0,
 
         /// <summary>
-        /// One tile of a server hall. Neighbouring hall tiles have no walls between them; the hall kit
-        /// (see <see cref="HallPlan"/>) adds the perimeter walls and doors per side.
+        /// The server hall: one room over a rectangle of cells (one 12 x 12 m tile per cell, no walls between them), with perimeter
+        /// walls and doors where the map connects it (<see cref="HallPlan"/>).
         /// </summary>
         Hall = 3,
 
         /// <summary>Security office (small room) with the video wall that shows the camera feeds.</summary>
         SecurityOffice = 4,
 
-        /// <summary>Small office: a 6 x 6 m room by the door, one door.</summary>
-        SmallOffice = 5,
+        /// <summary>Office: a 6 x 6 m room by the door, one door.</summary>
+        Office = 5,
 
         /// <summary>Electrical switch room (small room) with two transformers, switchgear and the load meters per hall section.</summary>
         PowerRoom = 6,
 
-        /// <summary>Cooling plant (small room) with two plate heat exchangers, pumps, risers and the coolant meters.</summary>
-        HvacRoom = 7,
+        /// <summary>Cooling plant (small room) with two plate heat exchangers, pumps and the coolant thermometers.</summary>
+        CoolingPlant = 7,
 
         /// <summary>Straight corridor (north-south).</summary>
         CorridorStraight = 8,
@@ -40,37 +40,40 @@ namespace ColdShutdown.Core
         /// <summary>Dead end (south arm only).</summary>
         CorridorDeadEnd = 11,
 
-        /// <summary>Storage room (small room): shelving with spare parts and archive boxes, and a fixed sliding gate.</summary>
+        /// <summary>Storage room (small room): shelving with boxes and the goods lift.</summary>
         StorageRoom = 12,
 
         /// <summary>
-        /// Lift end: a corridor tile like the dead end (south arm only) whose closed end is the landing of the passenger
-        /// lift, which is also the evacuation lift. No room in between: the lift opens straight onto the corridor, its own
-        /// doors open automatically. The player starts every run in the lift car.
+        /// Lift end: a corridor tile like the dead end (south arm only) whose closed end is the landing of the passenger lift, which
+        /// is also the evacuation lift. The player starts in the lift car.
         /// </summary>
-        Elevator = 13,
+        LiftEnd = 13,
     }
 
     public static class RoomTypeExtensions
     {
-        /// <summary>One character per room type, for the text map in the debug menu.</summary>
+        /// <summary>
+        /// The character of a room type in the world map text (<see cref="WorldMapText"/>) and the debug menu: every corridor shape is
+        /// <c>C</c> (the shape follows from its neighbours), <c>E</c> lift end, <c>O</c> office, <c>G</c> security office, <c>P</c> power
+        /// room, <c>V</c> cooling plant, <c>S</c> storage room, <c>H</c> hall.
+        /// </summary>
         public static char Symbol(this RoomType type)
         {
             switch (type)
             {
-                case RoomType.Corridor:
+                case RoomType.CorridorCross:
                 case RoomType.CorridorStraight:
                 case RoomType.CorridorT:
                 case RoomType.CorridorCorner:
+                case RoomType.CorridorDeadEnd:
                     return 'C';
-                case RoomType.CorridorDeadEnd: return 'D';
-                case RoomType.SmallOffice: return 'o';
+                case RoomType.Office: return 'O';
                 case RoomType.Hall: return 'H';
                 case RoomType.SecurityOffice: return 'G';
                 case RoomType.PowerRoom: return 'P';
-                case RoomType.HvacRoom: return 'V';
+                case RoomType.CoolingPlant: return 'V';
                 case RoomType.StorageRoom: return 'S';
-                case RoomType.Elevator: return 'E';
+                case RoomType.LiftEnd: return 'E';
                 default: return '?';
             }
         }

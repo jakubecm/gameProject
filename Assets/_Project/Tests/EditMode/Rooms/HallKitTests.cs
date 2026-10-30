@@ -11,14 +11,15 @@ using Object = UnityEngine.Object;
 namespace ColdShutdown.Tests.EditMode.Rooms
 {
     /// <summary>
-    /// Assembles hall tiles from the real kit (Tools/Cold Shutdown/Create Hall Kit) the way the level builder
+    /// Assembles hall tiles from the real kit (built by Tools/Cold Shutdown/Create Preview Scene) the way the level builder
     /// does, and checks them against the hall contract: walkways stay free, rack slots stay usable, everything
     /// stays inside the cell, signs carry the right codes.
     /// </summary>
     public class HallKitTests
     {
         private const float Epsilon = 0.001f;
-        private const string TilePath = "Assets/_Project/Prefabs/Rooms/Room_Hall.prefab";
+        private const string TilePath = "Assets/_Project/Prefabs/Rooms/Hall/HallTile.prefab";
+        private const string HallPath = "Assets/_Project/Prefabs/Rooms/Room_Hall.prefab";
         private const string KitPath = "Assets/_Project/Data/HallKit.asset";
 
         /// <summary>Walkways reach from just above the floor (painted lines are allowed) up to the opening height.</summary>
@@ -43,12 +44,21 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void Kit_HasEveryPieceAndTheHallDefinition()
         {
             var kit = AssetDatabase.LoadAssetAtPath<HallKit>(KitPath);
-            Assert.IsNotNull(kit, $"{KitPath} is missing. Run Tools/Cold Shutdown/Create Graybox Rooms.");
+            Assert.IsNotNull(kit, $"{KitPath} is missing. Run Tools/Cold Shutdown/Create Preview Scene.");
             Assert.IsTrue(kit.IsComplete, "The hall kit is missing a piece");
 
             var definition = AssetDatabase.LoadAssetAtPath<RoomDefinition>("Assets/_Project/Data/RoomDefinition_Hall.asset");
             Assert.IsNotNull(definition);
-            Assert.AreEqual(AssetDatabase.LoadAssetAtPath<GameObject>(TilePath), definition.Prefab);
+            // The hall is one room: the definition points at the hall baked for the world map, made of tile instances.
+            var hall = AssetDatabase.LoadAssetAtPath<GameObject>(HallPath);
+            Assert.IsNotNull(hall, $"{HallPath} is missing. Run Tools/Cold Shutdown/Create Preview Scene.");
+            Assert.AreEqual(hall, definition.Prefab);
+            var tile = AssetDatabase.LoadAssetAtPath<GameObject>(TilePath);
+            Assert.IsNotNull(tile, $"{TilePath} is missing");
+            foreach (var instance in hall.GetComponentsInChildren<Transform>(true).Where(t => t.name == "HallTile"))
+            {
+                Assert.AreEqual(tile, PrefabUtility.GetCorrespondingObjectFromSource(instance.gameObject), "A hall cell is not an instance of the tile");
+            }
         }
 
         [Test]
@@ -72,9 +82,9 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void Pods_AislesAreContainedAndHaveOnlyPerforatedTilesOnTheirFloor()
         {
             var cell = AssembleMiddleOfOpenHall(out _);
-            var tile = cell.transform.Find("Room_Hall");
+            var tile = cell.transform.Find("HallTile");
             float aisle = HallContract.AisleWidth / 2f;
-            var vents = PropInstances(tile.gameObject, "FloorVentTile").ToList();
+            var vents = PropInstances(tile.gameObject, "PerforatedFloorTile").ToList();
             Assert.AreEqual(HallContract.PodsPerTile * HallContract.RacksPerRow * 2, vents.Count, "The aisle floors are not all perforated tiles");
             for (int pod = 0; pod < HallContract.PodsPerTile; pod++)
             {
@@ -186,11 +196,11 @@ namespace ColdShutdown.Tests.EditMode.Rooms
 
             // Hanging cameras: on the east edge only (the neighbour shares it), 3 m either side of its middle, over the intersections with the small beams.
             var middle = AssembleMiddleOfOpenHall(out _);
-            var hanging = middle.GetComponentsInChildren<SecurityCamera>().Where(c => c.name.StartsWith("SecurityPendant")).ToList();
+            var hanging = middle.GetComponentsInChildren<SecurityCamera>().Where(c => c.name.StartsWith("CameraPendant")).ToList();
             Assert.AreEqual(2, hanging.Count, "Two hanging cameras per open east edge");
             foreach (var camera in hanging)
             {
-                var local = middle.transform.Find("Room_Hall").InverseTransformPoint(camera.transform.position);
+                var local = middle.transform.Find("HallTile").InverseTransformPoint(camera.transform.position);
                 Assert.AreEqual(RoomContract.CellHalfSize, local.x, 0.001f);
                 Assert.AreEqual(3f, Mathf.Abs(local.z), 0.001f);
             }
@@ -240,8 +250,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             foreach (var root in new[] { withDoor, lone, inner })
             {
                 // Infrastructure only: no water, no outlets, no plant (that lives in the power room and the cooling plant).
-                foreach (var banned in new[] { "Sprinkler", "HydrantCabinet", "FireExtinguisher", "PowerSocket", "DataSocket", "Transformer",
-                             "SwitchgearCabinet", "ElectricalPanel", "AirHandlingUnit", "PlateHeatExchanger", "CirculationPump", "BufferTank", "Shelf", "Desk" })
+                foreach (var banned in new[] { "Sprinkler", "HoseCabinet", "FireExtinguisher", "PowerSocket", "DataSocket", "Transformer",
+                             "Switchgear", "ElectricalPanel", "AirHandlingUnit", "HeatExchanger", "CirculationPump", "BufferTank", "Shelf", "Desk" })
                 {
                     Assert.IsEmpty(PropInstances(root, banned), $"The hall has a {banned}");
                 }
@@ -258,8 +268,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void Services_RunAboveTheHangingSigns()
         {
             var cell = AssembleMiddleOfOpenHall(out _);
-            var tile = cell.transform.Find("Room_Hall");
-            float signTop = HallContract.CeilingHeight - GrayboxPropsDrop;
+            var tile = cell.transform.Find("HallTile");
+            float signTop = HallContract.CeilingHeight - SignDrop;
             foreach (var path in new[] { "Dressing/Power/PowerTray_N", "Dressing/Power/PowerTray_S", "Dressing/Data/DataTray_N", "Dressing/Data/DataTray_S",
                          "Dressing/Ventilation/ReturnDuct", "Dressing/Ventilation/SupplyDuct_N", "Dressing/Ventilation/SupplyDuct_S",
                          "Dressing/GasExtinguishing/GasLine_N", "Dressing/GasExtinguishing/GasLine_S" })
@@ -279,7 +289,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void EveryAisle_IsConnectedToTheCentralHvac()
         {
             var cell = AssembleMiddleOfOpenHall(out _);
-            var tile = cell.transform.Find("Room_Hall");
+            var tile = cell.transform.Find("HallTile");
             for (int pod = 0; pod < HallContract.PodsPerTile; pod++)
             {
                 string name = pod == 0 ? "N" : "S";
@@ -325,6 +335,71 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
+        public void BakedHall_HasOneLightPerWalkwaySegment_ClearOfEverythingOnTheCeiling()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HallPath);
+            Assert.IsNotNull(prefab, $"{HallPath} is missing. Run Tools/Cold Shutdown/Create Preview Scene.");
+            var hall = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            created.Add(hall);
+            var tiles = hall.GetComponentsInChildren<Transform>(true).Where(t => t.name == "HallTile").ToList();
+            float cell = RoomContract.CellSize;
+            int columns = Mathf.RoundToInt(tiles.Max(t => t.position.x) / cell) + 1;
+            int rows = Mathf.RoundToInt(tiles.Max(t => t.position.z) / cell) + 1;
+            Assert.AreEqual(columns * rows, tiles.Count);
+
+            var fittings = hall.transform.Find("Lights").Cast<Transform>().ToList();
+            Assert.AreEqual(rows * (columns + 1) + columns * (rows + 1), fittings.Count, "One light per walkway segment");
+            Assert.IsEmpty(tiles.SelectMany(t => t.GetComponentsInChildren<Transform>()).Where(t => t.name.StartsWith("PendantLight")), "Tiles carry no lights of their own");
+
+            // Everything on the ceiling: ducts, trays, gas lines, hangers, detectors, beams, girders, signs, cameras.
+            var ceiling = hall.GetComponentsInChildren<Renderer>(true)
+                .Where(r => !r.transform.IsChildOf(hall.transform.Find("Lights")) && r.bounds.max.y > HallContract.LightTop - 0.15f)
+                .Select(r => (r.name, bounds: r.bounds)).ToList();
+            foreach (var fitting in fittings)
+            {
+                var light = fitting.GetComponentInChildren<Light>();
+                Assert.AreEqual(LightShadows.None, light.shadows, fitting.name);
+                Assert.AreEqual(LightmapBakeType.Realtime, light.lightmapBakeType, fitting.name);
+                // From the deck along a wall, from a girder between two tiles; the fitting's top is always at the same height.
+                bool girder = PrefabUtility.GetCorrespondingObjectFromSource(fitting.gameObject).name == "PendantLightGirder";
+                Assert.AreEqual(girder ? HallContract.GirderBottom : HallContract.CeilingHeight, fitting.position.y, 0.001f, $"{fitting.name} is not mounted on the deck or a girder");
+                Assert.AreEqual(HallContract.LightTop, fitting.position.y - (girder ? GirderDrop : DeckDrop), 0.001f, $"{fitting.name} hangs at the wrong height");
+
+                // Over a walkway: not over a pod or the hot aisle of any tile.
+                foreach (var tile in tiles)
+                {
+                    var local = tile.InverseTransformPoint(fitting.position);
+                    bool overPods = Mathf.Abs(local.x) < HallContract.PodHalfLength && Mathf.Abs(local.z) < HallContract.PodOuterZ;
+                    Assert.IsFalse(overPods, $"{fitting.name} hangs over the pods of {tile.parent.name}");
+                }
+
+                // The two wire ropes (0.55 m either side along the fitting) from the mount down to the fitting, and the fitting itself.
+                var points = new List<Vector3>();
+                foreach (float offset in new[] { -0.55f, 0.55f })
+                {
+                    for (float y = fitting.position.y - 0.08f; y > HallContract.LightTop; y -= 0.05f)
+                    {
+                        points.Add(new Vector3(fitting.position.x, y, fitting.position.z) + fitting.forward * offset);
+                    }
+                }
+                var along = new Vector3(Mathf.Abs(fitting.forward.x), 0f, Mathf.Abs(fitting.forward.z));
+                var body = new Bounds(new Vector3(fitting.position.x, HallContract.LightTop - 0.05f, fitting.position.z),
+                    along * 1.5f + (Vector3.one - along - Vector3.up) * 0.12f + Vector3.up * 0.1f);
+                foreach (var (name, bounds) in ceiling)
+                {
+                    foreach (var point in points)
+                    {
+                        Assert.IsFalse(bounds.Contains(point), $"A wire rope of {fitting.name} runs through {name}");
+                    }
+                    Assert.IsFalse(bounds.Intersects(body), $"{fitting.name} touches {name}");
+                }
+            }
+        }
+
+        private const float DeckDrop = HallContract.CeilingHeight - HallContract.LightTop;
+        private const float GirderDrop = HallContract.GirderBottom - HallContract.LightTop;
+
+        [Test]
         public void Signs_ShowOnlyTheTileCode()
         {
             // A 2 x 2 hall at columns 3-4, rows 2-3 of a bigger map: codes count from the hall's south-west tile.
@@ -334,7 +409,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             var signs = cell.GetComponentsInChildren<HallSign>();
             Assert.AreEqual(1, signs.Length, "Only the tile sign over the aisles hangs in the hall");
             Assert.AreEqual("B2", signs[0].Code);
-            Assert.IsTrue(signs[0].transform.IsChildOf(cell.transform.Find("Room_Hall")));
+            Assert.IsTrue(signs[0].transform.IsChildOf(cell.transform.Find("HallTile")));
         }
 
         [Test]
@@ -377,7 +452,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             var cell = new GameObject("Cell");
             created.Add(cell);
             var tile = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(TilePath), cell.transform);
-            tile.name = "Room_Hall";
+            tile.name = "HallTile";
             HallKit.LabelTile(tile, plan);
             kit.AddPieces(cell.transform, plan, (prefab, parent) => (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent));
             // Collider bounds follow the turned pieces only after the transforms reach the physics scene.
@@ -405,8 +480,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             return total.Value;
         }
 
-        /// <summary>Distance from the roof deck down to the top of a hanging sign (GrayboxPropsTool.HallSignDrop).</summary>
-        private const float GrayboxPropsDrop = 1.8f;
+        /// <summary>Distance from the roof deck down to the top of a hanging sign (Props.HallSignDrop).</summary>
+        private const float SignDrop = 1.8f;
 
         /// <summary>Instances of the prop prefab <c>Props/&lt;name&gt;.prefab</c> anywhere under <paramref name="root"/>.</summary>
         private static IEnumerable<GameObject> PropInstances(GameObject root, string name)

@@ -123,12 +123,18 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
-        public void Layout_NeverPlacesHallsAtRandom()
+        public void Create_FromTheWorldMap_PlansExactlyTheHallCells()
         {
-            var types = (RoomType[])System.Enum.GetValues(typeof(RoomType));
-            var layout = RoomLayout.Generate(MapGenerator.Generate(3, 8, 8), 3, types);
-            Assert.IsFalse(layout.Rooms.Any(room => room.Type == RoomType.Hall));
-            Assert.AreEqual(0, HallPlan.Create(layout).Count);
+            var parsed = WorldMapText.Parse("E C C C\n. D H H\n. . H H\n");
+            Assert.IsTrue(parsed.IsValid, string.Join("; ", parsed.Errors));
+            var plan = HallPlan.Create(parsed.Layout);
+            Assert.AreEqual(4, plan.Count);
+            Assert.IsTrue(plan.TryGetCell(2, 0, out var southWest));
+            Assert.AreEqual("A1", southWest.Code);
+            // The D corridor west of the hall gets the hall's door; the corridor above it does not open into the hall.
+            Assert.IsTrue(plan.TryGetCell(2, 1, out var northWest));
+            Assert.AreEqual(HallSideKind.Door, northWest.Side(Direction.West));
+            Assert.AreEqual(HallSideKind.Wall, northWest.Side(Direction.North));
         }
     }
 }

@@ -33,8 +33,6 @@ namespace ColdShutdown.Core
         public const int West = 1 << (int)Direction.West;
         public const int AllSides = North | East | South | West;
 
-        /// <summary>Every room (not a corridor or a hall tile) has exactly one layout (prefab): the one in the room preview scene.</summary>
-        public const int RoomLayouts = 1;
 
         public static int Mask(Direction side) => 1 << (int)side;
 
@@ -50,33 +48,33 @@ namespace ColdShutdown.Core
                 case RoomType.CorridorT: return East | South | West;
                 case RoomType.CorridorCorner: return East | South;
                 case RoomType.CorridorDeadEnd:
-                case RoomType.Elevator:
-                case RoomType.SmallOffice:
+                case RoomType.LiftEnd:
+                case RoomType.Office:
                 case RoomType.SecurityOffice:
                 case RoomType.PowerRoom:
-                case RoomType.HvacRoom:
+                case RoomType.CoolingPlant:
                 case RoomType.StorageRoom:
                     return South;
                 default: return AllSides;
             }
         }
 
-        /// <summary>Corridor tiles, the lift end (<see cref="RoomType.Elevator"/>) among them.</summary>
+        /// <summary>Corridor tiles, the lift end (<see cref="RoomType.LiftEnd"/>) among them.</summary>
         public static bool IsCorridor(RoomType type) =>
-            type == RoomType.Corridor || type == RoomType.CorridorStraight || type == RoomType.CorridorT ||
-            type == RoomType.CorridorCorner || type == RoomType.CorridorDeadEnd || type == RoomType.Elevator;
+            type == RoomType.CorridorCross || type == RoomType.CorridorStraight || type == RoomType.CorridorT ||
+            type == RoomType.CorridorCorner || type == RoomType.CorridorDeadEnd || type == RoomType.LiftEnd;
 
         /// <summary>
         /// Small rooms are a 6 x 6 m square by the south door of the cell (<see cref="RoomContract.SmallRoomHalfWidth"/>,
         /// <see cref="RoomContract.SmallRoomBackWall"/>); the rest of the cell is built up. They always have exactly one
-        /// door, at the end of a corridor. Every room is a small room.
+        /// door, into a neighbouring corridor. Every room is a small room.
         /// </summary>
         public static bool IsSmallRoom(RoomType type) =>
-            type == RoomType.SmallOffice || type == RoomType.SecurityOffice || type == RoomType.PowerRoom ||
-            type == RoomType.HvacRoom || type == RoomType.StorageRoom;
+            type == RoomType.Office || type == RoomType.SecurityOffice || type == RoomType.PowerRoom ||
+            type == RoomType.CoolingPlant || type == RoomType.StorageRoom;
 
         /// <summary>
-        /// How many fixed layouts (prefabs) a type has: <see cref="RoomLayouts"/> for rooms; for corridors one per arm
+        /// How many fixed layouts (prefabs) a type has: one for every room; for corridors one per arm
         /// the fire kit can be in that a turn cannot reach (<see cref="FireArmSide"/>): two for the corner (the second its
         /// mirror image), four for the T-junction (the fire kit in a side arm or in the stem, and their mirror images), one
         /// for the others (the lift end too); one for hall tiles.
@@ -88,7 +86,7 @@ namespace ColdShutdown.Core
                 case RoomType.CorridorCorner: return 2;
                 case RoomType.CorridorT: return 4;
                 case RoomType.Hall: return 1;
-                default: return IsCorridor(type) ? 1 : RoomLayouts;
+                default: return 1;
             }
         }
 
@@ -113,7 +111,7 @@ namespace ColdShutdown.Core
                         default: return Direction.East;
                     }
                 case RoomType.CorridorDeadEnd:
-                case RoomType.Elevator:
+                case RoomType.LiftEnd:
                     return Direction.South;
                 default: return Direction.North;
             }

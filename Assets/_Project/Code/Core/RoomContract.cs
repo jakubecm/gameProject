@@ -20,8 +20,8 @@ namespace ColdShutdown.Core
     }
 
     /// <summary>
-    /// The room contract: the one place where room dimensions live. The generator, the level
-    /// builder and the editor tools all read these values. Keep CLAUDE.md in sync when changing them.
+    /// The room contract: the one place where room dimensions live. The map, the level
+    /// builder and the editor tools all read these values. Keep ROOMS.md in sync when changing them.
     /// All lengths are in metres.
     /// </summary>
     public static class RoomContract
@@ -56,7 +56,7 @@ namespace ColdShutdown.Core
         /// <summary>Distance from the room center to the middle of a wall (where a wall plug stands).</summary>
         public const float WallCenterOffset = CellHalfSize - WallThickness / 2f;
 
-        // The generator may rotate rooms in these steps
+        // Rooms are turned in these steps
         public const int RotationStepDegrees = 90;
 
         // Racks

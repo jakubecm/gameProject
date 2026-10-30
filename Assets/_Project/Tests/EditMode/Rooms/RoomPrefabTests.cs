@@ -10,7 +10,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
 {
     /// <summary>
     /// Checks the generated room prefabs against the room contract. The prefabs come from
-    /// Tools/Cold Shutdown/Create Room Shell and Create Graybox Rooms.
+    /// Tools/Cold Shutdown/Create Preview Scene.
     /// </summary>
     public class RoomPrefabTests
     {
@@ -24,9 +24,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         /// <summary>Rooms built from the shell. Hall tiles have their own contract and tests (HallKitTests).</summary>
         private static readonly RoomType[] ShellRoomTypes = RoomTypes.Where(type => type != RoomType.Hall).ToArray();
 
-        /// <summary>Every shell room is a graybox room with dressing and cameras.</summary>
-        private static readonly RoomType[] GrayboxRoomTypes = ShellRoomTypes;
-
+        
         /// <summary>Every layout prefab of every shell room: rooms have four, corridors one.</summary>
         private static IEnumerable<(RoomType type, int layout, string path)> Layouts(IEnumerable<RoomType> types) =>
             types.SelectMany(type => Enumerable.Range(0, RoomRules.LayoutCount(type)).Select(layout => (type, layout, LayoutPath(type, layout))));
@@ -141,18 +139,18 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void TechnicalRooms_HaveNoSuspendedCeiling()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.HvacRoom, RoomType.StorageRoom }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }))
             {
                 var room = Instantiate(path);
                 Assert.IsFalse(room.transform.Find("Shell/SuspendedCeiling").gameObject.activeSelf, $"{type} layout {layout + 1} still has a suspended ceiling");
             }
-            Assert.IsTrue(Instantiate(PrefabPath(RoomType.SmallOffice)).transform.Find("Shell/SuspendedCeiling").gameObject.activeSelf);
+            Assert.IsTrue(Instantiate(PrefabPath(RoomType.Office)).transform.Find("Shell/SuspendedCeiling").gameObject.activeSelf);
         }
 
         [Test]
         public void EveryRoom_HasSprinklersDetectorsAndAnExtinguisher()
         {
-            foreach (var (type, layout, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 foreach (var prop in new[] { "Sprinkler", "SmokeDetector", "FireExtinguisher" })
@@ -179,7 +177,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             {
                 var room = Instantiate(path);
                 var cameras = room.GetComponentsInChildren<SecurityCamera>();
-                bool watched = type == RoomType.Corridor || type == RoomType.CorridorT || type == RoomType.CorridorCorner;
+                bool watched = type == RoomType.CorridorCross || type == RoomType.CorridorT || type == RoomType.CorridorCorner;
                 Assert.AreEqual(watched ? 1 : 0, cameras.Length, $"{type} has {cameras.Length} cameras");
                 foreach (var camera in cameras)
                 {
@@ -196,7 +194,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 float armMiddle = (1.5f + RoomContract.InteriorHalfSize) / 2f;
                 bool centered = (across < Epsilon && Mathf.Abs(along - 1.5f) < Epsilon) || (Mathf.Abs(across - 1.5f) < Epsilon && Mathf.Abs(along - armMiddle) < Epsilon);
                 Assert.IsTrue(centered, $"{type} layout {layout + 1}: the grille is not in the middle of its wall: {grille}");
-                foreach (var fire in new[] { "FireExtinguisher", "HydrantCabinet", "FireCallPoint" }.SelectMany(name => PropInstances(room, name)))
+                foreach (var fire in new[] { "FireExtinguisher", "HoseCabinet", "FireCallPoint" }.SelectMany(name => PropInstances(room, name)))
                 {
                     Assert.Greater(Vector3.Distance(Flat(fire.transform.position), Flat(grille)), 3f, $"{type} layout {layout + 1}: the grille is next to {fire.name}");
                 }
@@ -224,7 +222,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 var room = Instantiate(path);
                 var arm = room.transform.Find($"Dressing/Arm_{RoomRules.FireArmSide(type, layout)}");
                 Assert.IsNotNull(arm, $"{type} layout {layout + 1} has no fire arm");
-                foreach (var name in new[] { "FireExtinguisher", "HydrantCabinet", "FireCallPoint" })
+                foreach (var name in new[] { "FireExtinguisher", "HoseCabinet", "FireCallPoint" })
                 {
                     var kit = PropInstances(room, name).Single();
                     Assert.IsTrue(kit.transform.IsChildOf(arm), $"{type} layout {layout + 1}: the {name} is not in the fire arm");
@@ -241,7 +239,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             Assert.AreEqual(bounds.size.x, bounds.size.y, 0.01f, "The large grille is not square");
             Assert.That(bounds.size.y, Is.InRange(0.55f, 0.7f), "A person should just fit through the large grille");
             Assert.AreEqual(gap, bounds.min.y, 0.005f, "The large grille is not at the floor");
-            foreach (var (type, layout, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 foreach (var grille in PropInstances(room, "WallVentGrille"))
@@ -259,7 +257,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void RoomDoor_ShowsTheExitSignOnlyOnTheRoomSide()
         {
             // The door's +Z is the owner's side: the room, whose way out leads through it into the corridor.
-            var door = Instantiate($"{PropsFolder}/AutoSlidingDoor.prefab");
+            var door = Instantiate($"{PropsFolder}/RoomDoor.prefab");
             var signs = PropInstances(door, "ExitSign").ToList();
             Assert.AreEqual(1, signs.Count);
             Assert.Greater(signs[0].transform.localPosition.z, RoomContract.WallThickness / 2f, "The exit sign is not on the room side");
@@ -269,7 +267,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void LiftEnd_OpensTheLiftOntoTheCorridor_WithAnExitSign_AndThePlayerStartsInTheCar()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.Elevator }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.LiftEnd }))
             {
                 var room = Instantiate(path);
                 var lift = PropInstances(room, "PassengerLift").Single();
@@ -281,7 +279,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 Assert.Less(sign.transform.forward.z, -0.99f, "The exit sign does not face the lobby");
                 Assert.Less(Mathf.Abs(sign.transform.position.x), Epsilon, "The exit sign is not over the lift door");
                 Assert.Greater(sign.transform.position.y, RoomContract.LiftDoorHeight, "The exit sign is not over the lift door");
-                Assert.IsEmpty(PropInstances(room, "AutoSlidingDoor"), "The lift end is a corridor: no glass door");
+                Assert.IsEmpty(PropInstances(room, "RoomDoor"), "The lift end is a corridor: no glass door");
                 // No room in between: the lift door is the closed end of the corridor arm.
                 Assert.AreEqual(RoomDressingCorridorHalfWidth, RoomContract.LiftWallFace, Epsilon, "The lift does not close the corridor's crossing");
                 Assert.LessOrEqual(RoomContract.LiftCarWidth, 2f * RoomDressingCorridorHalfWidth - 0.2f, "The car does not fit behind the corridor");
@@ -312,7 +310,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void TechnicalRooms_HaveTwoBattensOnTheSprinklerAxesAndTwoShaftGrillesOppositeTheDoor()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.HvacRoom, RoomType.StorageRoom }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }))
             {
                 var room = Instantiate(path);
                 string what = $"{type} layout {layout + 1}";
@@ -329,7 +327,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 Assert.AreEqual(-3.0f, detector.z, 0.01f, $"{what}: detector off the middle");
                 if (type != RoomType.StorageRoom)
                 {
-                    var panel = room.transform.InverseTransformPoint(PropInstances(room, type == RoomType.HvacRoom ? "CoolingMeterPanel" : "AnalogMeterPanel").Single().transform.position);
+                    var panel = room.transform.InverseTransformPoint(PropInstances(room, type == RoomType.CoolingPlant ? "CoolingMeterPanel" : "PowerMeterPanel").Single().transform.position);
                     Assert.AreEqual(0f, panel.x, 0.01f, $"{what}: meter panel not opposite the door");
                     Assert.AreEqual(0f, panel.z, 0.01f, $"{what}: meter panel not on the back wall");
                 }
@@ -339,22 +337,22 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void TechnicalRooms_HaveTheirPlantAndAnalogMeters()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.HvacRoom }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant }))
             {
                 var room = Instantiate(path);
                 string what = $"{type} layout {layout + 1}";
-                var panels = PropInstances(room, type == RoomType.HvacRoom ? "CoolingMeterPanel" : "AnalogMeterPanel").ToList();
+                var panels = PropInstances(room, type == RoomType.CoolingPlant ? "CoolingMeterPanel" : "PowerMeterPanel").ToList();
                 Assert.IsNotEmpty(panels, $"{what} has no meter panel");
                 Assert.GreaterOrEqual(panels[0].GetComponentsInChildren<Transform>().Count(t => t.name.StartsWith("Thermometer_")), 6, $"{what} has too few thermometers");
                 Assert.IsEmpty(panels[0].GetComponentsInChildren<AnalogGauge>(), $"{what}: the thermometer panel is only a look, it has no logic");
                 if (type == RoomType.PowerRoom)
                 {
                     Assert.AreEqual(2, PropInstances(room, "Transformer").Count(), $"{what} needs two transformers");
-                    Assert.GreaterOrEqual(PropInstances(room, "SwitchgearCabinet").Count(), 2, $"{what} needs switchgear");
+                    Assert.GreaterOrEqual(PropInstances(room, "Switchgear").Count(), 2, $"{what} needs switchgear");
                 }
                 else
                 {
-                    Assert.AreEqual(2, PropInstances(room, "PlateHeatExchanger").Count() + PropInstances(room, "PlateHeatExchangerMirrored").Count(), $"{what} needs two heat exchangers");
+                    Assert.AreEqual(2, PropInstances(room, "HeatExchanger").Count() + PropInstances(room, "HeatExchangerMirrored").Count(), $"{what} needs two heat exchangers");
                     Assert.AreEqual(2, PropInstances(room, "CirculationPump").Count(), $"{what} needs two pumps");
                 }
                 foreach (var banned in new[] { "Desk", "Shelf", "FilingCabinet", "CoffeeCounter" })
@@ -367,7 +365,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void Offices_HaveTerminalSlot()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.SmallOffice, RoomType.SecurityOffice }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.Office, RoomType.SecurityOffice }))
             {
                 Assert.AreEqual(1, Instantiate(path).GetComponentsInChildren<TerminalSlot>().Length, $"{type} layout {layout + 1}");
             }
@@ -413,9 +411,9 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void GrayboxRooms_AreLitByTheirOwnFittings()
+        public void Rooms_AreLitByTheirOwnFittings()
         {
-            foreach (var (type, _, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, _, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 int lights = room.GetComponentsInChildren<Light>().Length;
@@ -427,9 +425,9 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void GrayboxRooms_AreDressed()
+        public void Rooms_AreDressed()
         {
-            foreach (var (type, layout, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 Assert.IsNotNull(room.transform.Find("Dressing"), $"{type} layout {layout + 1} has no Dressing");
@@ -440,7 +438,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void RoomLayouts_AreDifferent()
         {
             // Every layout of a room type is its own arrangement: no two layouts have their furniture in the same places.
-            foreach (var type in GrayboxRoomTypes.Where(t => RoomRules.LayoutCount(t) > 1))
+            foreach (var type in ShellRoomTypes.Where(t => RoomRules.LayoutCount(t) > 1))
             {
                 var seen = new HashSet<string>();
                 for (int layout = 0; layout < RoomRules.LayoutCount(type); layout++)
@@ -455,15 +453,15 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void GrayboxRooms_HaveSecurityCameras()
+        public void Rooms_HaveSecurityCameras()
         {
-            foreach (var (type, layout, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 var cameras = room.transform.Find("SecurityCameras");
                 Assert.IsNotNull(cameras, $"{type} has no SecurityCameras group");
                 var found = cameras.GetComponentsInChildren<SecurityCamera>();
-                if (!RoomRules.IsCorridor(type) || type == RoomType.Corridor || type == RoomType.CorridorT || type == RoomType.CorridorCorner) Assert.IsNotEmpty(found, $"{type} has no camera");
+                if (!RoomRules.IsCorridor(type) || type == RoomType.CorridorCross || type == RoomType.CorridorT || type == RoomType.CorridorCorner) Assert.IsNotEmpty(found, $"{type} has no camera");
                 Assert.LessOrEqual(found.Length, 2, $"{type} layout {layout + 1} has too many cameras");
                 if (RoomRules.IsSmallRoom(type)) Assert.AreEqual(1, found.Length, $"{type} layout {layout + 1}: a small room has one camera");
                 foreach (var camera in found)
@@ -495,7 +493,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void Furniture_StaysInTheRoomsItBelongsTo()
         {
-            foreach (var (type, _, path) in Layouts(GrayboxRoomTypes))
+            foreach (var (type, _, path) in Layouts(ShellRoomTypes))
             {
                 var room = Instantiate(path);
                 // Shelving only in the storage room, lockers and benches only in the security office.
@@ -519,10 +517,10 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void Offices_HaveEverythingAnOfficeNeeds()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.SmallOffice }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.Office }))
             {
                 var room = Instantiate(path);
-                var needed = new[] { "DualWorkstation", "Printer", "FilingCabinet", "CeilingSpeaker", "MeetingTable", "WallTv",
+                var needed = new[] { "Workstation", "Printer", "FilingCabinet", "CeilingSpeaker", "MeetingTable", "WallTv",
                     "CoffeeCounter", "CoffeeMachine", "Fridge", "PhotoFrame", "Mug", "PaperStack" };
                 foreach (var prop in needed)
                 {
@@ -577,14 +575,14 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void SecurityOffice_HasOnlyConsolesRacksAndLockersOrCoffee()
         {
-            var allowed = new[] { "Desk", "DualWorkstation", "PcTower", "OfficeChair", "FloorBox", "PaperStack", "Locker", "LockerBench", "CoffeeCounter",
-                "CoffeeMachine", "Mug", "PowerSocket", "DataSocket", "LedPanel600", "CeilingDiffuser", "CeilingSpeaker", "Sprinkler", "SmokeDetector",
+            var allowed = new[] { "Desk", "Workstation", "PcTower", "OfficeChair", "FloorBox", "PaperStack", "Locker", "LockerBench", "CoffeeCounter",
+                "CoffeeMachine", "Mug", "PowerSocket", "DataSocket", "LedPanel", "CeilingDiffuser", "CeilingSpeaker", "Sprinkler", "SmokeDetector",
                 "FireExtinguisher", "FireCallPoint", "LightSwitch" };
             foreach (var (_, layout, path) in Layouts(new[] { RoomType.SecurityOffice }))
             {
                 var room = Instantiate(path);
                 Assert.AreEqual(2, PropInstances(room, "Desk").Count(), $"Layout {layout + 1}: two desks");
-                Assert.AreEqual(2, PropInstances(room, "DualWorkstation").Count(), $"Layout {layout + 1}: two desks with two monitors");
+                Assert.AreEqual(2, PropInstances(room, "Workstation").Count(), $"Layout {layout + 1}: two desks with two monitors");
                 Assert.AreEqual(2, room.GetComponentsInChildren<RackSlot>().Length);
                 bool lockers = PropInstances(room, "Locker").Count() >= 2 && PropInstances(room, "LockerBench").Any();
                 bool coffee = PropInstances(room, "CoffeeCounter").Any();
@@ -641,10 +639,10 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         {
             // A tile is centered on the room center: 600 fittings on tile centers (multiples of 0.6 m), 1200 panels
             // across two tiles along Z (centered on a grid line).
-            foreach (var (type, layout, path) in Layouts(ShellRoomTypes.Where(t => !new[] { RoomType.PowerRoom, RoomType.HvacRoom, RoomType.StorageRoom }.Contains(t))))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes.Where(t => !new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }.Contains(t))))
             {
                 var room = Instantiate(path);
-                foreach (var name in new[] { "LedPanel600", "CeilingDiffuser", "Sprinkler", "SmokeDetector", "SecurityDome", "CeilingSpeaker" })
+                foreach (var name in new[] { "LedPanel", "CeilingDiffuser", "Sprinkler", "SmokeDetector", "CameraDome", "CeilingSpeaker" })
                 {
                     foreach (var fitting in PropInstances(room, name))
                     {

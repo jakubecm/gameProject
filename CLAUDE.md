@@ -7,8 +7,9 @@ physical clues (hall node, rack row, temperature, power load, exclusions) which 
 disconnects it before the infection reaches the gateway. **The focus is on the minigames** played on in-world
 terminals; they give the clues. The rogue AI talks to the player only via short text messages on terminals.
 
-- **There is exactly one map**, hand-designed by Developer B as a fixed layout of rooms on the 12 m grid. No
-  procedural maps. Rooms and props are built by editor tools; the map is assembled from them.
+- **There is exactly one map**, hand-designed by Developer B: a text grid of rooms (`Data/WorldMap.asset`), every room
+  one 12 x 12 m cell, the hall one room over a rectangle of cells. Models are the building blocks of rooms; each room
+  type has one prepared layout (template); the map arranges the rooms. Everything is generated from code by editor tools.
 - Engine: Unity 6.6 LTS, URP (Forward+), PC (Windows), Input System package.
 - Team: Developer A = systems (run state, clues/deduction, minigames Password + Breach, player);
   Developer B = map, rooms, props, lighting, sound, UI, minigames Log + Patch panel.
@@ -23,12 +24,18 @@ Assets/_Project/
   Code/Core/     pure C#, no UnityEngine (asmdef ColdShutdown.Core): grid and map data, room/hall contracts and rules
   Code/Runtime/  MonoBehaviours (asmdef ColdShutdown.Runtime); Player/ = first-person player
   Code/Editor/   editor tools, menu Tools/Cold Shutdown/... (asmdef ColdShutdown.Editor)
+    World/         everything the world is built from: WorldTool (the one tool), MainSceneTool, WorldBatch
+      Props/<Category>/<Model>.cs   one file per model; Props.cs = Prop enum + registry; Shared/ = cross-category helpers
+      Rooms/<Type>.cs               one file per room type (template: slots, structure, dressing); Rooms.cs = pipeline
+      Hall/HallBuilder.cs           hall kit (tile, sides, corners) and the baked hall
+      Building/                     MeshBuilder, ModelUtility, Surfaces (materials + generated textures), pipes, ducts, trays
+    PlayerPrefabTool.cs, SandboxSceneTool.cs   player and Sandbox_A (not world code)
   Art/           Materials (M_<SurfaceMaterial>), Textures (T_*), Meshes/Details + Meshes/Racks (generated, commit them), Models
   Audio/         SFX, Music, Mixers (empty so far)
-  Data/          RoomDefinition_<Type>.asset, HallKit.asset, RackContents.asset; later texts (lore, AI messages, briefing)
-  Prefabs/       Rooms/ (shell, wall plug, Room_<Type>[_Layout<n>], Hall/ pieces), Props/<GrayboxProp>, Player/, Terminals/
+  Data/          WorldMap.asset (the map), RoomDefinition_<Type>.asset, HallKit.asset, RackContents.asset; later texts
+  Prefabs/       Rooms/ (shell, wall plug, Room_<Type>[_Layout<n>], Room_Hall = baked hall, Hall/ kit pieces), Props/<Prop>, Player/, Terminals/
   Scenes/        Main.unity, Sandbox_A.unity (player test), Sandbox_B.unity (rooms preview)
-  Tests/EditMode/        Core tests (asmdef ColdShutdown.Tests.EditMode)
+  Tests/EditMode/        Core tests: map text, room rules, hall plan, contracts (asmdef ColdShutdown.Tests.EditMode)
   Tests/EditMode/Rooms/  prefab/hall/door/rack/level tests (asmdef ColdShutdown.Tests.EditMode.Rooms, references Runtime)
   Tests/EditMode/Player/ player tests (asmdef ColdShutdown.Tests.EditMode.Player)
 Assets/ThirdParty/<Source>/   downloaded assets, one folder per source, listed in CREDITS.md
@@ -40,22 +47,22 @@ All code and tests live under `Assets/` (Unity compiles nothing outside it).
 
 | Area | Files |
 |---|---|
-| Grid, directions, map data | Core: `Direction`, `MapData` (cells `(column, row)`, column 0/row 0 = south-west, North = +Z, East = +X, symmetric connections), `MapData.ToText` |
+| The map | Core: `WorldMapText` (text → layout, validation), `MapData` (cells `(column, row)`, column 0/row 0 = south-west, North = +Z, East = +X, symmetric connections), `Direction`; Runtime: `WorldMap` (the asset) |
 | Room geometry contract | Core: `RoomContract` (cell 12 m, ceiling 3 m, walls, openings, small room, lift, rack size, `GetOpeningPose`, `LiftStartPose`) |
-| Room types and rules | Core: `RoomType` (explicit values, append only, never reuse 1 or 2), `RoomRules` (door sides, layouts, fire arm, fitting turns, door owner) |
-| Room placement per cell | Core: `RoomLayout` / `PlacedRoom` (type + quarter turns + layout), `RoomLayout.FireArmOptions`, `LiftCell` |
-| Server hall | Core: `HallContract` (numbers), `HallPlan` (side/corner kinds, node codes A1...); Runtime: `HallKit` (assembles pieces), `HallSign` |
-| Building a level | Runtime: `LevelBuilder` (instantiates prefabs per cell, wall plugs, doors, hall pieces, `StartPose`, event `LevelBuilt`), `RoomDefinition` (type → layout prefabs) |
+| Room types and rules | Core: `RoomType` (explicit values, append only, never reuse 1 or 2; `Symbol` = map character), `RoomRules` (door sides, layouts, fire arm, fitting turns, door owner) |
+| Room placement per cell | Core: `RoomLayout` / `PlacedRoom` (type + quarter turns + layout, empty cells allowed), `RoomLayout.FireArmOptions` |
+| Server hall | Core: `HallContract` (numbers), `HallPlan` (side/corner kinds, node codes A1...); Runtime: `HallKit` (pieces), `HallSign` |
+| Building the level | Runtime: `LevelBuilder` (`Build()` the world map: rooms, wall plugs, doors, the baked hall, racks, player in the lift; event `LevelBuilt`; same code in Main at Play and in Sandbox_B in the editor), `RoomDefinition` (type → layout prefabs) |
 | Slots | Runtime: `RackSlot`, `TerminalSlot` (pivot on floor, forward = into the room), `SlotGizmos`, `SlotPoseExtensions` |
-| Racks | Runtime: `Rack` (`Configure(openable, seed)`), `RackDoor` (F opens/shuts, `OpenChanged`), `RackGlow`, `RackPlacement` (which racks open), `RackContentLibrary` |
+| Racks | Runtime: `Rack` (`Configure(openable, seed)`), `RackDoor` (on the door hinge; F opens/shuts only when looking at the door; `OpenChanged`), `RackGlow`, `RackPlacement` (which racks open), `RackContentLibrary` |
 | Doors | Runtime: `AutoSlidingDoor` (photo cells, readers, `IsLocked`), `AisleDoor` (derived, single leaf) |
 | CCTV | Runtime: `SecurityCamera`, `SecurityMonitor`, `SecurityMonitorWall` (pages feeds, only near the player, Play mode) |
 | Clue displays | Runtime: `AnalogGauge` (needle follows `Value` 0-1) |
 | Interaction | Runtime: `IInteractable`, `Interactable`, `Interactor` (on camera), `InteractionPrompt`, `InteractableColorToggle` (test) |
-| Debug | Runtime: `DebugMenu` (F1: FPS, map as text; Editor and development builds only) |
+| Debug | Runtime: `DebugMenu` (F1: FPS, rebuild, map as text; Editor and development builds only) |
 | Player | Runtime/Player: see Player |
-| Rooms and props (editor) | `RoomPreviewSceneTool` (the one Sandbox_B tool), `RoomShellTool`, `GrayboxRoomsTool` (room logic: slots, small-room walls, lift wall, video wall), `RoomLayouts` (slot poses), `RoomDressingTool` (all dressing), `RoomInfrastructure`, `RoomPipes`, `InfrastructureModels` (ducts, trays, hangers), `HallKitTool`, `GrayboxPropsTool*.cs` (one partial per prop family), `GrayboxMeshBuilder`, `GrayboxMaterials` (materials + generated textures), `GrayboxUtility` |
-| Scenes (editor) | `MainSceneTool` (Main.unity), `SandboxSceneTool` (Sandbox_A), `RoomBatchTools` (batch entry points) |
+| World (editor) | `World/`: see Project layout; `WorldTool` = Create Preview Scene, `MainSceneTool`, `WorldBatch` (batch entry) |
+| Other editor tools | `PlayerPrefabTool`, `SandboxSceneTool` (Sandbox_A) |
 
 Not built yet (planned): run state, clues/deduction, terminals and the four minigames, infection steps, AI
 messages, UI, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references.
@@ -66,22 +73,33 @@ messages, UI, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfe
 - Texts (lore, AI messages, briefing) are data in `Assets/_Project/Data`, never hard-coded strings.
 - Lighting is realtime (Forward+), no baked lightmaps; lights have no shadows except one or two chosen later (task 1.10).
 - Contract numbers live only in `RoomContract` / `HallContract`; tools and docs read them from there.
+- Generated assets (props, rooms, hall, meshes, generated textures, materials, Sandbox_B) are outputs of the code: commit
+  them with their `.meta` (scenes and prefabs reference them by GUID), never edit them by hand.
 - Everything a room is made of is generated by the editor tools; **change the tools, not the generated prefabs,
   materials or meshes** (they are rebuilt in place and hand edits are lost).
 
 ## Editor tools (Tools/Cold Shutdown/...)
 
-- **Create Preview Scene** – the one tool for rooms, props and `Sandbox_B`. Reimports textures, rewrites every generated
-  texture, resets materials, rebuilds every prop, room layout and the hall kit in place (same GUIDs), deletes prop
-  prefabs no `GrayboxProp` builds, then builds `Sandbox_B` (and `TestPreview` if it exists). Run it after any change to
-  a room or prop tool. Batch: `-executeMethod ColdShutdown.Editor.RoomBatchTools.BuildPreviewSceneB`
-  (`RebuildRoomsAndPreviews` also builds `TestPreview` and `Main`). The room shell and wall plug are only created when
-  missing (rooms are prefab variants of the shell).
-- **Create Main Scene** – `Main.unity`: player, `LevelBuilder` wired to every `RoomDefinition`, wall plug, door, hall kit, debug menu.
+- **Create Preview Scene** (`WorldTool`) – the one tool for the world. Checks the map, then rebuilds from code: every
+  generated texture, the materials, every model, every room layout, the hall kit; deletes props, rooms, definitions and
+  meshes no code makes any more; bakes the hall of the map (`Room_Hall`); rewires `Main`; builds `Sandbox_B` (left open).
+  Run it after any change to the map or to world code. Batch: `-executeMethod ColdShutdown.Editor.WorldBatch.Build`.
+  The room shell and wall plug are only created when missing (rooms are prefab variants of the shell).
+- **Create Main Scene** – `Main.unity`: player, `LevelBuilder` (builds the map at Play), debug menu.
 - **Create Sandbox Scene** – `Sandbox_A`: floor, light, player, two interaction test cubes.
 - **Player tools** – Create Player Prefab, Update Player Prefab, Use Player Prefab In Sandbox Scenes, Set Up Mixamo Player Body.
-- Mesh assets are named `<prefab root>_<part name>`: part names must be unique within a prefab, or parts overwrite
-  each other's mesh.
+- Generated mesh assets (`Art/Meshes/Details`) are named `<prefab root>_<part name>`: part names must be unique within a
+  prefab, or parts overwrite each other's mesh.
+
+## Working with the world (AI-friendly)
+
+- **A model:** read/edit only `World/Props/<Category>/<Model>.cs` (+ its `<Category>Parts.cs` if it uses one). New model =
+  a `Prop` value + one file with `[Model(Prop.X)]`. Reference: PROPS.md.
+- **A room:** read/edit only `World/Rooms/<Type>.cs` (its `[Template]`: slots, structure, dressing; shared helpers in
+  `RoomParts.cs`, `SmallRooms.cs`, `Corridor.cs`). New room type = `RoomType` value + door sides + symbol + one template file.
+- **The map:** edit the text of `Data/WorldMap.asset` (format in ROOMS.md).
+- **Textures:** generated ones are functions in `Surfaces` (rewritten every build); drawn ones are PNGs in `Art/Textures`.
+- After any of these: Create Preview Scene, then the EditMode tests.
 
 ## Player
 
@@ -106,13 +124,12 @@ One prefab, `Prefabs/Player/Player.prefab` (`PlayerPrefabTool`); every scene use
 
 ## Map and level
 
-- The map is a grid of 12 x 12 m cells; every cell holds one room, corridor piece or hall tile, turned by quarter
-  turns; unconnected openings get wall plugs. Rooms connect only through corridors; the hall is one rectangle of
-  hall tiles. Layout rules for rooms: `ROOMS.md`.
+- One map (`Data/WorldMap.asset`, text, north at the top; ROOMS.md). Every cell holds one room or corridor piece, turned by
+  quarter turns; corridor shapes, turns, fire-arm layouts and doors follow from the neighbours; unconnected openings get
+  wall plugs. Rooms connect only through corridors; the hall is one room over a rectangle of cells, entered from `D` corridors.
 - The player starts in the passenger lift car (`RoomContract.LiftStartPose`, `LevelBuilder.StartPose`).
-- `Level Builder / Level / Cell_<column>_<row> / Room_<Type>` + `WallPlug_<Side>` + `Door_<Side>`; the cell never
-  turns, only the room inside it.
-- `Sandbox_B` is the hand-made preview: a 2 x 3 hall (A1-B3) with corridors around it and one room of each type.
+- `Level Builder / Level / Cell_<column>_<row> / Room_<Type>` + `WallPlug_<Side>` + `Door_<Side>`, `Room_Hall` (at its
+  south-west cell), `Racks`; the cell never turns, only the room inside it.
 
 ## Working rules for Claude
 
@@ -121,7 +138,7 @@ One prefab, `Prefabs/Player/Player.prefab` (`PlayerPrefabTool`); every scene use
 - Never modify `Library/`, `Temp/`, `Logs/`, `UserSettings/` or generated `.csproj`/`.sln` files.
 - New files under `Assets/`: remind the user to focus Unity so it writes the `.meta` files, and to commit them.
 - New third-party asset → `Assets/ThirdParty/<Source>/` + a row in `CREDITS.md`.
-- A change to rooms or props also updates `ROOMS.md` / `PROPS.md`.
+- A change to rooms, props or the map also updates `ROOMS.md` / `PROPS.md` (the map shown in ROOMS.md is the one in `WorldMap.asset`).
 - Keep changes small and focused; one feature per branch.
 
 ## Commands

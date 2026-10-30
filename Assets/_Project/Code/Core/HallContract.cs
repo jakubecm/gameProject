@@ -23,6 +23,12 @@ namespace ColdShutdown.Core
 
         public const float RoofThickness = 0.15f;
 
+        /// <summary>Underside of the primary steel girders on every cell edge (an I-beam between tiles, a half one on the perimeter).</summary>
+        public const float GirderBottom = 5.2f;
+
+        /// <summary>Top of every hall light fitting, whether it hangs from the deck or from a girder: under the ducts (4.4 m), above the signs (4.2 m).</summary>
+        public const float LightTop = 4.1f;
+
         /// <summary>Width of the contained cold aisle between the two rack rows (two perforated tiles).</summary>
         public const float AisleWidth = 1.2f;
 

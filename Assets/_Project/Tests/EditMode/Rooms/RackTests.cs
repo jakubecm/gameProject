@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace ColdShutdown.Tests.EditMode.Rooms
 {
-    /// <summary>The one rack prop (Tools/Cold Shutdown/Create Graybox Props), its door, and which racks a level makes openable.</summary>
+    /// <summary>The one rack prop (built by Tools/Cold Shutdown/Create Preview Scene), its door, and which racks a level makes openable.</summary>
     public class RackTests
     {
         private const string RackPath = "Assets/_Project/Prefabs/Props/Rack.prefab";
@@ -38,8 +38,15 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         public void Rack_FitsItsSlotAndEveryFillingHasLeds()
         {
             var rack = Create();
-            var collider = rack.GetComponent<BoxCollider>();
-            Assert.AreEqual(new Vector3(RoomContract.RackWidth, RoomContract.RackHeight, RoomContract.RackDepth), collider.size);
+            // The body and the door together fill the slot: the body's collider stops behind the door, the door's covers the front.
+            var body = rack.GetComponent<BoxCollider>();
+            var door = (BoxCollider)rack.transform.Find("DoorHinge").GetComponent<Collider>();
+            Assert.AreEqual(RoomContract.RackWidth, body.size.x, 0.001f);
+            Assert.AreEqual(RoomContract.RackHeight, body.size.y, 0.001f);
+            Assert.AreEqual(-RoomContract.RackDepth / 2f, body.center.z - body.size.z / 2f, 0.001f);
+            float doorFront = rack.transform.InverseTransformPoint(door.transform.TransformPoint(door.center + Vector3.forward * door.size.z / 2f)).z;
+            Assert.AreEqual(RoomContract.RackDepth / 2f, doorFront, 0.001f);
+            Assert.AreEqual(doorFront - door.size.z, body.center.z + body.size.z / 2f, 0.001f, "The body's collider must stop behind the door");
 
             var library = AssetDatabase.LoadAssetAtPath<RackContentLibrary>("Assets/_Project/Data/RackContents.asset");
             Assert.IsNotNull(library, "The rack content library is missing");
@@ -58,12 +65,23 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
+        public void OnlyTheDoor_OffersToOpen()
+        {
+            var rack = Create();
+            rack.GetComponent<Rack>().Configure(true, 1);
+            Assert.IsEmpty(rack.GetComponent<Collider>().GetComponentsInParent<IInteractable>(), "Looking at the rack's side or back must not offer the door");
+            var doorCollider = rack.transform.Find("DoorHinge").GetComponent<Collider>();
+            Assert.IsTrue(doorCollider.enabled);
+            Assert.IsInstanceOf<RackDoor>(doorCollider.GetComponentInParent<IInteractable>(), "Looking at the door offers it");
+        }
+
+        [Test]
         public void ClosedRack_HasNoDoorLogicAndAFlushHandle()
         {
             var rack = Create();
             rack.GetComponent<Rack>().Configure(false, 1);
             Assert.IsFalse(rack.GetComponent<Rack>().IsOpenable);
-            Assert.IsFalse(rack.GetComponent<RackDoor>().enabled, "A closed rack must not be interactable");
+            Assert.IsFalse(rack.transform.Find("DoorHinge").GetComponent<RackDoor>().enabled, "A closed rack must not be interactable");
             Assert.IsTrue(rack.transform.Find("DoorHinge/HandleFlush").gameObject.activeSelf);
             Assert.IsFalse(rack.transform.Find("DoorHinge/HandleLever").gameObject.activeSelf);
             Assert.IsFalse(rack.transform.Find("DoorHinge").GetComponent<Collider>().enabled);
@@ -76,7 +94,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         {
             var rack = Create();
             rack.GetComponent<Rack>().Configure(true, 1);
-            var door = rack.GetComponent<RackDoor>();
+            var door = rack.transform.Find("DoorHinge").GetComponent<RackDoor>();
             Assert.IsTrue(door.enabled);
             Assert.IsTrue(rack.transform.Find("DoorHinge/HandleLever").gameObject.activeSelf, "The lever handle shows");
             Assert.IsFalse(rack.transform.Find("DoorHinge/HandleFlush").gameObject.activeSelf);
