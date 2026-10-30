@@ -12,7 +12,7 @@ namespace ColdShutdown.Editor
     /// <summary>
     /// Creates Main.unity: the player, a <see cref="LevelBuilder"/> wired to the room definitions, the
     /// wall plug, the automatic door and the hall kit, and the F1 <see cref="DebugMenu"/>. Press Play and the builder makes a random map and
-    /// puts the player in its middle. Run Create Room Shell, Create Graybox Rooms and Create Player Prefab
+    /// puts the player in its middle. Run Create Preview Scene (rooms) and Create Player Prefab
     /// first (the sandbox scene tools do the last one).
     /// </summary>
     public static class MainSceneTool
@@ -24,12 +24,12 @@ namespace ColdShutdown.Editor
         {
             if (!File.Exists(RoomShellTool.WallPlugPath))
             {
-                Debug.LogError($"{RoomShellTool.WallPlugPath} not found. Run Tools/Cold Shutdown/Create Room Shell first.");
+                Debug.LogError($"{RoomShellTool.WallPlugPath} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
             if (Enum.GetValues(typeof(RoomType)).Cast<RoomType>().Any(type => !File.Exists(GrayboxRoomsTool.DefinitionPath(type))))
             {
-                Debug.LogError("A room definition is missing. Run Tools/Cold Shutdown/Create Graybox Rooms first.");
+                Debug.LogError("A room definition is missing. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
 

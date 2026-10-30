@@ -17,13 +17,14 @@ namespace ColdShutdown.Editor
     /// <see cref="HallKit"/> build the hall, unused openings get wall plugs without door frames, every opening into a
     /// room gets an automatic door). Every door is unlocked. Rack slots get real rack props in the scene (not in the
     /// prefabs) until the rack generator (task 2.9) exists: every hall slot is filled, so every aisle is closed.
-    /// - <c>Sandbox_B</c>: a rectangular server hall of 3 x 3 tiles (nodes A1 to C3) with the corridors around it
+    /// - <c>Sandbox_B</c>: a rectangular server hall of 2 x 3 tiles (nodes A1 to B3) with the corridors around it
     ///   (a cross, T-junctions, a corner, a straight run and a dead end) and two doors into the hall, and one room of
     ///   every type off the corridors. The player starts in the lift, south-west of the hall.
     /// - <c>TestPreview</c>: one straight corridor with every layout of every room type on it (rooms in the north row,
     ///   plant rooms in the south row, in layout order from west to east), the lift end at its west end, every corridor
-    ///   shape at its ends and the 3 x 3 hall at its east end, to check each layout. The player starts in the lift.
+    ///   shape at its ends and the 2 x 3 hall at its east end, to check each layout. The player starts in the lift.
     /// Corridors get the turn and layout whose fire arm leads into a room, as in a generated level.
+    /// Its one menu item, Create Preview Scene, regenerates everything the scenes are made of before building them.
     /// </summary>
     public static class RoomPreviewSceneTool
     {
@@ -54,13 +55,68 @@ namespace ColdShutdown.Editor
             RoomType.Corridor, RoomType.CorridorT, RoomType.CorridorStraight, RoomType.CorridorCorner, RoomType.CorridorDeadEnd,
         };
 
-        [MenuItem("Tools/Cold Shutdown/Create Room Preview Scene")]
+        /// <summary>Set while <see cref="RebuildEverything"/> runs: it has asked once already.</summary>
+        private static bool SuppressPrompts;
+
+        /// <summary>
+        /// The one tool for <c>Sandbox_B</c>: asks once, then <see cref="RebuildEverything"/>. Run it after any change to a
+        /// texture, material, prop, room, the hall kit or this scene.
+        /// </summary>
+        [MenuItem("Tools/Cold Shutdown/Create Preview Scene")]
+        public static void CreatePreviewScene()
+        {
+            if (!Application.isBatchMode &&
+                (!EditorUtility.DisplayDialog("Cold Shutdown",
+                     "Regenerate all textures, materials, props, rooms and the hall kit and replace Sandbox_B? Hand edits in generated assets are lost.",
+                     "Build", "Cancel") ||
+                 !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()))
+            {
+                return;
+            }
+            RebuildEverything();
+        }
+
+        /// <summary>
+        /// Builds <c>Sandbox_B</c> from the start, in the right order and without asking, so every change shows: imports files
+        /// changed outside the Editor, imports the textures again and writes every generated one again, resets every material,
+        /// rebuilds every prop (with the rack fillings and the detail meshes), every room layout (logic, door frames, suspended
+        /// ceilings, dressing, definitions) and the hall kit, all in place (same GUIDs), deletes prop prefabs no tool makes any
+        /// more, then the scene (and <c>TestPreview</c> when it exists). The room shell and wall plug are only made when missing:
+        /// the rooms are variants of the shell, so replacing it would break them.
+        /// </summary>
+        public static void RebuildEverything()
+        {
+            SuppressPrompts = true;
+            try
+            {
+                AssetDatabase.Refresh();
+                AssetDatabase.ImportAsset(GrayboxMaterials.TextureFolder, ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+                GrayboxMaterials.RegenerateTextures(() =>
+                {
+                    RoomShellTool.CreateRoomShell();
+                    RoomDressingTool.RebuildAll();
+                    HallKitTool.Build(true);
+                });
+                GrayboxPropsTool.DeleteObsoleteProps();
+                AssetDatabase.SaveAssets();
+
+                if (File.Exists(TestScenePath)) CreateTestPreviewScene();
+                // Last, so Sandbox_B is the scene left open.
+                CreateRoomPreviewScene();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+            finally
+            {
+                SuppressPrompts = false;
+            }
+        }
+
+        /// <summary>Only the <c>Sandbox_B</c> scene, from the existing prefabs; <see cref="CreatePreviewScene"/> rebuilds them first.</summary>
         public static void CreateRoomPreviewScene()
         {
             var rooms = new[]
             {
-                new PreviewRoom(0, 2, RoomType.Office, 0, Direction.East, Direction.South),
-                new PreviewRoom(2, 0, RoomType.Office, 1, Direction.North),
                 new PreviewRoom(6, 1, RoomType.SmallOffice, 0, Direction.West),
                 new PreviewRoom(1, 5, RoomType.SecurityOffice, 0, Direction.South),
                 new PreviewRoom(4, 0, RoomType.PowerRoom, 0, Direction.North),
@@ -76,19 +132,19 @@ namespace ColdShutdown.Editor
                 // Doors into the hall.
                 (3, 1, Direction.North), (1, 3, Direction.East),
             };
-            bool IsHall(int column, int row) => column >= 2 && column <= 4 && row >= 2 && row <= 4;
+            bool IsHall(int column, int row) => column >= 2 && column <= 3 && row >= 2 && row <= 4;
 
             CreateScene(ScenePath, 7, 6, rooms, corridors, links, IsHall,
-                "Press Play: you start in the lift; the hall is north-east of it. The tile signs show the node codes A1 to C3.");
+                "Press Play: you start in the lift; the hall is north-east of it. The tile signs show the node codes A1 to B3.");
         }
 
-        [MenuItem("Tools/Cold Shutdown/Create Test Preview Scene")]
+        /// <summary>Only the <c>TestPreview</c> scene, from the existing prefabs (batch mode; <see cref="CreatePreviewScene"/> keeps an existing one up to date).</summary>
         public static void CreateTestPreviewScene()
         {
             // Corridor along row 1: a dead end and a straight piece in the west, then one crossing per pair of rooms, then
             // a T-junction with a corner and a dead end south of it, and the hall in the east.
             const int firstCross = 2;
-            var north = new[] { RoomType.Office, RoomType.SmallOffice, RoomType.SecurityOffice };
+            var north = new RoomType?[] { RoomType.SmallOffice, RoomType.SecurityOffice, null };
             var south = new[] { RoomType.PowerRoom, RoomType.HvacRoom, RoomType.StorageRoom };
             var rooms = new List<PreviewRoom> { new PreviewRoom(0, 2, RoomType.Elevator, 0, Direction.South) };
             int column = firstCross;
@@ -96,7 +152,7 @@ namespace ColdShutdown.Editor
             {
                 for (int layout = 0; layout < RoomRules.RoomLayouts; layout++, column++)
                 {
-                    rooms.Add(new PreviewRoom(column, 2, north[t], layout, Direction.South));
+                    if (north[t].HasValue) rooms.Add(new PreviewRoom(column, 2, north[t].Value, layout, Direction.South));
                     rooms.Add(new PreviewRoom(column, 0, south[t], layout, Direction.North));
                 }
             }
@@ -116,11 +172,11 @@ namespace ColdShutdown.Editor
             links.Add((junction, 0, Direction.East));
             // The door into the hall's west side.
             links.Add((junction, 1, Direction.East));
-            bool IsHall(int c, int r) => c >= hallColumn && c < hallColumn + 3 && r >= 1 && r <= 3;
+            bool IsHall(int c, int r) => c >= hallColumn && c < hallColumn + 2 && r >= 1 && r <= 3;
 
-            CreateScene(TestScenePath, hallColumn + 3, 4, rooms.ToArray(), corridors.ToArray(), links.ToArray(), IsHall,
-                "Press Play: you start in the lift at the west end; walk east along the corridor. North: offices, small offices and security offices, south: power rooms, " +
-                "cooling plants and storage rooms, each in layouts 1 to 4 from west to east. The hall (A1 to C3) is at the east end.");
+            CreateScene(TestScenePath, hallColumn + 2, 4, rooms.ToArray(), corridors.ToArray(), links.ToArray(), IsHall,
+                "Press Play: you start in the lift at the west end; walk east along the corridor. North: small offices and security offices, south: power rooms, " +
+                "cooling plants and storage rooms, one layout each. The hall (A1 to B3) is at the east end.");
         }
 
         private static void CreateScene(string path, int width, int height, PreviewRoom[] rooms, (int column, int row)[] corridors,
@@ -128,16 +184,16 @@ namespace ColdShutdown.Editor
         {
             if (AssetDatabase.LoadAssetAtPath<GameObject>(RoomShellTool.WallPlugPath) == null)
             {
-                Debug.LogError($"{RoomShellTool.WallPlugPath} not found. Run Tools/Cold Shutdown/Create Room Shell first.");
+                Debug.LogError($"{RoomShellTool.WallPlugPath} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
             if (AssetDatabase.LoadAssetAtPath<HallKit>(HallKitTool.KitPath) == null)
             {
-                Debug.LogError($"{HallKitTool.KitPath} not found. Run Tools/Cold Shutdown/Create Graybox Rooms first.");
+                Debug.LogError($"{HallKitTool.KitPath} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
             if (!ConfirmOverwrite(path) ||
-                (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()))
+                (!Application.isBatchMode && !SuppressPrompts && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()))
             {
                 return;
             }
@@ -208,7 +264,7 @@ namespace ColdShutdown.Editor
                     var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                     if (prefab == null)
                     {
-                        Debug.LogError($"{prefabPath} not found. Run Tools/Cold Shutdown/Create Graybox Rooms first.");
+                        Debug.LogError($"{prefabPath} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                         return;
                     }
 
@@ -285,38 +341,21 @@ namespace ColdShutdown.Editor
         }
 
         /// <summary>
-        /// A rack prop on every rack slot, so every aisle is closed on all sides: network racks at the west end of each
-        /// hall row, a GPU rack in about one slot in six and a JBOD in one in eight, compute racks elsewhere. The security
-        /// office gets its compute rack and its JBOD.
+        /// A rack on every rack slot, so every aisle is closed on all sides, placed the way a level will: one openable rack in the security
+        /// office and one per row of every server aisle (two per aisle, one on each side), random fillings for all (<see cref="RackPlacement"/>).
         /// </summary>
         private static void PlaceRacks(Transform level)
         {
             var racks = new GameObject("Racks (preview only)").transform;
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(GrayboxPropsTool.PathOf(GrayboxProp.Rack));
             int index = 0;
-            foreach (var slot in level.GetComponentsInChildren<RackSlot>())
+            RackPlacement.Assign(level.GetComponentsInChildren<RackSlot>(), slot =>
             {
-                var position = slot.transform.position;
-                int hash = (Mathf.RoundToInt(position.x * 10f) * 73856093 ^ Mathf.RoundToInt(position.z * 10f) * 19349663) & int.MaxValue;
-                // Slots sit in a RackSlots group directly under the room.
-                var room = slot.transform.parent.parent;
-                GrayboxProp prop;
-                if (room.name.StartsWith($"Room_{RoomType.SecurityOffice}"))
-                {
-                    prop = slot.name.EndsWith("00") ? GrayboxProp.RackCompute : GrayboxProp.RackJbod;
-                }
-                else
-                {
-                    var local = room.InverseTransformPoint(position);
-                    prop = local.x < -HallContract.PodHalfLength + RoomContract.RackWidth ? GrayboxProp.RackNetwork
-                        : hash % 6 == 1 ? GrayboxProp.RackGpu
-                        : hash % 8 == 3 ? GrayboxProp.RackJbod
-                        : GrayboxProp.RackCompute;
-                }
-
-                var rack = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(GrayboxPropsTool.PathOf(prop)), racks);
-                rack.name = $"{prop}_{index++:000}";
-                rack.transform.SetPositionAndRotation(position, slot.transform.rotation);
-            }
+                var rack = (GameObject)PrefabUtility.InstantiatePrefab(prefab, racks);
+                rack.name = $"Rack_{index++:000}";
+                rack.transform.SetPositionAndRotation(slot.transform.position, slot.transform.rotation);
+                return rack.GetComponent<Rack>();
+            }, 1);
         }
 
         /// <summary>
@@ -334,7 +373,7 @@ namespace ColdShutdown.Editor
         /// <summary>The scenes are throwaway sandboxes, so they may be replaced, but only after asking; batch mode always replaces.</summary>
         private static bool ConfirmOverwrite(string path)
         {
-            return Application.isBatchMode || !File.Exists(path) ||
+            return Application.isBatchMode || SuppressPrompts || !File.Exists(path) ||
                    EditorUtility.DisplayDialog("Cold Shutdown", $"{path} already exists. Replace it?", "Replace", "Cancel");
         }
     }

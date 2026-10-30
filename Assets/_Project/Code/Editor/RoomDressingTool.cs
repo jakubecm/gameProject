@@ -25,7 +25,7 @@ namespace ColdShutdown.Editor
     /// most about 4 m apart and 2.3 m from a wall, in a corridor one row on the axis of the lights; one smoke detector per
     /// corridor cell or small room, three in the office; an extinguisher and a manual call point by the exit; ceiling
     /// loudspeakers (voice alarm) in the suspended ceilings; one camera per room or corridor, two at a T-junction or a
-    /// crossing, none in the meeting room. Every room has a light switch beside its door. The hall
+    /// crossing. Every room has a light switch beside its door. The hall
     /// (see <see cref="HallKitTool"/>) has no water at all.
     ///
     /// Furniture follows what a room is for and always leaves room to walk: desks keep 1 m behind them for the chair and
@@ -38,12 +38,10 @@ namespace ColdShutdown.Editor
     /// terminal slots. Ceiling fittings sit in the centre of a grid tile (multiples of 0.6 m from the room center) or,
     /// for 1200 mm fittings, across two tiles centered on a grid line.
     ///
-    /// Each room type has two designs; layouts 3 and 4 are their mirror images (<see cref="LayoutMirror"/>). The
-    /// dressers below are written for the design and place everything through <see cref="Put"/> and friends, which
-    /// apply the mirror.
+    /// Every room type has exactly one layout. The dressers below place everything through <see cref="Put"/> and friends.
     ///
-    /// Dress Graybox Rooms only adds what is missing, so hand edits survive. Rebuild Graybox Rooms throws the generated
-    /// logic, dressing, props and material settings away and builds them again.
+    /// <see cref="RebuildAll"/> (run by Create Preview Scene) throws the generated logic, dressing, props and material settings
+    /// away and builds them again.
     /// </summary>
     public static class RoomDressingTool
     {
@@ -73,27 +71,24 @@ namespace ColdShutdown.Editor
         private const float OutletHeight = 0.3f;
         private const float ParapetHeight = 0.88f;
 
-        private const float EmergencyLightHeight = 2.45f;
-
         /// <summary>Center height of the small grilles under a 3 m ceiling (<see cref="GrayboxPropsTool.GrilleGap"/> below it).</summary>
         private static float HighGrilleHeight => GrayboxPropsTool.HighGrilleCenter(RoomContract.CeilingHeight);
 
-        private delegate void Dresser(Transform dressing, Transform cameras, int design);
+        private delegate void Dresser(Transform dressing, Transform cameras);
 
         private static readonly Dictionary<RoomType, Dresser> Dressers = new Dictionary<RoomType, Dresser>
         {
-            { RoomType.Corridor, (d, c, _) => DressCorridor(d, c, RoomType.Corridor, layoutIndex) },
-            { RoomType.CorridorStraight, (d, c, _) => DressCorridor(d, c, RoomType.CorridorStraight, layoutIndex) },
-            { RoomType.CorridorT, (d, c, _) => DressCorridor(d, c, RoomType.CorridorT, layoutIndex) },
-            { RoomType.CorridorCorner, (d, c, _) => DressCorridor(d, c, RoomType.CorridorCorner, layoutIndex) },
-            { RoomType.CorridorDeadEnd, (d, c, _) => DressCorridor(d, c, RoomType.CorridorDeadEnd, layoutIndex) },
-            { RoomType.Office, DressOffice },
+            { RoomType.Corridor, (d, c) => DressCorridor(d, c, RoomType.Corridor, layoutIndex) },
+            { RoomType.CorridorStraight, (d, c) => DressCorridor(d, c, RoomType.CorridorStraight, layoutIndex) },
+            { RoomType.CorridorT, (d, c) => DressCorridor(d, c, RoomType.CorridorT, layoutIndex) },
+            { RoomType.CorridorCorner, (d, c) => DressCorridor(d, c, RoomType.CorridorCorner, layoutIndex) },
+            { RoomType.CorridorDeadEnd, (d, c) => DressCorridor(d, c, RoomType.CorridorDeadEnd, layoutIndex) },
             { RoomType.SmallOffice, DressSmallOffice },
             { RoomType.SecurityOffice, DressSecurityOffice },
             { RoomType.PowerRoom, DressPowerRoom },
             { RoomType.HvacRoom, DressHvacRoom },
             { RoomType.StorageRoom, DressStorageRoom },
-            { RoomType.Elevator, (d, c, _) => DressCorridor(d, c, RoomType.Elevator, layoutIndex) },
+            { RoomType.Elevator, (d, c) => DressCorridor(d, c, RoomType.Elevator, layoutIndex) },
         };
 
         /// <summary>Technical rooms: no suspended ceiling, epoxy floor, services exposed.</summary>
@@ -107,30 +102,8 @@ namespace ColdShutdown.Editor
 
         private static float Ceiling => RoomContract.CeilingHeight;
 
-        /// <summary>The mirror of the layout being dressed; every placement below goes through it.</summary>
-        private static LayoutMirror mirror = LayoutMirror.None;
-
         /// <summary>The layout being dressed (corridor layouts differ in their fire arm, see <see cref="RoomRules.FireArmSide"/>).</summary>
         private static int layoutIndex;
-
-        [MenuItem("Tools/Cold Shutdown/Dress Graybox Rooms")]
-        public static void DressGrayboxRooms()
-        {
-            GrayboxPropsTool.CreateGrayboxProps();
-            DressAll(false);
-        }
-
-        [MenuItem("Tools/Cold Shutdown/Rebuild Graybox Rooms")]
-        public static void RebuildGrayboxRooms()
-        {
-            if (!Application.isBatchMode && !EditorUtility.DisplayDialog("Cold Shutdown",
-                    "Rebuild all graybox props, surface materials, door frames, suspended ceilings, room logic (slots, walls of " +
-                    "small rooms, video wall) and Dressing groups of every room layout? Hand edits in them are lost.", "Rebuild", "Cancel"))
-            {
-                return;
-            }
-            RebuildAll();
-        }
 
         /// <summary>The whole rebuild without asking: props, materials, every layout's logic and dressing, definitions.</summary>
         internal static void RebuildAll()
@@ -155,7 +128,7 @@ namespace ColdShutdown.Editor
                 if (!Dressers.TryGetValue(type, out var dress)) continue;
                 bool technical = IsTechnicalRoom(type);
                 EditPrefab(RoomLayouts.PrefabPath(type, layout), root =>
-                    ConfigureShell(root, technical) | DressRoom(root, dress, RoomLayouts.Mirror(type, layout), layout, rebuild));
+                    ConfigureShell(root, technical) | DressRoom(root, dress, layout, rebuild));
             }
             AssetDatabase.SaveAssets();
         }
@@ -190,7 +163,7 @@ namespace ColdShutdown.Editor
         {
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
             {
-                Debug.LogError($"{path} not found. Run Create Room Shell and Create Graybox Rooms first.");
+                Debug.LogError($"{path} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
 
@@ -230,7 +203,7 @@ namespace ColdShutdown.Editor
         /// Builds the room's <c>Dressing</c> and <c>SecurityCameras</c> groups if the dressing is missing; on a rebuild
         /// both are thrown away first.
         /// </summary>
-        private static bool DressRoom(GameObject root, Dresser dress, LayoutMirror layoutMirror, int layout, bool rebuild)
+        private static bool DressRoom(GameObject root, Dresser dress, int layout, bool rebuild)
         {
             var existing = root.transform.Find(DressingName);
             if (existing != null && !rebuild) return false;
@@ -243,17 +216,15 @@ namespace ColdShutdown.Editor
                 }
             }
 
-            mirror = layoutMirror;
             layoutIndex = layout;
             try
             {
                 var dressing = GrayboxUtility.CreateGroup(DressingName, root.transform);
                 var cameras = GrayboxUtility.CreateGroup(SecurityCamerasName, root.transform);
-                dress(dressing, cameras, RoomLayouts.Design(layout));
+                dress(dressing, cameras);
             }
             finally
             {
-                mirror = LayoutMirror.None;
                 layoutIndex = 0;
             }
             return true;
@@ -317,17 +288,47 @@ namespace ColdShutdown.Editor
                 GrayboxUtility.CreateBoxBetween($"Tee_Z_{i}", grid, new Vector3(at - bar / 2f, bottom, -Wall), new Vector3(at + bar / 2f, Ceiling, Wall), SurfaceMaterial.CeilingGrid);
             }
 
+            // The tiles: white mineral-fibre, 576 mm between the tees, with a stepped (tegular) edge; one mesh for the room.
+            var tiles = new GrayboxMeshBuilder();
+            float limit = Wall - bar;
+            float half = CeilingTile / 2f - bar / 2f;
+            const float inset = 0.012f;
+            for (int i = -10; i <= 10; i++)
+            {
+                for (int j = -10; j <= 10; j++)
+                {
+                    float cx = i * CeilingTile;
+                    float cz = j * CeilingTile;
+                    float x0 = Mathf.Max(cx - half, -limit);
+                    float x1 = Mathf.Min(cx + half, limit);
+                    float z0 = Mathf.Max(cz - half, -limit);
+                    float z1 = Mathf.Min(cz + half, limit);
+                    if (x1 - x0 < 0.05f || z1 - z0 < 0.05f) continue;
+                    tiles.AddBox(new Vector3(x0, Ceiling - 0.0080f, z0), new Vector3(x1, Ceiling, z1), false);
+                    // The face sits behind the step; the sides that a wall angle covers are not stepped.
+                    float fx0 = Mathf.Abs(x0 - (cx - half)) < 0.001f ? x0 + inset : x0;
+                    float fx1 = Mathf.Abs(x1 - (cx + half)) < 0.001f ? x1 - inset : x1;
+                    float fz0 = Mathf.Abs(z0 - (cz - half)) < 0.001f ? z0 + inset : z0;
+                    float fz1 = Mathf.Abs(z1 - (cz + half)) < 0.001f ? z1 - inset : z1;
+                    if (fx1 - fx0 > 0.05f && fz1 - fz0 > 0.05f)
+                    {
+                        tiles.AddBox(new Vector3(fx0, Ceiling - depth + 0.0008f, fz0), new Vector3(fx1, Ceiling - 0.0080f, fz1), false);
+                    }
+                }
+            }
+            tiles.Attach("Tiles", grid, SurfaceMaterial.CeilingTile);
+
             GrayboxUtility.CreateBoxBetween("WallAngle_N", grid, new Vector3(-Wall, bottom, Wall - bar), new Vector3(Wall, Ceiling, Wall), SurfaceMaterial.CeilingGrid);
             GrayboxUtility.CreateBoxBetween("WallAngle_S", grid, new Vector3(-Wall, bottom, -Wall), new Vector3(Wall, Ceiling, -Wall + bar), SurfaceMaterial.CeilingGrid);
             GrayboxUtility.CreateBoxBetween("WallAngle_E", grid, new Vector3(Wall - bar, bottom, -Wall), new Vector3(Wall, Ceiling, Wall), SurfaceMaterial.CeilingGrid);
             GrayboxUtility.CreateBoxBetween("WallAngle_W", grid, new Vector3(-Wall, bottom, -Wall), new Vector3(-Wall + bar, Ceiling, Wall), SurfaceMaterial.CeilingGrid);
         }
 
-        // ---------------------------------------------------------------- placement through the layout mirror
+        // ---------------------------------------------------------------- placement
 
-        /// <summary>Places a prop at a point of the design (room-local), mirrored for the layout.</summary>
+        /// <summary>Places a prop at a point of the room (room-local).</summary>
         private static Transform Put(GrayboxProp prop, Transform parent, float x, float y, float z, float yaw = 0f, string name = null) =>
-            GrayboxPropsTool.Place(prop, parent, mirror.Point(new Vector3(x, y, z)), mirror.Yaw(yaw), name);
+            GrayboxPropsTool.Place(prop, parent, new Vector3(x, y, z), yaw, name);
 
         private static Transform Put(GrayboxProp prop, Transform parent, Vector3 position, float yaw = 0f, string name = null) =>
             Put(prop, parent, position.x, position.y, position.z, yaw, name);
@@ -337,63 +338,125 @@ namespace ColdShutdown.Editor
         {
             foreach (var (x, z) in positions)
             {
-                var at = mirror.Point(new Vector3(x, Ceiling, z));
+                var at = (new Vector3(x, Ceiling, z));
                 GrayboxPropsTool.Place(prop, parent, at, 0f, $"{prop}_{at.x:0.0}_{at.z:0.0}");
             }
         }
 
-        /// <summary>A 1200 mm fitting (long side along Z in the design) at each (x, z).</summary>
+        /// <summary>A 1200 mm fitting (long side along Z along Z) at each (x, z).</summary>
         private static void PutLongFitting(GrayboxProp prop, Transform parent, params (float x, float z)[] positions)
         {
             foreach (var (x, z) in positions)
             {
-                var at = mirror.Point(new Vector3(x, Ceiling, z));
-                GrayboxPropsTool.Place(prop, parent, at, mirror.Yaw(0f), $"Light_{at.x:0.0}_{at.z:0.0}");
+                var at = (new Vector3(x, Ceiling, z));
+                GrayboxPropsTool.Place(prop, parent, at, 0f, $"Light_{at.x:0.0}_{at.z:0.0}");
             }
         }
 
         private static void Box(string name, Transform parent, Vector3 a, Vector3 b, SurfaceMaterial surface, bool collider = false) =>
-            GrayboxUtility.CreateBoxBetween(name, parent, mirror.Point(a), mirror.Point(b), surface, collider);
+            GrayboxUtility.CreateBoxBetween(name, parent, a, b, surface, collider);
 
         private static Vector3 Riser(Transform parent, string name, Vector3 wallPoint, Vector3 normal, float radius, SurfaceMaterial surface,
-            float valveHeight = -1f, SurfaceMaterial handle = SurfaceMaterial.Metal) =>
-            RoomInfrastructure.Riser(parent, name, mirror.Point(wallPoint), mirror.Point(normal), radius, surface, valveHeight, handle);
+            float valveHeight = -1f) =>
+            RoomInfrastructure.Riser(parent, name, wallPoint, normal, radius, surface, valveHeight);
 
         private static void Outlet(Transform parent, string name, Vector3 wallPoint, Vector3 normal) =>
-            RoomInfrastructure.WiredOutlet(parent, name, mirror.Point(wallPoint), mirror.Point(normal));
+            RoomInfrastructure.WiredOutlet(parent, name, wallPoint, normal);
 
         private static void Trunking(Transform parent, string name, Vector3 from, Vector3 to, Vector3 normal) =>
-            RoomInfrastructure.Trunking(parent, name, mirror.Point(from), mirror.Point(to), mirror.Point(normal));
+            RoomInfrastructure.Trunking(parent, name, from, to, normal);
+
+        private static void Trunking(Transform parent, string name, Vector3[] path, Vector3 normal) =>
+            RoomInfrastructure.Trunking(parent, name, path, normal);
+
+        private static void PipePath(string name, Transform parent, Vector3[] path, float radius, SurfaceMaterial surface) =>
+            RoomPipes.Pipe(parent, name, path, radius, surface);
 
         private static void Pipe(string name, Transform parent, Vector3 from, Vector3 to, float radius, SurfaceMaterial surface) =>
-            GrayboxUtility.CreatePipe(name, parent, mirror.Point(from), mirror.Point(to), radius, surface);
+            RoomPipes.Pipe(parent, name, from, to, radius, surface);
 
-        /// <summary>A cable tray between two points of the design; <paramref name="rodsAt"/> are positions along its run.</summary>
+        /// <summary>A cable tray between two points of the room; <paramref name="rodsAt"/> are positions along its run.</summary>
         private static void Tray(Transform parent, string name, Vector3 from, Vector3 to, SurfaceMaterial tray, SurfaceMaterial cables, float[] rodsAt)
         {
             bool alongX = Mathf.Abs(to.x - from.x) > Mathf.Abs(to.z - from.z);
-            var a = mirror.Point(from);
-            var b = mirror.Point(to);
+            var a = from;
+            var b = to;
             bool mirroredAlongX = Mathf.Abs(b.x - a.x) > Mathf.Abs(b.z - a.z);
             var rods = rodsAt.Select(r =>
             {
-                var p = mirror.Point(alongX ? new Vector3(r, 0f, from.z) : new Vector3(from.x, 0f, r));
+                var p = (alongX ? new Vector3(r, 0f, from.z) : new Vector3(from.x, 0f, r));
                 return mirroredAlongX ? p.x : p.z;
             }).ToArray();
             RoomInfrastructure.Tray(parent, name, a, b, TrayWidth, TrayBottom, tray, cables, rods);
         }
 
-        /// <summary>A painted floor line between two points of the design that differ along one axis.</summary>
+        /// <summary>
+        /// Painted floor lines (each between two points that differ along one axis) merged into one mesh without overlaps: every line is 5 cm wide and
+        /// runs half a width past its ends so corners and junctions are filled, clipped to the room (the walls); the union is cut into boxes on the grid of all
+        /// the line edges, so no two pieces share floor area.
+        /// </summary>
+        private static void PaintedLines(Transform parent, string name, IList<(Vector3 from, Vector3 to)> lines, float minX, float maxX, float minZ, float maxZ)
+        {
+            const float width = 0.05f;
+            const float thickness = 0.002f;
+            var rects = new List<Vector4>();
+            foreach (var (from, to) in lines)
+            {
+                bool alongX = Mathf.Abs(to.x - from.x) > Mathf.Abs(to.z - from.z);
+                float x0 = Mathf.Min(from.x, to.x);
+                float x1 = Mathf.Max(from.x, to.x);
+                float z0 = Mathf.Min(from.z, to.z);
+                float z1 = Mathf.Max(from.z, to.z);
+                if (alongX) rects.Add(new Vector4(Mathf.Max(minX, x0 - width / 2f), z0 - width / 2f, Mathf.Min(maxX, x1 + width / 2f), z0 + width / 2f));
+                else rects.Add(new Vector4(x0 - width / 2f, Mathf.Max(minZ, z0 - width / 2f), x0 + width / 2f, Mathf.Min(maxZ, z1 + width / 2f)));
+            }
+            var xs = new SortedSet<float>();
+            var zs = new SortedSet<float>();
+            foreach (var r in rects)
+            {
+                xs.Add(r.x);
+                xs.Add(r.z);
+                zs.Add(r.y);
+                zs.Add(r.w);
+            }
+            var xl = xs.ToList();
+            var zl = zs.ToList();
+            var paint = new GrayboxMeshBuilder();
+            for (int j = 0; j < zl.Count - 1; j++)
+            {
+                float runStart = float.NaN;
+                for (int i = 0; i <= xl.Count - 1; i++)
+                {
+                    bool covered = false;
+                    if (i < xl.Count - 1)
+                    {
+                        float cx = (xl[i] + xl[i + 1]) / 2f;
+                        float cz = (zl[j] + zl[j + 1]) / 2f;
+                        foreach (var r in rects) covered |= cx > r.x && cx < r.z && cz > r.y && cz < r.w;
+                    }
+                    if (covered && float.IsNaN(runStart)) runStart = xl[i];
+                    if (!covered && !float.IsNaN(runStart))
+                    {
+                        paint.AddBox(new Vector3(runStart, 0f, zl[j]), new Vector3(xl[i], thickness, zl[j + 1]));
+                        runStart = float.NaN;
+                    }
+                }
+            }
+            var group = GrayboxUtility.CreateGroup(name, parent);
+            paint.Attach("Paint", group, SurfaceMaterial.SafetyYellow);
+        }
+
+        /// <summary>A painted floor line between two points of the room that differ along one axis.</summary>
         private static void Marking(Transform parent, string name, Vector3 from, Vector3 to)
         {
             const float width = 0.05f;
-            var a = mirror.Point(from);
-            var b = mirror.Point(to);
+            var a = from;
+            var b = to;
             var across = Mathf.Abs(b.x - a.x) > Mathf.Abs(b.z - a.z) ? Vector3.forward : Vector3.right;
             GrayboxUtility.CreateBoxBetween(name, parent, a - across * (width / 2f), b + across * (width / 2f) + Vector3.up * 0.002f, SurfaceMaterial.SafetyYellow);
         }
 
-        /// <summary>A yellow line around the floor rectangle (x0, z0)-(x1, z1) of the design.</summary>
+        /// <summary>A yellow line around the floor rectangle (x0, z0)-(x1, z1) of the room.</summary>
         private static void Outline(Transform parent, string name, float x0, float z0, float x1, float z1)
         {
             Marking(parent, $"{name}_S", new Vector3(x0, 0f, z0), new Vector3(x1, 0f, z0));
@@ -403,33 +466,78 @@ namespace ColdShutdown.Editor
         }
 
         /// <summary>
-        /// Yellow keep-clear hatching over the floor rectangle (x0, z0)-(x1, z1) of the design: an outline and diagonal
-        /// stripes 0.4 m apart, the space that must never be blocked (in front of the storage room's gate).
+        /// Yellow keep-clear hatching over the floor rectangle (x0, z0)-(x1, z1) of the room: an outline and diagonal
+        /// stripes, the space that must never be blocked (in front of the storage room's gate).
         /// </summary>
         private static void Hatching(Transform parent, string name, float x0, float z0, float x1, float z1)
         {
+            // One mesh of exact pieces, so nothing overlaps and nothing is left open: four border bars that tile the outline without
+            // overlapping at the corners, and diagonal stripes clipped to the inside of the border, so every stripe ends flush on it.
+            const float bar = 0.05f;
+            const float thickness = 0.002f;
+            const float period = 0.5f;
+            const float stripe = 0.25f;
             var group = GrayboxUtility.CreateGroup(name, parent);
-            Outline(group, "Edge", x0, z0, x1, z1);
-            var a = mirror.Point(new Vector3(x0, 0f, z0));
-            var b = mirror.Point(new Vector3(x1, 0f, z1));
-            var min = Vector3.Min(a, b);
-            var max = Vector3.Max(a, b);
-            float width = max.x - min.x;
-            float depth = max.z - min.z;
-            const float step = 0.4f;
-            int index = 0;
-            // Stripes at 45 degrees, each clipped to the rectangle by its length: from the left edge or the bottom edge.
-            for (float start = -width + step / 2f; start < depth; start += step)
+            var paint = new GrayboxMeshBuilder();
+            float minX = Mathf.Min(x0, x1);
+            float maxX = Mathf.Max(x0, x1);
+            float minZ = Mathf.Min(z0, z1);
+            float maxZ = Mathf.Max(z0, z1);
+            paint.AddBox(new Vector3(minX, 0f, minZ), new Vector3(maxX, thickness, minZ + bar));
+            paint.AddBox(new Vector3(minX, 0f, maxZ - bar), new Vector3(maxX, thickness, maxZ));
+            paint.AddBox(new Vector3(minX, 0f, minZ + bar), new Vector3(minX + bar, thickness, maxZ - bar));
+            paint.AddBox(new Vector3(maxX - bar, 0f, minZ + bar), new Vector3(maxX, thickness, maxZ - bar));
+
+            float innerMinX = minX + bar;
+            float innerMaxX = maxX - bar;
+            float innerMinZ = minZ + bar;
+            float innerMaxZ = maxZ - bar;
+            // A stripe is the band c0 <= (z - x) <= c0 + stripe, clipped to the inner rectangle (Sutherland-Hodgman, four edges).
+            for (float c0 = innerMinZ - innerMaxX; c0 < innerMaxZ - innerMinX; c0 += period)
             {
-                // A stripe is the line z - min.z = (x - min.x) + start.
-                float xFrom = Mathf.Max(0f, -start);
-                float xTo = Mathf.Min(width, depth - start);
-                if (xTo - xFrom < 0.15f) continue;
-                float length = (xTo - xFrom) * Mathf.Sqrt(2f);
-                var center = new Vector3(min.x + (xFrom + xTo) / 2f, 0.001f, min.z + (xFrom + xTo) / 2f + start);
-                var stripe = GrayboxUtility.CreateBox($"Stripe_{index++}", group, center, new Vector3(0.1f, 0.002f, length - 0.1f), SurfaceMaterial.SafetyYellow, false);
-                stripe.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
+                var polygon = new List<Vector2>
+                {
+                    new Vector2(innerMinX - 10f, innerMinX - 10f + c0),
+                    new Vector2(innerMaxX + 10f, innerMaxX + 10f + c0),
+                    new Vector2(innerMaxX + 10f, innerMaxX + 10f + c0 + stripe),
+                    new Vector2(innerMinX - 10f, innerMinX - 10f + c0 + stripe),
+                };
+                polygon = Clip(polygon, p => p.x - innerMinX);
+                polygon = Clip(polygon, p => innerMaxX - p.x);
+                polygon = Clip(polygon, p => p.y - innerMinZ);
+                polygon = Clip(polygon, p => innerMaxZ - p.y);
+                if (polygon.Count < 3 || PolygonArea(polygon) < 0.0004f) continue;
+                paint.AddPrism(polygon, 0f, thickness, Vector3.zero);
             }
+            paint.Attach("Paint", group, SurfaceMaterial.SafetyYellow);
+        }
+
+        /// <summary>Keeps the part of a convex polygon where <paramref name="inside"/> is not negative.</summary>
+        private static List<Vector2> Clip(List<Vector2> polygon, System.Func<Vector2, float> inside)
+        {
+            var result = new List<Vector2>();
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                var a = polygon[i];
+                var b = polygon[(i + 1) % polygon.Count];
+                float da = inside(a);
+                float db = inside(b);
+                if (da >= 0f) result.Add(a);
+                if ((da >= 0f) != (db >= 0f)) result.Add(Vector2.Lerp(a, b, da / (da - db)));
+            }
+            return result;
+        }
+
+        private static float PolygonArea(List<Vector2> polygon)
+        {
+            float area = 0f;
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                var a = polygon[i];
+                var b = polygon[(i + 1) % polygon.Count];
+                area += a.x * b.y - b.x * a.y;
+            }
+            return Mathf.Abs(area) / 2f;
         }
 
         // ---------------------------------------------------------------- corridors
@@ -439,20 +547,19 @@ namespace ColdShutdown.Editor
         /// dead end), between partition blocks (technical rooms behind them); a missing arm is walled up. In the suspended
         /// ceiling, on the corridor axis: a 600 mm LED panel in the middle of the crossing and of every arm, and between
         /// them the sprinklers (1.8 and 4.8 m from the center, so they are 3.0 to 3.6 m apart all along the corridor). One
-        /// smoke detector and one loudspeaker per cell, cameras by the central light (two at a T-junction or a crossing,
-        /// one elsewhere).
+        /// smoke detector and one loudspeaker per cell, one camera in the middle of a crossing, T-junction or corner (none in straight corridors and dead ends).
         ///
         /// The services are spread over the arms, starting with the fire arm of the layout
         /// (<see cref="RoomRules.FireArmSide"/>, which the layout turns towards a room): the fire-water riser with its hose
         /// cabinet, an extinguisher and a call point stand there, by the room's entrance and off the through-corridor. The
-        /// next arm has the water and gas risers and an outlet box fed from the ceiling, the last one the emergency light.
+        /// next arm has the water and gas risers and an outlet box fed from the ceiling.
         /// The cell's one ventilation grille (a large square one at the floor; no duct shows) and its light switch above
         /// it share the middle of one wall, as far from the fire kit as the cell allows: the arm opposite the fire arm, or
         /// the wall that closes it. Mirrored layouts (<see cref="RoomRules.IsMirroredCorridor"/>) mirror every arm and go
         /// round the arms the other way.
         ///
         /// The lift end (<see cref="RoomType.Elevator"/>) is a dead end whose closed north end is the landing of the
-        /// passenger lift (structure from Create Graybox Rooms, the <see cref="GrayboxProp.PassengerLift"/> on it); its
+        /// passenger lift (structure from <see cref="GrayboxRoomsTool"/>, the <see cref="GrayboxProp.PassengerLift"/> on it); its
         /// grille and switch go to the middle of the west wall of the crossing instead.
         /// </summary>
         private static void DressCorridor(Transform dressing, Transform cameras, RoomType type, int layout)
@@ -519,13 +626,31 @@ namespace ColdShutdown.Editor
             }
 
             var ceiling = GrayboxUtility.CreateGroup("Ceiling", dressing);
-            GrayboxPropsTool.Place(GrayboxProp.LedPanel600, ceiling, new Vector3(0f, Ceiling, 0f), 0f, "Light_Center");
+            // One light per arm (3.6 m from the middle); only a straight corridor also has one in the middle, so the lights stay
+            // 3.6 m apart all along it.
+            if (type == RoomType.CorridorStraight)
+            {
+                GrayboxPropsTool.Place(GrayboxProp.LedPanel600, ceiling, new Vector3(0f, Ceiling, 0f), 0f, "Light_Center");
+            }
             PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (0.6f, -0.6f));
             // Where a corner or a dead end closes the crossing on two sides, the arms' sprinklers do not reach its far
             // walls: one more on the axis.
             if (type == RoomType.CorridorCorner || type == RoomType.CorridorDeadEnd || lift)
             {
                 PutOnCeiling(GrayboxProp.Sprinkler, ceiling, (0f, 0.6f));
+            }
+            // A dead end (and the lift end) has its arm light 3.6 m from the middle; a second one 3.0 m nearer the closed end
+            // spreads the two evenly along the axis.
+            if (type == RoomType.CorridorDeadEnd || lift)
+            {
+                PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (0f, -0.6f));
+            }
+            // A crossing or T-junction has its camera in the middle: the smoke detector goes diagonally across from the
+            // loudspeaker, right next to the camera.
+            bool crossOrT = type == RoomType.Corridor || type == RoomType.CorridorT;
+            if (crossOrT)
+            {
+                GrayboxPropsTool.Place(GrayboxProp.SmokeDetector, ceiling, new Vector3(-0.6f, Ceiling, 0.6f), 0f, "SmokeDetector");
             }
             PlaceCorridorCameras(cameras, type);
 
@@ -538,7 +663,7 @@ namespace ColdShutdown.Editor
             }
             for (int i = 0; i < armList.Count; i++)
             {
-                DressCorridorArm(Arm(dressing, $"Arm_{armList[i]}", armList[i]), i, i == armList.Count - 1, flip);
+                DressCorridorArm(Arm(dressing, $"Arm_{armList[i]}", armList[i]), i, i == armList.Count - 1, flip, !crossOrT);
             }
 
             // The grille and the light switch: the middle of the arm opposite the fire arm (on the face the services leave
@@ -580,9 +705,9 @@ namespace ColdShutdown.Editor
         /// One corridor arm, authored as the north arm (it runs from z = 1.5 to the wall; the partition faces are at
         /// x = ±1.5) and mirrored east-west if <paramref name="flip"/>. <paramref name="index"/> counts the arms from the
         /// fire arm: the fire kit in arm 0, the water and gas risers and the outlets (all on the west face, so the east face
-        /// stays free for a grille) in arm 1; the last arm gets the emergency light.
+        /// stays free for a grille) in arm 1.
         /// </summary>
-        private static void DressCorridorArm(Transform arm, int index, bool last, bool flip)
+        private static void DressCorridorArm(Transform arm, int index, bool last, bool flip, bool detectorInArm)
         {
             float s = flip ? -1f : 1f;
             float face = CorridorHalfWidth;
@@ -605,52 +730,40 @@ namespace ColdShutdown.Editor
             if (index == 0)
             {
                 // Fire water: riser clamped to the east partition, hose cabinet beside it, fed by a branch.
-                var fire = RoomInfrastructure.Riser(pipes, "FireWaterRiser", new Vector3(s * face, 0f, 4.5f), fromEastFace, 0.045f, SurfaceMaterial.SafetyRed);
+                var fire = RoomInfrastructure.Riser(pipes, "FireWaterRiser", new Vector3(s * face, 0f, 4.5f), fromEastFace, RoomPipes.FireRadius, SurfaceMaterial.SafetyRed);
                 const float hydrantZ = 3.3f;
                 GrayboxPropsTool.Place(GrayboxProp.HydrantCabinet, safety, new Vector3(s * face, 0f, hydrantZ), westFacing);
-                GrayboxUtility.CreatePipe("HydrantBranch", pipes, fire + Vector3.up * 1.25f, new Vector3(fire.x, 1.25f, hydrantZ + 0.325f), 0.025f, SurfaceMaterial.SafetyRed);
+                RoomPipes.Pipe(pipes, "HydrantBranch", fire + Vector3.up * 1.25f, new Vector3(fire.x, 1.25f, hydrantZ + 0.325f), RoomPipes.FireRadius, SurfaceMaterial.SafetyRed);
                 GrayboxPropsTool.Place(GrayboxProp.FireExtinguisher, safety, new Vector3(-s * face, 0f, 3.6f), eastFacing);
                 GrayboxPropsTool.Place(GrayboxProp.FireCallPoint, safety, new Vector3(-s * face, GrayboxPropsTool.CallPointHeight, 4.3f), eastFacing);
-                GrayboxPropsTool.Place(GrayboxProp.SmokeDetector, ceiling, new Vector3(0f, Ceiling, 2.4f), 0f, "SmokeDetector");
+                if (detectorInArm)
+                {
+                    GrayboxPropsTool.Place(GrayboxProp.SmokeDetector, ceiling, new Vector3(0f, Ceiling, 2.4f), 0f, "SmokeDetector");
+                }
             }
             else if (index == 1)
             {
-                RoomInfrastructure.Riser(pipes, "WaterRiser", new Vector3(-s * face, 0f, 4.6f), fromWestFace, 0.025f, SurfaceMaterial.PipeWater, 1.2f, SurfaceMaterial.PipeWater);
-                RoomInfrastructure.Riser(pipes, "GasRiser", new Vector3(-s * face, 0f, 2.3f), fromWestFace, 0.02f, SurfaceMaterial.PipeGas, 1.4f, SurfaceMaterial.PipeGas);
+                RoomInfrastructure.Riser(pipes, "WaterRiser", new Vector3(-s * face, 0f, 4.6f), fromWestFace, RoomPipes.NarrowRadius, SurfaceMaterial.PipeWater, 1.2f);
+                RoomInfrastructure.Riser(pipes, "GasRiser", new Vector3(-s * face, 0f, 2.3f), fromWestFace, RoomPipes.NarrowRadius, SurfaceMaterial.PipeGas, 1.4f);
                 RoomInfrastructure.WiredOutlet(power, "Outlets", new Vector3(-s * face, 0f, 3.45f), fromWestFace);
-            }
-            if (last)
-            {
-                GrayboxPropsTool.Place(GrayboxProp.EmergencyLight, safety, new Vector3(-s * face, EmergencyLightHeight, 5.2f), eastFacing);
             }
         }
 
         /// <summary>
-        /// Ceiling domes by the central light, on tile centers: two at a crossing or a T-junction (each looking along two
-        /// arms), one in every other corridor shape.
+        /// One ceiling dome in the middle of a crossing, a T-junction or a corner, looking along the arms it watches
+        /// (both arms of a corner). Straight corridors, dead ends and the lift end have no camera.
         /// </summary>
         private static void PlaceCorridorCameras(Transform cameras, RoomType type)
         {
-            void Dome(float x, float z, float yaw, string name) =>
-                GrayboxPropsTool.Place(GrayboxProp.SecurityDome, cameras, new Vector3(x, Ceiling, z), yaw, name);
-
+            float yaw;
             switch (type)
             {
-                case RoomType.Corridor:
-                    Dome(0.6f, 0.6f, 225f, "SecurityDome_NE");
-                    Dome(-0.6f, -0.6f, 45f, "SecurityDome_SW");
-                    break;
-                case RoomType.CorridorT:
-                    Dome(-0.6f, 0.6f, 135f, "SecurityDome_NW");
-                    Dome(0.6f, 0.6f, 225f, "SecurityDome_NE");
-                    break;
-                case RoomType.CorridorStraight:
-                    Dome(0.6f, 0.6f, 180f, "SecurityDome");
-                    break;
-                default:
-                    Dome(-0.6f, 0.6f, type == RoomType.CorridorCorner ? 135f : 180f, "SecurityDome");
-                    break;
+                case RoomType.Corridor: yaw = 0f; break;
+                case RoomType.CorridorT: yaw = 180f; break;
+                case RoomType.CorridorCorner: yaw = 135f; break;
+                default: return;
             }
+            GrayboxPropsTool.Place(GrayboxProp.SecurityDome, cameras, new Vector3(0f, Ceiling, 0f), yaw, "SecurityDome");
         }
 
         /// <summary>A group turned so that content authored for the north side ends up on <paramref name="side"/>.</summary>
@@ -661,143 +774,24 @@ namespace ColdShutdown.Editor
             return group;
         }
 
-        // ---------------------------------------------------------------- office (big room, doors south and west)
-
-        /// <summary>
-        /// Full-size office, doors on its south and west sides (the walkways meet in the middle). Two designs; layouts 3
-        /// and 4 are mirrored across the diagonal, which swaps the two door sides.
-        /// Design 1: a glazed meeting room in the north-east (table for six, wall TV and whiteboard at the same height);
-        /// a cluster of four desks at right angles to the north wall on the parapet trunking with a printer and filing
-        /// cabinets beside it; the coffee corner (kitchenette, fridge, standing table) on the east wall; two desks back to
-        /// back in the south-east with filing cabinets on the south wall; a huddle table, the terminal and a printer in
-        /// the south-west.
-        /// Design 2: an open meeting area in the north-west (table for six, TV on the north wall, whiteboard on the west
-        /// wall); the coffee corner on the north wall in the north-east with filing cabinets on the east wall; a bench of
-        /// four desks in the south-east and a touchdown desk on the east wall; the terminal, a printer and filing cabinets
-        /// in the south-west.
-        /// </summary>
-        private static void DressOffice(Transform dressing, Transform cameras, int design)
-        {
-            var furniture = GrayboxUtility.CreateGroup("Furniture", dressing);
-            var details = GrayboxUtility.CreateGroup("Details", dressing);
-            var power = GrayboxUtility.CreateGroup("PowerAndData", dressing);
-            var safety = GrayboxUtility.CreateGroup("Safety", dressing);
-            var ceiling = GrayboxUtility.CreateGroup("Ceiling", dressing);
-
-            if (design == 0)
-            {
-                // NE: glazed meeting room on the grid lines at 1.5 m, its entrance on the west side by the office.
-                const float glass = 1.5f;
-                var meeting = GrayboxUtility.CreateGroup("MeetingRoom", furniture);
-                GlassWall(meeting, "Glass_W", new Vector3(glass, 0f, glass + 1.0f), new Vector3(glass, 0f, Wall));
-                GlassWall(meeting, "Glass_S", new Vector3(glass, 0f, glass), new Vector3(Wall, 0f, glass));
-                MeetingTable(meeting, details, new Vector3(3.65f, 0f, 3.65f), 0f, 3);
-                Put(GrayboxProp.WallTv, meeting, Wall, 0f, 3.65f, 270f);
-                Put(GrayboxProp.Whiteboard, meeting, 3.65f, 0f, Wall, 180f);
-                Put(GrayboxProp.PowerSocket, power, Wall, OutletHeight, 2.6f, 270f, "PowerSocket_Meeting");
-                Put(GrayboxProp.DataSocket, power, Wall, OutletHeight, 2.85f, 270f, "DataSocket_Meeting");
-
-                // NW: four desks at right angles to the north wall, fed by the parapet trunking; printer and cabinets east of them.
-                DeskCluster(furniture, details, power, -3.0f, 3.2f, 4.8f, "NW", new[] { false, true, true, false });
-                ParapetTrunking(power, -Wall, -1.4f, Wall, new[] { -3.6f, -2.4f });
-                Put(GrayboxProp.Printer, furniture, 0f, 0f, Wall - 0.325f, 180f, "Printer_N");
-                Put(GrayboxProp.PowerSocket, power, 0.5f, OutletHeight, Wall, 180f, "PowerSocket_Printer_N");
-                CabinetRow(furniture, details, "N", new[] { 0.6f, 1.05f }, x => new Vector3(x, 0f, Wall - 0.3f), 180f);
-
-                // East: the coffee corner, a standing table in front of it.
-                Kitchenette(furniture, details, power, new Vector3(Wall - 0.3f, 0f, -0.2f), 270f);
-                Put(GrayboxProp.Fridge, furniture, Wall - 0.345f, 0f, 1.05f, 270f);
-                StandingTable(furniture, details, new Vector3(3.6f, 0f, 0f));
-
-                // SE: two desks back to back, filing cabinets on the south wall.
-                PlaceDesk(furniture, details, power, new Vector3(3.9f, 0f, -2.4f), 0f, "SE1", true, true);
-                PlaceDesk(furniture, details, power, new Vector3(3.9f, 0f, -3.2f), 180f, "SE2", false, true);
-                CabinetRow(furniture, details, "S", new[] { 3.5f, 3.95f, 4.4f, 4.85f, 5.3f }, x => new Vector3(x, 0f, -Wall + 0.3f), 0f);
-
-                // SW: a huddle table for four by the terminal, a printer on the west wall.
-                DressTerminalOutlets(power, -4.55f, -Wall, 0f);
-                MeetingTable(furniture, details, new Vector3(-3.6f, 0f, -2.9f), 0f, 2, "Huddle");
-                Put(GrayboxProp.Printer, furniture, -Wall + 0.325f, 0f, -4.4f, 90f, "Printer_W");
-                Put(GrayboxProp.PowerSocket, power, -Wall, OutletHeight, -3.9f, 90f, "PowerSocket_Printer_W");
-
-                Put(GrayboxProp.FireExtinguisher, safety, -Wall, 0f, -3.2f, 90f);
-                Put(GrayboxProp.FireCallPoint, safety, -Wall, GrayboxPropsTool.CallPointHeight, 3.3f, 90f);
-
-                PutLongFitting(GrayboxProp.LedPanel1200, ceiling, (3.6f, 3.9f), (-3.0f, 3.3f), (-3.0f, 4.5f), (0f, 3.3f), (3.6f, -0.3f), (3.6f, -2.7f), (-3.6f, -2.7f));
-                PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (-1.8f, 4.8f), (2.4f, 4.8f), (2.4f, -1.8f), (-2.4f, -1.8f));
-                PutOnCeiling(GrayboxProp.SmokeDetector, ceiling, (-1.2f, 2.4f), (3.0f, 2.4f), (1.8f, -2.4f));
-                PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (-4.2f, 2.4f), (4.8f, 2.4f), (2.4f, -4.8f), (-2.4f, -4.8f));
-                Put(GrayboxProp.SecurityDome, cameras, -5.4f, Ceiling, 5.4f, 135f, "SecurityDome_NW");
-                Put(GrayboxProp.SecurityDome, cameras, 5.4f, Ceiling, -5.4f, 315f, "SecurityDome_SE");
-            }
-            else
-            {
-                // NW: an open meeting area, the TV on the north wall and the whiteboard on the west wall at the same height.
-                MeetingTable(furniture, details, new Vector3(-3.0f, 0f, 3.7f), 0f, 3);
-                Put(GrayboxProp.WallTv, furniture, -3.0f, 0f, Wall, 180f);
-                Put(GrayboxProp.Whiteboard, furniture, -Wall, 0f, 3.7f, 90f);
-                Put(GrayboxProp.PowerSocket, power, -2.0f, OutletHeight, Wall, 180f, "PowerSocket_Meeting");
-                Put(GrayboxProp.DataSocket, power, -1.75f, OutletHeight, Wall, 180f, "DataSocket_Meeting");
-
-                // NE: the coffee corner on the north wall, a standing table, filing cabinets on the east wall.
-                Kitchenette(furniture, details, power, new Vector3(3.1f, 0f, Wall - 0.3f), 180f);
-                Put(GrayboxProp.Fridge, furniture, 4.45f, 0f, Wall - 0.345f, 180f);
-                StandingTable(furniture, details, new Vector3(3.1f, 0f, 3.6f));
-                CabinetRow(furniture, details, "E", new[] { 2.2f, 2.65f, 3.1f, 3.55f }, z => new Vector3(Wall - 0.3f, 0f, z), 270f);
-
-                // SE: a bench of four desks (two pairs back to back), a touchdown desk on the east wall.
-                foreach (var (x, suffix) in new[] { (2.6f, "1"), (4.2f, "2") })
-                {
-                    PlaceDesk(furniture, details, power, new Vector3(x, 0f, -2.2f), 0f, $"Bench{suffix}N", suffix == "1", true);
-                    PlaceDesk(furniture, details, power, new Vector3(x, 0f, -3.0f), 180f, $"Bench{suffix}S", suffix == "2", true);
-                }
-                PlaceDesk(furniture, details, power, new Vector3(Wall - 0.4f, 0f, 0.4f), 270f, "Touchdown", false, false);
-                Put(GrayboxProp.PowerSocket, power, Wall, OutletHeight, -0.6f, 270f, "PowerSocket_Touchdown");
-                Put(GrayboxProp.DataSocket, power, Wall, OutletHeight, -0.85f, 270f, "DataSocket_Touchdown");
-
-                // SW: the terminal, a printer on the south wall, filing cabinets on the west wall.
-                DressTerminalOutlets(power, -4.55f, -Wall, 0f);
-                Put(GrayboxProp.Printer, furniture, -5.0f, 0f, -Wall + 0.325f, 0f, "Printer_S");
-                Put(GrayboxProp.PowerSocket, power, -4.5f, OutletHeight, -Wall, 0f, "PowerSocket_Printer_S");
-                CabinetRow(furniture, details, "W", new[] { -3.4f, -3.85f }, z => new Vector3(-Wall + 0.3f, 0f, z), 90f);
-
-                Put(GrayboxProp.FireExtinguisher, safety, -3.0f, 0f, -Wall, 0f);
-                Put(GrayboxProp.FireCallPoint, safety, -Wall, GrayboxPropsTool.CallPointHeight, -3.0f, 90f);
-
-                PutLongFitting(GrayboxProp.LedPanel1200, ceiling, (-3.0f, 3.9f), (3.0f, 3.9f), (3.6f, -2.7f), (-3.6f, -3.9f), (4.8f, 0.3f));
-                PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (0f, 2.4f));
-                PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (-1.2f, 4.8f), (1.8f, 4.8f), (2.4f, -4.8f), (-1.8f, -4.2f));
-                PutOnCeiling(GrayboxProp.SmokeDetector, ceiling, (-1.8f, 1.8f), (1.8f, -1.2f), (-2.4f, -2.4f));
-                PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (-4.8f, 2.4f), (2.4f, 2.4f), (1.2f, -4.8f), (-2.4f, -4.8f));
-                Put(GrayboxProp.SecurityDome, cameras, -5.4f, Ceiling, -5.4f, 45f, "SecurityDome_SW");
-                Put(GrayboxProp.SecurityDome, cameras, 5.4f, Ceiling, 5.4f, 225f, "SecurityDome_NE");
-            }
-
-            // Both doors: a light switch beside each (on the side away from the door's reader), an emergency light.
-            Put(GrayboxProp.LightSwitch, safety, -2.85f, GrayboxPropsTool.LightSwitchHeight, -Wall, 0f, "LightSwitch_S");
-            Put(GrayboxProp.LightSwitch, safety, -Wall, GrayboxPropsTool.LightSwitchHeight, 2.85f, 90f, "LightSwitch_W");
-            Put(GrayboxProp.EmergencyLight, safety, -Wall, EmergencyLightHeight, 4.8f, 90f);
-            // Sprinklers 4.2 m apart, 1.6 m from the walls (light hazard).
-            PutOnCeiling(GrayboxProp.Sprinkler, ceiling, Lattice(new[] { -4.2f, 0f, 4.2f }, new[] { -4.2f, 0f, 4.2f }));
-        }
-
         // ---------------------------------------------------------------- small rooms (6 x 6 m by the south door)
 
         /// <summary>
         /// What every small room has, placed the same way: four sprinklers (2.4 m apart across, 3 m along the room, at most
         /// 2.2 m from a wall), one smoke detector, a ceiling dome in the corner by the door looking in, the light switch on
-        /// the west wall beside the door, an emergency light on the west wall, and the extinguisher and the call point on
+        /// the west wall beside the door, and the extinguisher and the call point on
         /// the east wall by the door (west if <paramref name="extinguisherWest"/>).
         /// </summary>
-        private static void SmallRoomBasics(Transform dressing, Transform cameras, (float x, float z) detector, bool extinguisherWest = false)
+        private static void SmallRoomBasics(Transform dressing, Transform cameras, (float x, float z) detector, bool extinguisherWest = false, bool switchEast = false)
         {
             var safety = GrayboxUtility.CreateGroup("Safety", dressing);
             var ceiling = dressing.Find("Ceiling") ?? GrayboxUtility.CreateGroup("Ceiling", dressing);
-            PutOnCeiling(GrayboxProp.Sprinkler, ceiling, (-1.2f, -0.6f), (1.2f, -0.6f), (-1.2f, -3.6f), (1.2f, -3.6f));
+            // At the corners of the 3 x 3 tiles around the room's middle tile (every other tile), symmetric about the center (0, -3).
+            PutOnCeiling(GrayboxProp.Sprinkler, ceiling, (-1.2f, -1.8f), (1.2f, -1.8f), (-1.2f, -4.2f), (1.2f, -4.2f));
             PutOnCeiling(GrayboxProp.SmokeDetector, ceiling, detector);
             Put(GrayboxProp.SecurityDome, cameras, 2.4f, Ceiling, -5.4f, 315f, "SecurityDome");
-            Put(GrayboxProp.LightSwitch, safety, -Side, GrayboxPropsTool.LightSwitchHeight, -5.6f, 90f, "LightSwitch");
-            Put(GrayboxProp.EmergencyLight, safety, -Side, EmergencyLightHeight, -3.0f, 90f);
+            if (switchEast) Put(GrayboxProp.LightSwitch, safety, Side, GrayboxPropsTool.LightSwitchHeight, -5.7f, 270f, "LightSwitch");
+            else Put(GrayboxProp.LightSwitch, safety, -Side, GrayboxPropsTool.LightSwitchHeight, -5.6f, 90f, "LightSwitch");
             float x = extinguisherWest ? -Side : Side;
             float yaw = extinguisherWest ? 90f : 270f;
             Put(GrayboxProp.FireExtinguisher, safety, x, 0f, -5.3f, yaw);
@@ -805,12 +799,29 @@ namespace ColdShutdown.Editor
         }
 
         /// <summary>
-        /// Small office, 6 x 6 m. Design 1: two desks facing the west wall, the coffee corner on the back wall with a
-        /// standing table, a printer and filing cabinets on the east wall, the terminal on the west wall by the door.
-        /// Design 2: a meeting table for four at right angles to the TV on the back wall, two desks facing the east wall,
-        /// filing cabinets on the east wall, a printer and the terminal on the west wall.
+        /// The suspended ceiling of the small offices and the security office, built like the storage room's: two 1x1 (600 mm)
+        /// LED panels on the axis of the air unit (the door axis), in line with the sprinkler rows, the air diffuser in the middle of the room and, diagonally beside it, one loudspeaker and the smoke detector
+        /// (<see cref="SmallRoomDetector"/>). The camera sits in the right-hand corner by the door
+        /// (<see cref="SmallRoomBasics"/>).
         /// </summary>
-        private static void DressSmallOffice(Transform dressing, Transform cameras, int design)
+        private static void SmallRoomCeiling(Transform ceiling)
+        {
+            PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (0f, -1.8f), (0f, -4.2f));
+            PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (0f, -3.0f));
+            PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (0.6f, -2.4f));
+        }
+
+        private static readonly (float x, float z) SmallRoomDetector = (-0.6f, -3.6f);
+
+        /// <summary>
+        /// Small office, 6 x 6 m, with the office props and still room to walk. Back (north) wall, opposite the door: the wall TV centred in the free
+        /// part of the wall (between the west wall and the coffee corner) and the meeting table centred on the same axis, turned 90 degrees (its short end
+        /// towards the TV, a few centimetres from the wall), with a chair on each long side; the coffee
+        /// corner (kitchenette, fridge in the corner) in the north-east corner. West wall: the desk with two monitors, keyboard, mouse and a photo frame, as near
+        /// the door wall as the lockers of the security office (0.95 m from it), beside the terminal in the corner. East wall, the same distance from the door wall:
+        /// two filing cabinets and the printer with its socket (a few centimetres between them). The walkway from the door stays free.
+        /// </summary>
+        private static void DressSmallOffice(Transform dressing, Transform cameras)
         {
             var furniture = GrayboxUtility.CreateGroup("Furniture", dressing);
             var details = GrayboxUtility.CreateGroup("Details", dressing);
@@ -818,61 +829,53 @@ namespace ColdShutdown.Editor
             var ceiling = GrayboxUtility.CreateGroup("Ceiling", dressing);
             float back = RoomContract.SmallRoomBackWall;
 
-            if (design == 0)
-            {
-                PlaceDesk(furniture, details, power, new Vector3(-Side + 0.4f, 0f, -0.9f), 90f, "W1", false, false);
-                PlaceDesk(furniture, details, power, new Vector3(-Side + 0.4f, 0f, -2.6f), 90f, "W2", true, false);
-                Put(GrayboxProp.PowerSocket, power, -Side, OutletHeight, -1.65f, 90f, "PowerSocket_Desks");
-                Put(GrayboxProp.DataSocket, power, -Side, OutletHeight, -1.9f, 90f, "DataSocket_Desks");
+            // North-east corner: the coffee corner, the fridge in the corner.
+            const float counterX = 1.15f;
+            Kitchenette(furniture, details, power, new Vector3(counterX, 0f, back - 0.3f), 180f);
+            Put(GrayboxProp.Fridge, furniture, 2.45f, 0f, back - 0.345f, 180f);
 
-                Kitchenette(furniture, details, power, new Vector3(1.0f, 0f, back - 0.3f), 180f);
-                Put(GrayboxProp.Fridge, furniture, 2.3f, 0f, back - 0.345f, 180f);
-                StandingTable(furniture, details, new Vector3(1.0f, 0f, -1.9f));
+            // The free wall: from the west wall to where the kitchenette's cabinets start (counter 1.8 m wide, centred on counterX).
+            float freeFrom = -Side;
+            float freeTo = counterX - 0.9f;
+            float axis = (freeFrom + freeTo) / 2f;
+            Put(GrayboxProp.WallTv, details, axis, 0f, back, 180f);
+            // The table (1.8 x 0.9 m) is turned 90 degrees: its short end stands 5 cm from the wall under the TV.
+            const float tableGap = 0.05f;
+            MeetingTable(furniture, details, new Vector3(axis, 0f, back - tableGap - 0.9f), 90f, 2);
 
-                Put(GrayboxProp.Printer, furniture, Side - 0.325f, 0f, -3.0f, 270f);
-                Put(GrayboxProp.PowerSocket, power, Side, OutletHeight, -2.5f, 270f, "PowerSocket_Printer");
-                CabinetRow(furniture, details, "E", new[] { -3.65f, -4.1f }, z => new Vector3(Side - 0.3f, 0f, z), 270f);
-                DressTerminalOutlets(power, -Side, -5.2f, 90f);
+            // West wall: the desk with two monitors, 0.95 m from the door wall (the terminal's space is in the corner, 0.15 m clear of it).
+            var desk = new Vector3(-Side + 0.4f, 0f, -Side * 2f + SecurityLockerGap + 0.8f);
+            PlaceDesk(furniture, details, power, desk, 90f, "W1", true, false);
+            var top = desk + Vector3.up * GrayboxPropsTool.DeskHeight;
+            var turn = Quaternion.Euler(0f, 90f, 0f);
+            Put(GrayboxProp.PhotoFrame, details, top + turn * new Vector3(0.66f, 0f, -0.2f), 78f, "PhotoFrame_W1");
+            Put(GrayboxProp.Mug, details, top + turn * new Vector3(-0.66f, 0f, 0.15f), 90f, "Mug_W1");
+            DressTerminalOutlets(power, -Side, -4.97f, 90f);
 
-                PutLongFitting(GrayboxProp.LedPanel1200, ceiling, (-1.8f, -1.5f), (1.2f, -1.5f), (0f, -4.5f));
-                PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (1.8f, -3.6f));
-                PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (0f, -1.2f));
-                PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (0f, -3.0f));
-                SmallRoomBasics(dressing, cameras, (0f, -2.4f));
-            }
-            else
-            {
-                MeetingTable(furniture, details, new Vector3(-0.9f, 0f, -2.3f), 90f, 2);
-                Put(GrayboxProp.WallTv, furniture, -0.9f, 0f, back, 180f);
-                Put(GrayboxProp.PowerSocket, power, -0.1f, OutletHeight, back, 180f, "PowerSocket_Tv");
-                Put(GrayboxProp.DataSocket, power, 0.15f, OutletHeight, back, 180f, "DataSocket_Tv");
+            // East wall, from the same distance: two filing cabinets, a small gap, the printer and its socket.
+            float start = -Side * 2f + SecurityLockerGap;
+            CabinetRow(furniture, details, "E", new[] { start + 0.225f, start + 0.675f }, z => new Vector3(Side - 0.3f, 0f, z), 270f);
+            // A few centimetres between the cabinets and the printer, as in a real office.
+            const float printerGap = 0.04f;
+            float printerZ = start + 0.9f + printerGap + 0.3f;
+            Put(GrayboxProp.Printer, furniture, Side - 0.325f, 0f, printerZ, 270f);
+            Put(GrayboxProp.PowerSocket, power, Side, OutletHeight, printerZ + 0.375f, 270f, "PowerSocket_Printer");
 
-                PlaceDesk(furniture, details, power, new Vector3(Side - 0.4f, 0f, -0.9f), 270f, "E1", true, false);
-                PlaceDesk(furniture, details, power, new Vector3(Side - 0.4f, 0f, -2.6f), 270f, "E2", false, false);
-                Put(GrayboxProp.PowerSocket, power, Side, OutletHeight, -1.65f, 270f, "PowerSocket_Desks");
-                Put(GrayboxProp.DataSocket, power, Side, OutletHeight, -1.9f, 270f, "DataSocket_Desks");
-                CabinetRow(furniture, details, "E", new[] { -3.7f, -4.15f }, z => new Vector3(Side - 0.3f, 0f, z), 270f);
-
-                Put(GrayboxProp.Printer, furniture, -Side + 0.325f, 0f, -3.6f, 90f);
-                Put(GrayboxProp.PowerSocket, power, -Side, OutletHeight, -3.1f, 90f, "PowerSocket_Printer");
-                DressTerminalOutlets(power, -Side, -5.2f, 90f);
-
-                PutLongFitting(GrayboxProp.LedPanel1200, ceiling, (-0.6f, -2.1f), (2.4f, -1.5f), (0f, -4.5f));
-                PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (-1.8f, -4.2f));
-                PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (0.6f, -1.2f));
-                PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (-1.8f, -1.2f));
-                SmallRoomBasics(dressing, cameras, (0.6f, -3.0f));
-            }
+            SmallRoomCeiling(ceiling);
+            SmallRoomBasics(dressing, cameras, SmallRoomDetector, false, true);
         }
 
+        /// <summary>Distance from the door wall's inner face to the nearest edge of the security office's lockers (and of the office's cabinets and desk): 0.95 m.</summary>
+        private const float SecurityLockerGap = 0.95f;
+
         /// <summary>
-        /// Security office, 6 x 6 m: the video wall of 2 x 4 screens across the whole back wall (Create Graybox Rooms), two
+        /// Security office, 6 x 6 m: the video wall of 2 x 4 screens across the whole back wall (<see cref="GrayboxRoomsTool"/>), two
         /// desks with two monitors each facing it, the compute and JBOD rack slots on a side wall and the terminal by the
-        /// door; nothing else but, in design 1, lockers and a bench on the east wall, and in design 2 the coffee corner
+        /// door; nothing else but lockers and a bench on the east wall
         /// on the west wall (the racks and the terminal then stand on the east wall). Few lights, so the screens stay
         /// readable.
         /// </summary>
-        private static void DressSecurityOffice(Transform dressing, Transform cameras, int design)
+        private static void DressSecurityOffice(Transform dressing, Transform cameras)
         {
             var furniture = GrayboxUtility.CreateGroup("Furniture", dressing);
             var details = GrayboxUtility.CreateGroup("Details", dressing);
@@ -880,7 +883,8 @@ namespace ColdShutdown.Editor
             var ceiling = GrayboxUtility.CreateGroup("Ceiling", dressing);
             float back = RoomContract.SmallRoomBackWall;
 
-            foreach (var (x, suffix) in new[] { (-0.85f, "1"), (0.85f, "2") })
+            // The two consoles stand 2 mm apart (their tops are 1.6 m wide).
+            foreach (var (x, suffix) in new[] { (-0.801f, "1"), (0.801f, "2") })
             {
                 PlaceDesk(furniture, details, power, new Vector3(x, 0f, -1.9f), 180f, $"Console{suffix}", true, true);
             }
@@ -893,30 +897,21 @@ namespace ColdShutdown.Editor
             }
 
             // Outlets for the two racks, beside them on their wall.
-            float rackSide = design == 0 ? -1f : 1f;
-            float rackYaw = design == 0 ? 90f : 270f;
-            Put(GrayboxProp.PowerSocket, power, rackSide * Side, OutletHeight, -3.05f, rackYaw, "PowerSocket_Racks");
-            Put(GrayboxProp.DataSocket, power, rackSide * Side, OutletHeight, -2.8f, rackYaw, "DataSocket_Racks");
-            DressTerminalOutlets(power, rackSide * Side, design == 0 ? -5.2f : -5.45f, rackYaw);
+            float rackSide = -1f;
+            float rackYaw = 90f;
+            Put(GrayboxProp.PowerSocket, power, rackSide * Side, OutletHeight, -3.45f, rackYaw, "PowerSocket_Racks");
+            Put(GrayboxProp.DataSocket, power, rackSide * Side, OutletHeight, -3.2f, rackYaw, "DataSocket_Racks");
+            DressTerminalOutlets(power, rackSide * Side, -4.97f, rackYaw);
 
-            if (design == 0)
+            // The changing corner on the east wall, as near the door wall as the extinguisher corner allows (0.3 m clear of it): two lockers and the bench in front.
+            foreach (float z in new[] { -3.95f, -4.55f })
             {
-                // The changing corner: lockers on the east wall, a bench in front of them.
-                foreach (float z in new[] { -3.3f, -3.7f, -4.1f })
-                {
-                    Put(GrayboxProp.Locker, furniture, Side - 0.25f, 0f, z, 270f, $"Locker_{z:0.0}");
-                }
-                Put(GrayboxProp.LockerBench, furniture, 1.9f, 0f, -3.7f, 90f);
+                Put(GrayboxProp.Locker, furniture, Side - 0.25f, 0f, z, 270f, $"Locker_{z:0.0}");
             }
-            else
-            {
-                Kitchenette(furniture, details, power, new Vector3(-Side + 0.3f, 0f, -3.8f), 90f);
-            }
+            Put(GrayboxProp.LockerBench, furniture, 1.9f, 0f, -4.25f, 90f);
 
-            PutOnCeiling(GrayboxProp.LedPanel600, ceiling, (-1.8f, -3.0f), (1.8f, -3.0f), (0f, -1.2f), (0f, -4.8f));
-            PutOnCeiling(GrayboxProp.CeilingDiffuser, ceiling, (0f, -3.0f));
-            PutOnCeiling(GrayboxProp.CeilingSpeaker, ceiling, (-0.6f, -4.2f));
-            SmallRoomBasics(dressing, cameras, (0.6f, -2.4f), design == 1);
+            SmallRoomCeiling(ceiling);
+            SmallRoomBasics(dressing, cameras, SmallRoomDetector, false, true);
         }
 
         /// <summary>
@@ -951,7 +946,7 @@ namespace ColdShutdown.Editor
             {
                 foreach (int side in new[] { -1, 1 })
                 {
-                    var position = new Vector3(x + side * 0.4f, 0f, z);
+                    var position = new Vector3(x + side * 0.4015f, 0f, z);
                     float yaw = side < 0 ? 270f : 90f;
                     PlaceDesk(furniture, details, power, position, yaw, $"{name}{i + 1}", dual[i], z == z0);
                     var turn = Quaternion.Euler(0f, yaw, 0f);
@@ -978,15 +973,17 @@ namespace ColdShutdown.Editor
 
         /// <summary>
         /// Combined power and data trunking at desk height along a north-facing wall (at <paramref name="wallZ"/>): it
-        /// starts at the west wall, runs east to <paramref name="riseX"/> and rises into the ceiling there, so both ends
+        /// starts at the west wall, runs east to <paramref name="riseX"/> and turns up into the ceiling there in a mitred corner, so both ends
         /// are closed. A power and a data outlet at each of <paramref name="outlets"/>.
         /// </summary>
         private static void ParapetTrunking(Transform power, float fromX, float riseX, float wallZ, float[] outlets)
         {
             var south = new Vector3(0f, 0f, -1f);
             float front = wallZ - GrayboxPropsTool.TrunkingDepth;
-            Trunking(power, "ParapetTrunking", new Vector3(fromX, ParapetHeight, wallZ), new Vector3(riseX + GrayboxPropsTool.TrunkingWidth / 2f, ParapetHeight, wallZ), south);
-            Trunking(power, "ParapetTrunking_Rise", new Vector3(riseX, ParapetHeight, wallZ), new Vector3(riseX, Ceiling, wallZ), south);
+            Trunking(power, "ParapetTrunking", new[]
+            {
+                new Vector3(fromX, ParapetHeight, wallZ), new Vector3(riseX, ParapetHeight, wallZ), new Vector3(riseX, Ceiling, wallZ),
+            }, south);
             foreach (float x in outlets)
             {
                 Put(GrayboxProp.PowerSocket, power, x - 0.12f, ParapetHeight, front, 180f, $"PowerSocket_Parapet_{x:0.0}");
@@ -1003,17 +1000,9 @@ namespace ColdShutdown.Editor
             var turn = Quaternion.Euler(0f, yaw, 0f);
             Put(GrayboxProp.CoffeeCounter, furniture, position, yaw);
             Put(GrayboxProp.CoffeeMachine, details, position + turn * GrayboxPropsTool.CounterMachinePosition, yaw);
-            Put(GrayboxProp.Mug, details, position + turn * new Vector3(-0.15f, GrayboxPropsTool.CounterHeight, 0.1f), yaw, "Mug_Counter1");
-            Put(GrayboxProp.Mug, details, position + turn * new Vector3(0.0f, GrayboxPropsTool.CounterHeight, 0.05f), yaw + 40f, "Mug_Counter2");
+            Put(GrayboxProp.Mug, details, position + turn * new Vector3(-0.09f, GrayboxPropsTool.CounterHeight, -0.245f), yaw, "Mug_Counter1");
+            Put(GrayboxProp.Mug, details, position + turn * new Vector3(0.09f, GrayboxPropsTool.CounterHeight, -0.245f), yaw, "Mug_Counter2");
             Put(GrayboxProp.PowerSocket, power, position + turn * new Vector3(-0.55f, 1.15f, -0.3f), yaw, "PowerSocket_Coffee");
-        }
-
-        /// <summary>The standing table of a coffee corner with two mugs on it.</summary>
-        private static void StandingTable(Transform furniture, Transform details, Vector3 position)
-        {
-            Put(GrayboxProp.CoffeeTable, furniture, position);
-            Put(GrayboxProp.Mug, details, position + new Vector3(-0.12f, GrayboxPropsTool.CoffeeTableHeight, 0.08f), 0f, "Mug_Table1");
-            Put(GrayboxProp.Mug, details, position + new Vector3(0.14f, GrayboxPropsTool.CoffeeTableHeight, -0.06f), 120f, "Mug_Table2");
         }
 
         /// <summary>A row of filing cabinets against a wall; every other one has papers on top.</summary>
@@ -1064,34 +1053,6 @@ namespace ColdShutdown.Editor
             Put(GrayboxProp.DataSocket, power, at + along * 0.25f, yaw, "DataSocket_Terminal");
         }
 
-        /// <summary>
-        /// A floor-to-ceiling glass wall between two points on the floor (along X or Z): aluminium head and floor
-        /// tracks, mullions about every metre, glass panes with a collider so nobody walks through.
-        /// </summary>
-        private static void GlassWall(Transform parent, string name, Vector3 from, Vector3 to)
-        {
-            var group = GrayboxUtility.CreateGroup(name, parent);
-            bool alongX = Mathf.Abs(to.x - from.x) > Mathf.Abs(to.z - from.z);
-            var across = alongX ? Vector3.forward : Vector3.right;
-            float top = Ceiling - GrayboxPropsTool.CeilingGridDepth;
-            const float frame = 0.025f;
-            Box("Track_Floor", group, from - across * frame, to + across * frame + Vector3.up * 0.04f, SurfaceMaterial.Metal);
-            Box("Track_Head", group, from - across * frame + Vector3.up * (top - 0.04f), to + across * frame + Vector3.up * top, SurfaceMaterial.Metal);
-            Box("Glass", group, from - across * 0.006f + Vector3.up * 0.04f, to + across * 0.006f + Vector3.up * (top - 0.04f), SurfaceMaterial.Glass, true);
-            float length = (to - from).magnitude;
-            int panes = Mathf.Max(1, Mathf.RoundToInt(length));
-            var along = (to - from).normalized;
-            for (int i = 0; i <= panes; i++)
-            {
-                var at = from + along * (length * i / panes);
-                var half = along * 0.02f;
-                Box($"Mullion_{i}", group, Clamp(at - half, from, to) - across * frame, Clamp(at + half, from, to) + across * frame + Vector3.up * top, SurfaceMaterial.Metal);
-            }
-        }
-
-        private static Vector3 Clamp(Vector3 point, Vector3 a, Vector3 b) =>
-            new Vector3(Mathf.Clamp(point.x, Mathf.Min(a.x, b.x), Mathf.Max(a.x, b.x)), point.y, Mathf.Clamp(point.z, Mathf.Min(a.z, b.z), Mathf.Max(a.z, b.z)));
-
         private static (float x, float z)[] Lattice(float[] xs, float[] zs)
         {
             var points = new List<(float, float)>();
@@ -1108,15 +1069,32 @@ namespace ColdShutdown.Editor
         // ---------------------------------------------------------------- technical rooms (6 x 6 m, one door)
 
         /// <summary>
+        /// The ceiling of the technical rooms (power room, cooling plant, storage room), the same in all three: two LED
+        /// battens on the sprinkler axes (x = ±1.2 m, along the door axis, centered between the two sprinkler rows), and on the
+        /// wall opposite the door two ventilation shaft grilles high up on those same axes. Nothing runs across the ceiling.
+        /// The smoke detector sits in the exact middle of the room (<see cref="TechnicalDetector"/>).
+        /// </summary>
+        private static void TechnicalCeiling(Transform ceiling, Transform air)
+        {
+            foreach (float x in new[] { -1.2f, 1.2f })
+            {
+                Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, -3.0f, 0f, $"Light_{x:0.0}_-3.0");
+                Put(GrayboxProp.WallVentGrille, air, x, HighGrilleHeight, RoomContract.SmallRoomBackWall, 180f, $"ShaftGrille_{(x < 0 ? "W" : "E")}");
+            }
+        }
+
+        /// <summary>The middle of a small room (room-local), where the technical rooms have their smoke detector.</summary>
+        private static readonly (float x, float z) TechnicalDetector = (0f, -3.0f);
+
+        /// <summary>
         /// Electrical switch room, 6 x 6 m, filled with what belongs there and nothing else. Two cast-resin transformers
         /// stand along the side walls in the north half (0.8 m behind them, 1.8 m between their fronts), each behind a
-        /// yellow keep-out line, with cross ventilation (a large intake grille low behind the west one, an exhaust grille
-        /// high on the east wall). On the back wall between them the panel of analog meters for all hall sections. In the
-        /// south half, 1 m in front of the transformers: design 1 two switchgear sections on the west wall and two UPS
-        /// cabinets on the east wall; design 2 two distribution boards on the west wall and the switchgear on the east
-        /// wall. An exposed power tray across the room. LED battens, sprinklers, a detector, a CO2 extinguisher.
+        /// yellow keep-out line (no floor grilles in this room; the two shaft grilles are high on the back wall). On the back wall between
+        /// them the panel of kW meters for all hall sections. In the
+        /// south half, 1 m in front of the transformers: two switchgear sections on the west wall and two UPS
+        /// cabinets on the east wall. An exposed power tray across the room. LED battens, sprinklers, a detector, a CO2 extinguisher.
         /// </summary>
-        private static void DressPowerRoom(Transform dressing, Transform cameras, int design)
+        private static void DressPowerRoom(Transform dressing, Transform cameras)
         {
             var plant = GrayboxUtility.CreateGroup("Plant", dressing);
             var power = GrayboxUtility.CreateGroup("Power", dressing);
@@ -1127,132 +1105,159 @@ namespace ColdShutdown.Editor
             const float transformerZ = -1.6f;
             Put(GrayboxProp.Transformer, plant, -1.5f, 0f, transformerZ, 90f, "Transformer_W");
             Put(GrayboxProp.Transformer, plant, 1.5f, 0f, transformerZ, 270f, "Transformer_E");
-            // Keep-out lines 0.5 m around both enclosures, closed by the walls.
+            // Yellow lines, one exact mesh: the aisle lines (1.4 m either side of the middle, from the door as in the cooling plant) run into the keep-out lines
+            // 0.5 m round both enclosures (the front line along z = -3.1 m, the side line at x = 0.4 m), closed by the walls; nothing overlaps, every corner is square.
+            var lines = new List<(Vector3, Vector3)>();
             foreach (int side in new[] { -1, 1 })
             {
-                string name = side < 0 ? "W" : "E";
-                Marking(markings, $"KeepOut_{name}_Front", new Vector3(side * Side, 0f, -3.1f), new Vector3(side * 0.4f, 0f, -3.1f));
-                Marking(markings, $"KeepOut_{name}_Side", new Vector3(side * 0.4f, 0f, -3.1f), new Vector3(side * 0.4f, 0f, 0f));
+                lines.Add((new Vector3(side * 1.4f, 0f, -2f * Side), new Vector3(side * 1.4f, 0f, -3.1f)));
+                lines.Add((new Vector3(side * Side, 0f, -3.1f), new Vector3(side * 0.4f, 0f, -3.1f)));
+                lines.Add((new Vector3(side * 0.4f, 0f, -3.1f), new Vector3(side * 0.4f, 0f, RoomContract.SmallRoomBackWall)));
             }
-            Put(GrayboxProp.FloorVentGrille, air, -Side, 0f, transformerZ, 90f, "IntakeGrille");
-            Put(GrayboxProp.WallVentGrille, air, Side, HighGrilleHeight, transformerZ, 270f, "ExhaustGrille");
+            PaintedLines(markings, "KeepOut", lines, -Side, Side, -2f * Side, RoomContract.SmallRoomBackWall);
+            TechnicalCeiling(ceiling, air);
 
             Put(GrayboxProp.AnalogMeterPanel, plant, 0f, 0f, RoomContract.SmallRoomBackWall, 180f, "MeterPanel");
 
-            if (design == 0)
+            foreach (float z in new[] { -4.0f, -4.8f })
             {
-                foreach (float z in new[] { -4.0f, -4.8f })
-                {
-                    Put(GrayboxProp.SwitchgearCabinet, plant, -Side + 0.3f, 0f, z, 90f, $"Switchgear_{z:0.0}");
-                }
-                foreach (float z in new[] { -4.0f, -4.6f })
-                {
-                    Put(GrayboxProp.EquipmentCabinet, plant, Side - 0.4f, 0f, z, 270f, $"UpsCabinet_{z:0.0}");
-                }
-                Tray(power, "PowerTray", new Vector3(-Side, 0f, -3.0f), new Vector3(Side, 0f, -3.0f), SurfaceMaterial.Metal, SurfaceMaterial.PowerCable,
-                    new[] { -2.4f, -1.2f, 0f, 1.2f, 2.4f });
-                foreach (var (x, z) in new[] { (0f, -1.6f), (0f, -4.0f), (-1.8f, -4.0f), (1.8f, -4.0f) })
-                {
-                    Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, z, 0f, $"Light_{x:0.0}_{z:0.0}");
-                }
+                Put(GrayboxProp.SwitchgearCabinet, plant, -Side + 0.3f, 0f, z, 90f, $"Switchgear_{z:0.0}");
             }
-            else
+            // Their north edge is 0.5 m from the transformers' front line (z = -3.1), as the switchgear's and the transformers' are.
+            foreach (float z in new[] { -3.9f, -4.5f })
             {
-                foreach (float z in new[] { -4.0f, -4.8f })
-                {
-                    Put(GrayboxProp.ElectricalPanel, power, -Side, 0f, z, 90f, $"DistributionBoard_{z:0.0}");
-                    Put(GrayboxProp.SwitchgearCabinet, plant, Side - 0.3f, 0f, z, 270f, $"Switchgear_{z:0.0}");
-                }
-                Tray(power, "PowerTray", new Vector3(-Side, 0f, -4.4f), new Vector3(Side, 0f, -4.4f), SurfaceMaterial.Metal, SurfaceMaterial.PowerCable,
-                    new[] { -2.4f, -1.2f, 0f, 1.2f, 2.4f });
-                foreach (var (x, z) in new[] { (0f, -1.6f), (-0.9f, -4.0f), (0.9f, -4.0f) })
-                {
-                    Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, z, 0f, $"Light_{x:0.0}_{z:0.0}");
-                }
+                Put(GrayboxProp.EquipmentCabinet, plant, Side - 0.4f, 0f, z, 270f, $"UpsCabinet_{z:0.0}");
             }
+            
 
-            SmallRoomBasics(dressing, cameras, (0.6f, -2.4f));
+            SmallRoomBasics(dressing, cameras, TechnicalDetector);
         }
 
         /// <summary>
-        /// Cooling plant, 6 x 6 m, filled with what belongs there and nothing else: two plate heat exchangers (chilled
-        /// water to the hall's cooling loop, their pipes rising behind them to the ceiling), two circulation pumps with
-        /// risers and thermometers, a chilled-water buffer tank, the panel of analog meters (coolant temperatures and air
-        /// flow), a pair of chilled-water risers on the wall and the supply duct under the slab across the room, with a
-        /// return grille high on the wall. Design 1: exchangers on the back wall, pumps in front of them, the tank by the
-        /// west wall; design 2: exchangers along the side walls, the tank on the back wall between them, the pumps by the
-        /// side walls further south. Plant keeps 1 m between machines and 0.6 m to the walls.
+        /// Cooling plant (HVAC room, 6 x 6 m), a chilled-water plant for the data centre that fills the room except for the 2.4 m aisle
+        /// from the door to the thermometer wall. Everything is piped into the two large plate heat exchangers at the back end of the
+        /// side walls, and every pipe runs along the walls or rises from the floor or ceiling or into a wall, none crosses the room. On one
+        /// side the pump set (two base-mounted pumps with blue motors, their discharge into the exchanger's flow line along the wall and
+        /// the return line down to their suction flanges); on the other the buffer tank, the air handling unit and the expansion vessel,
+        /// tapped into the second exchanger's flow and return lines. The six thermometers on the back wall run into the exchangers' end
+        /// faces. The only gauges are the large ones on that wall and the pumps' thermometers. The pumps are on the east side.
+        /// Nothing stands in the aisle or the door pockets, nor in the extinguisher corner.
         /// </summary>
-        private static void DressHvacRoom(Transform dressing, Transform cameras, int design)
+        private static void DressHvacRoom(Transform dressing, Transform cameras)
         {
             var plant = GrayboxUtility.CreateGroup("Plant", dressing);
             var pipes = GrayboxUtility.CreateGroup("Pipes", dressing);
             var air = GrayboxUtility.CreateGroup("Ventilation", dressing);
+            var markings = GrayboxUtility.CreateGroup("Markings", dressing);
             var ceiling = GrayboxUtility.CreateGroup("Ceiling", dressing);
 
-            void Pump(float x, float z, float yaw, string name)
+            // Yellow lines 1.4 m either side of the middle (clear of the door frame) along the aisle from the door to the thermometer wall: everything between them stays clear.
+            foreach (int side in new[] { -1, 1 })
             {
-                Put(GrayboxProp.CirculationPump, plant, x, 0f, z, yaw, $"Pump_{name}");
-                Pipe($"PumpRiser_{name}", pipes, new Vector3(x, 0.7f, z), new Vector3(x, Ceiling, z), 0.04f, SurfaceMaterial.PipeWater);
-                var front = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
-                Put(GrayboxProp.PipeGauge, pipes, new Vector3(x, 1.5f, z) + front * 0.04f, yaw, $"Thermometer_{name}");
+                Marking(markings, $"KeepClear_{(side < 0 ? "W" : "E")}", new Vector3(side * 1.4f, 0f, -2f * Side), new Vector3(side * 1.4f, 0f, RoomContract.SmallRoomBackWall));
             }
 
-            float riserZ;
-            if (design == 0)
-            {
-                Put(GrayboxProp.PlateHeatExchanger, plant, -1.4f, 0f, -0.9f, 180f, "HeatExchanger_W");
-                Put(GrayboxProp.PlateHeatExchanger, plant, 1.4f, 0f, -0.9f, 180f, "HeatExchanger_E");
-                Pump(-1.4f, -2.4f, 180f, "1");
-                Pump(1.4f, -2.4f, 180f, "2");
-                Put(GrayboxProp.BufferTank, plant, -1.9f, 0f, -4.2f, 90f, "BufferTank");
-                Put(GrayboxProp.AnalogMeterPanel, plant, Side, 0f, -3.6f, 270f, "MeterPanel");
-                riserZ = -4.6f;
-                foreach (var (x, z) in new[] { (0f, -1.6f), (0f, -4.2f), (1.8f, -4.2f) })
-                {
-                    Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, z, 0f, $"Light_{x:0.0}_{z:0.0}");
-                }
-            }
-            else
-            {
-                Put(GrayboxProp.PlateHeatExchanger, plant, -2.0f, 0f, -1.3f, 90f, "HeatExchanger_W");
-                Put(GrayboxProp.PlateHeatExchanger, plant, 2.0f, 0f, -1.3f, 270f, "HeatExchanger_E");
-                Put(GrayboxProp.BufferTank, plant, 0f, 0f, -1.0f, 180f, "BufferTank");
-                Pump(-2.1f, -3.4f, 90f, "1");
-                Pump(2.1f, -3.4f, 270f, "2");
-                Put(GrayboxProp.AnalogMeterPanel, plant, -Side, 0f, -4.6f, 90f, "MeterPanel");
-                riserZ = -4.4f;
-                foreach (var (x, z) in new[] { (0f, -2.0f), (0f, -4.4f), (1.8f, -4.4f) })
-                {
-                    Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, z, 0f, $"Light_{x:0.0}_{z:0.0}");
-                }
-            }
+            const float s = 1f;                               // the side of the pumps: east
+            float pumpSideYaw = s > 0f ? 270f : 90f;          // faces the aisle from that side
+            float otherSideYaw = s > 0f ? 90f : 270f;
+            float wallLine = Side - RoomPipes.WideRadius - 0.04f;
+            float wallP = s * wallLine;                       // axis of the wall pipes on the pump side
+            float wallO = -s * wallLine;                      // ... and on the other side
+            float exchangerX = wallLine - 0.5f;
+            const float laneFlow = 2.62f;
+            const float laneReturn = 2.40f;
+            const float flowZ = -2.00f;                       // where the exchangers' secondary flow and return pipes rise
+            const float returnZ = -2.30f;
+            float wide = RoomPipes.WideRadius;
+            var towardsAisleP = Vector3.left * s;
+            var towardsAisleO = Vector3.right * s;
 
-            // Chilled-water flow and return risers on the east wall, floor to ceiling.
-            Riser(pipes, "ChilledWater_Flow", new Vector3(Side, 0f, riserZ), Vector3.left, 0.05f, SurfaceMaterial.PipeWater, 1.3f);
-            Riser(pipes, "ChilledWater_Return", new Vector3(Side, 0f, riserZ - 0.25f), Vector3.left, 0.05f, SurfaceMaterial.PipeWater, 1.5f);
+            Put(GrayboxProp.CoolingMeterPanel, plant, 0f, 0f, RoomContract.SmallRoomBackWall, 180f, "MeterPanel");
+            Put(s > 0f ? GrayboxProp.PlateHeatExchanger : GrayboxProp.PlateHeatExchangerMirrored, plant, s * exchangerX, 0f, -1.55f, pumpSideYaw, "HeatExchanger_A");
+            Put(s > 0f ? GrayboxProp.PlateHeatExchangerMirrored : GrayboxProp.PlateHeatExchanger, plant, -s * exchangerX, 0f, -1.55f, otherSideYaw, "HeatExchanger_B");
 
-            // The supply duct comes out of the walls under the slab and runs across the room, grilles in its underside.
-            const float ductZ = -3.0f;
-            Box("SupplyDuct", air, new Vector3(-Side, TrayBottom, ductZ - 0.25f), new Vector3(Side, Ceiling - 0.02f, ductZ + 0.25f), SurfaceMaterial.Metal);
-            foreach (float x in new[] { -1.2f, 1.2f })
+            // Pump side: two pumps with the motors to the aisle and the suction flanges to the wall.
+            float[] pumpZ = { -3.4f, -4.2f };
+            float pumpX = s * 2.4f;
+            float flangeX = s * (2.4f + 0.285f);
+            for (int i = 0; i < 2; i++)
             {
-                Box($"DuctGrille_{x:0.0}", air, new Vector3(x - 0.2f, TrayBottom - 0.01f, ductZ - 0.15f), new Vector3(x + 0.2f, TrayBottom, ductZ + 0.15f), SurfaceMaterial.FloorVent);
+                float z = pumpZ[i];
+                Put(GrayboxProp.CirculationPump, plant, pumpX, 0f, z, s > 0f ? 180f : 0f, $"Pump_{i + 1}");
+                // Discharge up to the flow lane, to the wall line (it ends on the header that runs along the wall to the exchanger).
+                PipePath($"Discharge_{i + 1}", pipes, new[] { new Vector3(pumpX, 0.7f, z), new Vector3(pumpX, laneFlow, z), new Vector3(wallP, laneFlow, z) }, wide, SurfaceMaterial.PipeWater);
+                RoomPipes.BallValve(pipes, $"DischargeValve_{i + 1}", new Vector3(pumpX, 1.05f, z), Vector3.up, towardsAisleP, wide);
+                Put(GrayboxProp.PipeGauge, pipes, new Vector3(pumpX, 1.5f, z) + towardsAisleP * wide, pumpSideYaw, $"Thermometer_{i + 1}");
             }
-            Put(GrayboxProp.WallVentGrille, air, -Side, HighGrilleHeight, -2.4f, 90f, "ReturnGrille");
+            // Flow header along the wall from the exchanger to the far pump; return header back from the exchanger, down to the suctions.
+            PipePath("FlowHeader_A", pipes, new[] { new Vector3(wallP, laneFlow, flowZ), new Vector3(wallP, laneFlow, pumpZ[1]) }, wide, SurfaceMaterial.PipeWater);
+            PipePath("ReturnHeader_A", pipes, new[]
+            {
+                new Vector3(wallP, laneReturn, returnZ), new Vector3(wallP, laneReturn, pumpZ[1]), new Vector3(wallP, 0.34f, pumpZ[1]), new Vector3(flangeX, 0.34f, pumpZ[1]),
+            }, wide, SurfaceMaterial.PipeWater);
+            PipePath("ReturnBranch_A", pipes, new[] { new Vector3(wallP, laneReturn, pumpZ[0]), new Vector3(wallP, 0.34f, pumpZ[0]), new Vector3(flangeX, 0.34f, pumpZ[0]) }, wide, SurfaceMaterial.PipeWater);
+            WallClamps("FlowClamps_A", pipes, wallP, laneFlow, flowZ, pumpZ[1], towardsAisleP);
+            WallClamps("ReturnClamps_A", pipes, wallP, laneReturn, returnZ, pumpZ[1], towardsAisleP);
 
-            SmallRoomBasics(dressing, cameras, design == 0 ? (0f, -0.6f) : (0.6f, -0.6f));
+            // The other side: buffer tank, air handling unit and expansion vessel tapped into the second exchanger's lines.
+            float tankX = -s * 2.28f;
+            const float tankZ = -3.12f;
+            Put(GrayboxProp.BufferTank, plant, tankX, 0f, tankZ, otherSideYaw, "BufferTank");
+            var otherTurn = Quaternion.Euler(0f, otherSideYaw, 0f);
+            var tankFlow = new Vector3(tankX, 0f, tankZ) + otherTurn * new Vector3(-0.12f, 0f, 0f);
+            var tankReturn = new Vector3(tankX, 0f, tankZ) + otherTurn * new Vector3(0.12f, 0f, 0f);
+            PipePath("TankFlow", pipes, new[] { new Vector3(tankFlow.x, 2.23f, tankFlow.z), new Vector3(tankFlow.x, laneFlow, tankFlow.z), new Vector3(wallO, laneFlow, tankFlow.z) }, wide, SurfaceMaterial.PipeWater);
+            RoomPipes.BallValve(pipes, "TankFlowValve", new Vector3(tankFlow.x, 2.43f, tankFlow.z), Vector3.up, towardsAisleO, wide);
+            PipePath("TankReturn", pipes, new[] { new Vector3(tankReturn.x, 2.23f, tankReturn.z), new Vector3(tankReturn.x, laneReturn, tankReturn.z), new Vector3(wallO, laneReturn, tankReturn.z) }, wide, SurfaceMaterial.PipeWater);
+
+            const float handlerZ = -3.95f;
+            float handlerX = -s * 2.48f;
+            Put(GrayboxProp.AirHandlerUnit, plant, handlerX, 0f, handlerZ, otherSideYaw, "AirHandlerUnit");
+            var handlerFlow = new Vector3(handlerX, 0f, handlerZ) + otherTurn * new Vector3(-0.2f, 0f, -0.23f);
+            var handlerReturn = new Vector3(handlerX, 0f, handlerZ) + otherTurn * new Vector3(0.2f, 0f, -0.23f);
+            PipePath("HandlerFlow", pipes, new[] { new Vector3(handlerFlow.x, 1.99f, handlerFlow.z), new Vector3(handlerFlow.x, laneFlow, handlerFlow.z), new Vector3(wallO, laneFlow, handlerFlow.z) }, wide, SurfaceMaterial.PipeWater);
+            RoomPipes.BallValve(pipes, "HandlerFlowValve", new Vector3(handlerFlow.x, 2.3f, handlerFlow.z), Vector3.up, towardsAisleO, wide);
+            PipePath("HandlerReturn", pipes, new[] { new Vector3(handlerReturn.x, 1.99f, handlerReturn.z), new Vector3(handlerReturn.x, laneReturn, handlerReturn.z), new Vector3(wallO, laneReturn, handlerReturn.z) }, wide, SurfaceMaterial.PipeWater);
+
+            const float vesselZ = -4.57f;
+            float vesselX = -s * 2.35f;
+            Put(GrayboxProp.ExpansionVessel, plant, vesselX, 0f, vesselZ, otherSideYaw, "ExpansionVessel");
+            var nozzle = new Vector3(vesselX, 0.5f, vesselZ) + otherTurn * new Vector3(0f, 0f, -0.28f);
+            PipePath("VesselReturn", pipes, new[] { new Vector3(wallO, laneReturn, vesselZ), new Vector3(wallO, 0.5f, vesselZ), new Vector3(nozzle.x, 0.5f, vesselZ) }, wide, SurfaceMaterial.PipeWater);
+
+            // Flow and return headers along the wall on the other side.
+            PipePath("FlowHeader_B", pipes, new[] { new Vector3(wallO, laneFlow, flowZ), new Vector3(wallO, laneFlow, handlerFlow.z) }, wide, SurfaceMaterial.PipeWater);
+            PipePath("ReturnHeader_B", pipes, new[] { new Vector3(wallO, laneReturn, returnZ), new Vector3(wallO, laneReturn, vesselZ) }, wide, SurfaceMaterial.PipeWater);
+            WallClamps("FlowClamps_B", pipes, wallO, laneFlow, flowZ, handlerFlow.z, towardsAisleO);
+            WallClamps("ReturnClamps_B", pipes, wallO, laneReturn, returnZ, vesselZ, towardsAisleO);
+
+            TechnicalCeiling(ceiling, air);
+            SmallRoomBasics(dressing, cameras, TechnicalDetector);
+        }
+
+        /// <summary>Blue pipe clamps every metre along a horizontal run on the wall (x = <paramref name="wallX"/>, between two z), at height <paramref name="y"/>.</summary>
+        private static void WallClamps(string name, Transform parent, float wallX, float y, float fromZ, float toZ, Vector3 normal)
+        {
+            var strap = new GrayboxMeshBuilder();
+            var screws = new GrayboxMeshBuilder();
+            float direction = Mathf.Sign(toZ - fromZ);
+            for (float z = fromZ + direction * 0.5f; direction * (toZ - z) > 0.3f; z += direction * 1.0f)
+            {
+                RoomPipes.Clamp(strap, screws, new Vector3(wallX, y, z), Vector3.forward, normal, RoomPipes.WideRadius, 0.04f);
+            }
+            strap.Attach($"{name}_Clamps", parent, SurfaceMaterial.SupportBlue);
+            screws.Attach($"{name}_Screws", parent, SurfaceMaterial.Chrome);
         }
 
         /// <summary>
-        /// Storage room, 6 x 6 m, filled with steel shelving that carries crates, archive boxes and binders, every shelf
+        /// Storage room, 6 x 6 m, filled with galvanised shelving that carries cardboard boxes, every shelf
         /// reachable from an aisle at least 0.9 m wide: a row along the back wall, a row along the west wall, a
-        /// back-to-back double row in the middle (along Z in design 1, along X in design 2) and one unit on the east wall.
+        /// back-to-back double row in the middle (along Z) and one unit on the east wall.
         /// The east wall has the landing of the goods lift (only looks: its solid doors never open) with yellow keep-clear
         /// hatching on the floor in front.
-        /// An exhaust grille high on the back wall, LED battens, sprinklers, a detector, an extinguisher.
+        /// Two shaft grilles high on the back wall, two LED battens, sprinklers, a detector in the middle, an extinguisher.
         /// </summary>
-        private static void DressStorageRoom(Transform dressing, Transform cameras, int design)
+        private static void DressStorageRoom(Transform dressing, Transform cameras)
         {
             var shelving = GrayboxUtility.CreateGroup("Shelving", dressing);
             var details = GrayboxUtility.CreateGroup("Details", dressing);
@@ -1268,7 +1273,7 @@ namespace ColdShutdown.Editor
                 ShelfWithItems(shelving, details, new Vector3(x, 0f, z), yaw, index++);
             }
 
-            foreach (float x in new[] { -2.4f, -1.4f, -0.4f, 0.6f, 1.6f })
+            foreach (float x in new[] { -2f, -1f, 0f, 1f, 2f })
             {
                 Shelf(x, back - half, 180f);
             }
@@ -1276,68 +1281,65 @@ namespace ColdShutdown.Editor
             {
                 Shelf(-Side + half, z, 90f);
             }
-            Shelf(Side - half, -1.0f, 270f);
-            if (design == 0)
+            Shelf(Side - half, -0.9f, 270f);
+            // The double row is centred in the free space between the west row and the start of the keep-clear hatching.
+            float rowX = (-Side + 2f * half + FreightHatchStartX) / 2f;
+            foreach (float z in new[] { -1.9f, -2.9f })
             {
-                foreach (float z in new[] { -1.9f, -2.9f })
-                {
-                    Shelf(-half, z, 270f);
-                    Shelf(half, z, 90f);
-                }
+                Shelf(rowX - half, z, 270f);
+                Shelf(rowX + half, z, 90f);
             }
-            else
-            {
-                foreach (float x in new[] { -0.5f, 0.5f })
-                {
-                    Shelf(x, -1.9f + half, 0f);
-                    Shelf(x, -1.9f - half, 180f);
-                }
-            }
+            
 
             // The goods lift on the east wall and the space in front of it that must stay clear for loading.
             var lift = GrayboxUtility.CreateGroup("FreightLift", dressing);
             Put(GrayboxProp.FreightLift, lift, Side, 0f, FreightLiftZ, 270f, "FreightLift");
             float hatch = GrayboxPropsTool.FreightDoorWidth / 2f + 0.15f;
-            Hatching(markings, "KeepClear_FreightLift", 1.6f, FreightLiftZ - hatch, Side, FreightLiftZ + hatch);
+            Hatching(markings, "KeepClear_FreightLift", FreightHatchStartX, FreightLiftZ - hatch, Side, FreightLiftZ + hatch);
 
-            Put(GrayboxProp.WallVentGrille, air, 0f, HighGrilleHeight, back, 180f, "ExhaustGrille");
-            foreach (var (x, z) in new[] { (-1.5f, -2.0f), (1.5f, -2.0f), (0f, -4.6f) })
-            {
-                Put(GrayboxProp.LedBatten, ceiling, x, Ceiling, z, 0f, $"Light_{x:0.0}_{z:0.0}");
-            }
-            SmallRoomBasics(dressing, cameras, (0f, -0.6f));
+            TechnicalCeiling(ceiling, air);
+            SmallRoomBasics(dressing, cameras, TechnicalDetector);
         }
 
         /// <summary>Room-local Z of the middle of the goods lift door in the storage room (on the east wall).</summary>
         private const float FreightLiftZ = -3.55f;
 
+        /// <summary>Room-local X where the goods lift's keep-clear hatching starts (its edge furthest from the wall).</summary>
+        private const float FreightHatchStartX = 1.6f;
+
         /// <summary>
-        /// A steel shelving unit (1 m wide, its archive boxes built in) with more on its boards: crates on the bottom
-        /// board, binders or a crate on the middle board, and a crate on top of every third unit.
+        /// A galvanised shelving unit (1 m wide) with cardboard boxes on its boards: every board carries one or two of the four box
+        /// kinds, chosen by a fixed pattern from the unit's index so neighbouring units differ.
         /// </summary>
         private static void ShelfWithItems(Transform shelving, Transform details, Vector3 position, float yaw, int index)
         {
             var turn = Quaternion.Euler(0f, yaw, 0f);
             Put(GrayboxProp.Shelf, shelving, position, yaw, $"Shelf_{index + 1}");
             var boards = GrayboxPropsTool.ShelfBoardTops;
-            Put(GrayboxProp.StorageCrate, details, position + turn * new Vector3(-0.25f, boards[0], 0f), yaw, $"StorageCrate_{index + 1}_A");
-            if (index % 2 == 0)
+            var kinds = new[] { GrayboxProp.BoxCartonCube, GrayboxProp.BoxLidFlat, GrayboxProp.BoxLidCube, GrayboxProp.BoxCartonFlat };
+            for (int board = 0; board < boards.Length; board++)
             {
-                Put(GrayboxProp.StorageCrate, details, position + turn * new Vector3(0.24f, boards[0], 0f), yaw, $"StorageCrate_{index + 1}_B");
-                Put(GrayboxProp.Binders, details, position + turn * new Vector3(0f, boards[2], 0f), yaw, $"Binders_{index + 1}");
-            }
-            else
-            {
-                Put(GrayboxProp.StorageCrate, details, position + turn * new Vector3(0.2f, boards[2], 0f), yaw, $"StorageCrate_{index + 1}_C");
-            }
-            if (index % 3 == 0)
-            {
-                Put(GrayboxProp.StorageCrate, details, position + turn * new Vector3(-0.1f, ShelfTop, 0f), yaw, $"StorageCrate_{index + 1}_Top");
+                // Two boxes or one box (left, middle or right), depending on unit and board.
+                int pattern = (index * 3 + board * 5) % 6;
+                if (board == 0 && index % 2 == 0)
+                {
+                    Put(kinds[(index + board) % 4], details, position + turn * new Vector3(-0.25f, boards[board], 0f), yaw, $"Box_{index + 1}_{board + 1}_A");
+                    Put(kinds[(index + board + 1) % 4], details, position + turn * new Vector3(0.27f, boards[board], 0f), yaw, $"Box_{index + 1}_{board + 1}_B");
+                    continue;
+                }
+                // x of the first and the second box: two boxes side by side, or just one somewhere along the board.
+                float[] first = { -0.24f, -0.24f, -0.08f, -0.08f, 0.27f, 0.0f };
+                Put(kinds[(index + board * 2 + pattern) % 4], details, position + turn * new Vector3(first[pattern], boards[board], 0f), yaw, $"Box_{index + 1}_{board + 1}_A");
+                if (pattern == 0 || pattern == 2)
+                {
+                    Put(kinds[(index + board + pattern + 1) % 4], details, position + turn * new Vector3(0.27f, boards[board], 0f), yaw, $"Box_{index + 1}_{board + 1}_B");
+                }
+                else if (pattern == 4)
+                {
+                    Put(kinds[(index + board + 3) % 4], details, position + turn * new Vector3(-0.2f, boards[board], 0f), yaw, $"Box_{index + 1}_{board + 1}_B");
+                }
             }
         }
-
-        /// <summary>Top of the shelving's highest board.</summary>
-        private const float ShelfTop = 1.92f;
 
         private static string Corner(int sx, int sz) => $"{(sz > 0 ? "N" : "S")}{(sx > 0 ? "E" : "W")}";
     }

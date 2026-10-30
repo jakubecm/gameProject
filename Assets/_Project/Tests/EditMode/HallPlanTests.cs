@@ -118,7 +118,7 @@ namespace ColdShutdown.Tests.EditMode
             Assert.GreaterOrEqual(HallContract.HotAisleWidth, 1.2f);
             Assert.AreEqual(HallContract.WallInnerOffset, HallContract.PodOuterZ + HallContract.SideWalkway, 0.001f);
             Assert.GreaterOrEqual(HallContract.AisleWidth, 1.2f, "A cold aisle needs at least two floor tiles");
-            Assert.Greater(HallContract.ContainmentHeight, RoomContract.RackHeight);
+            Assert.GreaterOrEqual(HallContract.ContainmentHeight, RoomContract.RackHeight);
             Assert.Less(HallContract.ContainmentHeight, RoomContract.OpeningHeight);
         }
 

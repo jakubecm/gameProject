@@ -3,15 +3,12 @@ namespace ColdShutdown.Core
     /// <summary>
     /// Kind of room a cell can hold. Values are explicit so serialized assets stay valid
     /// when types are added; only ever append new values. Value 1 was the old server aisle room (racks now
-    /// stand only in the hall and the security office); never reuse it.
+    /// stand only in the hall and the security office) and value 2 the full-size office (removed: every room is a small room now); never reuse them.
     /// </summary>
     public enum RoomType
     {
         /// <summary>Corridor crossing: arms to all four sides.</summary>
         Corridor = 0,
-
-        /// <summary>Full-size office (one cell, at most two doors): the only big room.</summary>
-        Office = 2,
 
         /// <summary>
         /// One tile of a server hall. Neighbouring hall tiles have no walls between them; the hall kit
@@ -67,7 +64,6 @@ namespace ColdShutdown.Core
                 case RoomType.CorridorCorner:
                     return 'C';
                 case RoomType.CorridorDeadEnd: return 'D';
-                case RoomType.Office: return 'O';
                 case RoomType.SmallOffice: return 'o';
                 case RoomType.Hall: return 'H';
                 case RoomType.SecurityOffice: return 'G';

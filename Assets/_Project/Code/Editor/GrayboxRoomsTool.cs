@@ -8,12 +8,11 @@ using UnityEngine;
 namespace ColdShutdown.Editor
 {
     /// <summary>
-    /// Creates every layout of every <see cref="RoomType"/> (<see cref="RoomLayouts"/>) as a prefab variant of the room
+    /// Creates the layout of every <see cref="RoomType"/> (one per room, several only for corridors, <see cref="RoomLayouts"/>) as a prefab variant of the room
     /// shell, plus a <see cref="RoomDefinition"/> per type that lists its layouts. This tool only adds the game logic of a
     /// room (rack and terminal slots, the security office's video wall) and the walls that close a small room
-    /// (<see cref="RoomRules.IsSmallRoom"/>); furniture and fittings come from Dress Graybox Rooms. Existing prefabs and
-    /// definitions are never replaced, so hand edits are safe and a new room type only needs a new enum value and
-    /// another run. Run Create Room Shell first. Rebuild Graybox Rooms (in <see cref="RoomDressingTool"/>) rebuilds the
+    /// (<see cref="RoomRules.IsSmallRoom"/>); furniture and fittings come from <see cref="RoomDressingTool"/>. Existing prefabs and
+    /// definitions are never replaced here; <see cref="RoomDressingTool.RebuildAll"/> (run by Create Preview Scene) rebuilds the
     /// logic in place.
     /// </summary>
     public static class GrayboxRoomsTool
@@ -24,13 +23,12 @@ namespace ColdShutdown.Editor
 
         public static string DefinitionPath(RoomType type) => $"{DefinitionsFolder}/RoomDefinition_{type}.asset";
 
-        [MenuItem("Tools/Cold Shutdown/Create Graybox Rooms")]
         public static void CreateGrayboxRooms()
         {
             var shell = AssetDatabase.LoadAssetAtPath<GameObject>(RoomShellTool.ShellPath);
             if (shell == null)
             {
-                Debug.LogError($"{RoomShellTool.ShellPath} not found. Run Tools/Cold Shutdown/Create Room Shell first.");
+                Debug.LogError($"{RoomShellTool.ShellPath} not found. Run Tools/Cold Shutdown/Create Preview Scene first.");
                 return;
             }
 
@@ -93,8 +91,6 @@ namespace ColdShutdown.Editor
 
         private static void AddLogic(Transform room, RoomType type, int layout)
         {
-            var mirror = RoomLayouts.Mirror(type, layout);
-            int design = RoomLayouts.Design(layout);
             if (RoomRules.IsSmallRoom(type))
             {
                 AddSmallRoomWalls(room);
@@ -104,15 +100,15 @@ namespace ColdShutdown.Editor
                 AddLiftShaft(room);
             }
 
-            var terminal = RoomLayouts.Terminal(type, design);
+            var terminal = RoomLayouts.Terminal(type);
             if (terminal.HasValue)
             {
                 var slot = new GameObject("TerminalSlot", typeof(TerminalSlot)).transform;
                 slot.SetParent(room, false);
-                RoomShellTool.ApplyPose(slot, mirror.Pose(terminal.Value));
+                RoomShellTool.ApplyPose(slot, terminal.Value);
             }
 
-            var racks = RoomLayouts.Racks(type, design);
+            var racks = RoomLayouts.Racks(type);
             if (racks.Length > 0)
             {
                 var group = GrayboxUtility.CreateGroup("RackSlots", room);
@@ -120,7 +116,7 @@ namespace ColdShutdown.Editor
                 {
                     var slot = new GameObject($"RackSlot_{i:00}", typeof(RackSlot)).transform;
                     slot.SetParent(group, false);
-                    RoomShellTool.ApplyPose(slot, mirror.Pose(racks[i]));
+                    RoomShellTool.ApplyPose(slot, racks[i]);
                 }
             }
 
@@ -230,7 +226,7 @@ namespace ColdShutdown.Editor
             }
             var others = serialized.FindProperty("otherLayouts");
             int count = RoomRules.LayoutCount(type) - 1;
-            if (others.arraySize < count) others.arraySize = count;
+            others.arraySize = count;
             for (int i = 0; i < count; i++)
             {
                 var element = others.GetArrayElementAtIndex(i);

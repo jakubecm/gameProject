@@ -4,22 +4,21 @@ namespace ColdShutdown.Editor
 {
     /// <summary>
     /// Command-line entry points for rebuilding the graybox content without opening the Editor UI:
-    /// <c>Unity -batchmode -quit -projectPath . -executeMethod ColdShutdown.Editor.RoomBatchTools.RebuildRoomsAndPreviews</c>.
+    /// <c>Unity -batchmode -quit -projectPath . -executeMethod ColdShutdown.Editor.RoomBatchTools.BuildPreviewSceneB</c>.
+    /// In the Editor the same build is Tools/Cold Shutdown/Create Preview Scene.
     /// </summary>
     public static class RoomBatchTools
     {
+        /// <summary>Everything <c>Sandbox_B</c> is made of, then the scene (<see cref="RoomPreviewSceneTool.RebuildEverything"/>).</summary>
+        public static void BuildPreviewSceneB() => RoomPreviewSceneTool.RebuildEverything();
+
         /// <summary>
-        /// Rebuilds every prop, the hall kit, every room layout (logic and dressing), the room definitions, both
-        /// preview scenes and the main scene (so its level builder knows every room type). Destructive like Rebuild Graybox
-        /// Rooms and Rebuild Hall Kit; for graybox output only.
+        /// <see cref="BuildPreviewSceneB"/>, then the <c>TestPreview</c> scene even when it does not exist yet, and the main scene (so
+        /// its level builder knows every room type). Destructive; for graybox output only.
         /// </summary>
         public static void RebuildRoomsAndPreviews()
         {
-            RoomShellTool.CreateRoomShell();
-            RoomDressingTool.RebuildAll();
-            HallKitTool.RebuildHallKit();
-            AssetDatabase.SaveAssets();
-            RoomPreviewSceneTool.CreateRoomPreviewScene();
+            RoomPreviewSceneTool.RebuildEverything();
             RoomPreviewSceneTool.CreateTestPreviewScene();
             MainSceneTool.CreateMainScene();
             AssetDatabase.SaveAssets();

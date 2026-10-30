@@ -66,7 +66,7 @@ namespace ColdShutdown.Core
         /// PLACEHOLDER weight of a room type, until task 2.1 (room types, quotas, entry and gateway) replaces
         /// the random choice with real quotas. Only the types that fit a cell compete for it (see
         /// <see cref="RoomRules.FittingTurns"/>): corridor shapes match the connections exactly, small rooms need a
-        /// dead end, big rooms at most two connections. Hall tiles only make sense as a connected hall, so the
+        /// dead end. Hall tiles only make sense as a connected hall, so the
         /// random placeholder never picks them. A type without an entry here counts as 10.
         /// </summary>
         public static int PlaceholderWeight(RoomType type)
@@ -79,7 +79,6 @@ namespace ColdShutdown.Core
                 case RoomType.CorridorCorner:
                 case RoomType.CorridorDeadEnd:
                     return 50;
-                case RoomType.Office: return 12;
                 case RoomType.SmallOffice: return 8;
                 case RoomType.SecurityOffice: return 4;
                 case RoomType.PowerRoom: return 4;

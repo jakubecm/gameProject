@@ -64,31 +64,14 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
-        public void BigRooms_HaveAtMostTwoDoorsOnNeighbouringSides()
-        {
-            // The office is the only big room.
-            Assert.IsFalse(RoomRules.IsSmallRoom(RoomType.Office));
-            foreach (var type in new[] { RoomType.Office })
-            {
-                Assert.AreEqual(2, RoomRules.MaxDoors(type));
-                Assert.AreEqual(RoomRules.South | RoomRules.West, RoomRules.DoorSides(type), type.ToString());
-                // A single door fits two ways (on either door side), two neighbouring doors one way, opposite doors never.
-                Assert.AreEqual(2, RoomRules.FittingTurns(type, RoomRules.North).Count, type.ToString());
-                Assert.AreEqual(1, RoomRules.FittingTurns(type, RoomRules.North | RoomRules.East).Count, type.ToString());
-                Assert.IsEmpty(RoomRules.FittingTurns(type, RoomRules.North | RoomRules.South), type.ToString());
-                Assert.IsEmpty(RoomRules.FittingTurns(type, RoomRules.North | RoomRules.East | RoomRules.South), type.ToString());
-            }
-        }
-
-        [Test]
         public void Doors_BelongToTheRoomNotTheCorridor()
         {
-            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.CorridorT, RoomType.Office));
+            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.CorridorT, RoomType.SmallOffice));
             Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.SecurityOffice, RoomType.CorridorStraight));
-            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.Office, RoomType.PowerRoom));
+            Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.SmallOffice, RoomType.PowerRoom));
             Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Corridor, RoomType.CorridorDeadEnd));
             Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Corridor, RoomType.Hall));
-            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Hall, RoomType.Office));
+            Assert.AreEqual(DoorPlacement.HallPiece, RoomRules.DoorBetween(RoomType.Hall, RoomType.SmallOffice));
             Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Hall, RoomType.Hall));
         }
 
@@ -103,7 +86,7 @@ namespace ColdShutdown.Tests.EditMode
             Assert.IsFalse(RoomRules.HasAutomaticDoors(RoomType.Elevator));
             Assert.AreEqual(DoorPlacement.None, RoomRules.DoorBetween(RoomType.Elevator, RoomType.CorridorStraight));
             // Next to a room with doors, that room's door closes the opening.
-            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.Elevator, RoomType.Office));
+            Assert.AreEqual(DoorPlacement.Second, RoomRules.DoorBetween(RoomType.Elevator, RoomType.SmallOffice));
             Assert.AreEqual(DoorPlacement.First, RoomRules.DoorBetween(RoomType.StorageRoom, RoomType.Elevator));
         }
 
@@ -131,7 +114,7 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
-        public void Rooms_HaveFourLayouts_CorridorsOnePerFireArm()
+        public void Rooms_HaveOneLayout_CorridorsOnePerFireArm()
         {
             foreach (RoomType type in System.Enum.GetValues(typeof(RoomType)))
             {
@@ -141,7 +124,7 @@ namespace ColdShutdown.Tests.EditMode
                     : RoomRules.RoomLayouts;
                 Assert.AreEqual(expected, RoomRules.LayoutCount(type), type.ToString());
             }
-            Assert.AreEqual(4, RoomRules.RoomLayouts);
+            Assert.AreEqual(1, RoomRules.RoomLayouts);
         }
     }
 }

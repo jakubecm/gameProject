@@ -104,7 +104,7 @@ namespace ColdShutdown.Tests.EditMode
             }
             for (int layout = 0; layout < RoomRules.RoomLayouts; layout++)
             {
-                Assert.IsTrue(seen.Contains((RoomType.Office, layout)), $"Office layout {layout + 1} is never used");
+                Assert.IsTrue(seen.Contains((RoomType.SmallOffice, layout)), $"Small office layout {layout + 1} is never used");
                 Assert.IsTrue(seen.Contains((RoomType.StorageRoom, layout)), $"Storage room layout {layout + 1} is never used");
             }
         }
@@ -140,21 +140,21 @@ namespace ColdShutdown.Tests.EditMode
         [Test]
         public void Layout_FallsBackToTheCrossWhenNothingFits()
         {
-            // Only offices and the cross: a T-junction cell can only be a cross with one arm plugged.
+            // Only small offices and the cross: a T-junction cell can only be a cross with one arm plugged.
             var map = new MapData(3, 2);
             map.Connect(1, 0, Direction.West);
             map.Connect(1, 0, Direction.East);
             map.Connect(1, 0, Direction.North);
-            var layout = RoomLayout.Generate(map, 4, new[] { RoomType.Corridor, RoomType.Office });
+            var layout = RoomLayout.Generate(map, 4, new[] { RoomType.Corridor, RoomType.SmallOffice });
             Assert.AreEqual(RoomType.Corridor, layout.GetRoom(1, 0).Type);
-            Assert.AreEqual(RoomType.Office, layout.GetRoom(0, 0).Type, "A dead end fits an office; the cross does not");
+            Assert.AreEqual(RoomType.SmallOffice, layout.GetRoom(0, 0).Type, "A dead end fits a small office; the cross does not");
         }
 
         [Test]
         public void Layout_OnlyUsesTheTypesItIsGiven()
         {
-            var layout = RoomLayout.Generate(MapGenerator.Generate(1, 6, 6), 1, new[] { RoomType.Office });
-            Assert.IsTrue(layout.Rooms.All(room => room.Type == RoomType.Office));
+            var layout = RoomLayout.Generate(MapGenerator.Generate(1, 6, 6), 1, new[] { RoomType.SmallOffice });
+            Assert.IsTrue(layout.Rooms.All(room => room.Type == RoomType.SmallOffice));
         }
 
         [Test]

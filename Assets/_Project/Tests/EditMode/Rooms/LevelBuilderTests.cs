@@ -106,16 +106,17 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void Build_UsesEveryLayoutOfTheRooms()
+        public void Build_GivesEveryRoomItsOneLayout()
         {
             var builder = CreateBuilder();
-            var used = new HashSet<int>();
             for (int seed = 0; seed < 20; seed++)
             {
                 builder.Build(seed, 6, 6);
-                foreach (var room in builder.Layout.Rooms.Where(r => RoomRules.LayoutCount(r.Type) > 1)) used.Add(room.Layout);
+                foreach (var room in builder.Layout.Rooms.Where(r => !RoomRules.IsCorridor(r.Type) && r.Type != RoomType.Hall))
+                {
+                    Assert.AreEqual(0, room.Layout, $"{room.Type} has only one layout");
+                }
             }
-            Assert.AreEqual(RoomRules.RoomLayouts, used.Count, "Not every layout is used");
         }
 
         [Test]

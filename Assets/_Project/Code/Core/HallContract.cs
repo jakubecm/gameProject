@@ -9,7 +9,7 @@ namespace ColdShutdown.Core
     /// - two pods side by side across the tile, one north and one south of the middle (<see cref="PodCenterZ"/>). Each
     ///   pod is a long contained cold aisle running east-west: two straight rows of fourteen racks, side by side
     ///   without gaps, fronts facing each other across a 1.2 m aisle. The aisle is closed on every side: rack backs
-    ///   and sides outside, a containment roof just above the racks, automatic sliding doors at both ends. Its floor
+    ///   and sides outside, a containment roof lying on the rack tops, automatic sliding doors at both ends. Its floor
     ///   is perforated tiles only;
     /// - the rack backs of the two pods face each other across the hot aisle in the middle of the tile;
     /// - a free walkway around the pods: 1.6 m to the east and west perimeter walls (3.6 m cross walkway between the
@@ -50,8 +50,11 @@ namespace ColdShutdown.Core
         /// <summary>Width of the hot aisle in the middle of the tile, between the rack backs of the two pods.</summary>
         public const float HotAisleWidth = 2f * (PodCenterZ - PodHalfDepth);
 
-        /// <summary>Height of the containment roof over the pod, a little above the racks.</summary>
-        public const float ContainmentHeight = RoomContract.RackHeight + 0.2f;
+        /// <summary>Underside of the containment roof over the pod: the roof panels lie directly on the rack tops, no gap.</summary>
+        public const float ContainmentHeight = RoomContract.RackHeight;
+
+        /// <summary>Thickness of the containment roof panels (its top is <see cref="ContainmentHeight"/> + this).</summary>
+        public const float ContainmentPanel = 0.04f;
 
         /// <summary>Distance from the cell center to the inner face of a perimeter wall (same as a room wall).</summary>
         public const float WallInnerOffset = RoomContract.InteriorHalfSize;

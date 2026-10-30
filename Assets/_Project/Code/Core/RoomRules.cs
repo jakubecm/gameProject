@@ -33,24 +33,14 @@ namespace ColdShutdown.Core
         public const int West = 1 << (int)Direction.West;
         public const int AllSides = North | East | South | West;
 
-        /// <summary>A big room (one whole cell) has at most this many doors.</summary>
-        public const int BigRoomMaxDoors = 2;
-
-        /// <summary>Every room (not a corridor or a hall tile) comes in this many fixed layouts (prefabs), chosen per cell.</summary>
-        public const int RoomLayouts = 4;
-
-        /// <summary>
-        /// Door sides of a big room: two neighbouring sides. The walkways from them meet in the middle, so the other
-        /// half of the room (along the north and east walls) is free for furniture and plant.
-        /// </summary>
-        public const int BigRoomDoorSides = South | West;
+        /// <summary>Every room (not a corridor or a hall tile) has exactly one layout (prefab): the one in the room preview scene.</summary>
+        public const int RoomLayouts = 1;
 
         public static int Mask(Direction side) => 1 << (int)side;
 
         /// <summary>
         /// Sides of the unturned prefab that may have a door. Corridors have exactly these arms; small rooms and
-        /// the dead end only have their south opening; the office (the only big room) its south and west openings;
-        /// hall tiles any side.
+        /// the dead end only have their south opening; hall tiles any side.
         /// </summary>
         public static int DoorSides(RoomType type)
         {
@@ -67,8 +57,6 @@ namespace ColdShutdown.Core
                 case RoomType.HvacRoom:
                 case RoomType.StorageRoom:
                     return South;
-                case RoomType.Office:
-                    return BigRoomDoorSides;
                 default: return AllSides;
             }
         }
@@ -81,7 +69,7 @@ namespace ColdShutdown.Core
         /// <summary>
         /// Small rooms are a 6 x 6 m square by the south door of the cell (<see cref="RoomContract.SmallRoomHalfWidth"/>,
         /// <see cref="RoomContract.SmallRoomBackWall"/>); the rest of the cell is built up. They always have exactly one
-        /// door, at the end of a corridor. Every room except the office is a small room.
+        /// door, at the end of a corridor. Every room is a small room.
         /// </summary>
         public static bool IsSmallRoom(RoomType type) =>
             type == RoomType.SmallOffice || type == RoomType.SecurityOffice || type == RoomType.PowerRoom ||
@@ -139,8 +127,7 @@ namespace ColdShutdown.Core
         public static int MaxDoors(RoomType type)
         {
             if (IsCorridor(type) || type == RoomType.Hall) return BitCount(DoorSides(type));
-            if (IsSmallRoom(type)) return 1;
-            return BigRoomMaxDoors;
+            return 1;
         }
 
         /// <summary>Rooms whose entrances are automatic sliding glass doors with an access reader: every non-corridor.</summary>

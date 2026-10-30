@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using ColdShutdown.Core;
 using ColdShutdown.Runtime;
 using UnityEditor;
 using UnityEngine;
+using static ColdShutdown.Editor.GrayboxMeshBuilder;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
@@ -23,28 +25,75 @@ namespace ColdShutdown.Editor
         public const float HallSignSize = 0.8f;
 
         /// <summary>Length of the pole of a pendant CCTV dome, from its mount to the dome.</summary>
-        public const float SecurityPendantDrop = 1.9f;
+        public const float SecurityPendantDrop = 2.2f;
 
         // LED high-bay fittings, 4000 K, no shadows.
         private static readonly Color LedColor = new Color(1f, 0.97f, 0.92f);
 
         /// <summary>
-        /// Linear LED high-bay luminaire 1.3 m long (along Z), hanging on two wires from the roof deck. Its light
-        /// is a wide downward spot without shadows.
+        /// The hall's luminaire: the storage room's LED batten (<see cref="BuildLedBatten"/>, 1.5 m long along Z, its light a wide downward spot without shadows)
+        /// hanging <see cref="PendantLightDrop"/> below the roof deck on two steel wire ropes, each with a rounded ceiling plate, a chrome cup with a cable
+        /// gripper, a crimped ferrule and a thimble eye on a bracket that sits on the tray, and a round black power cable that curves down from a small junction
+        /// box on the roof to a gland on the tray. Pivot on the roof deck, hanging down.
         /// </summary>
         private static void BuildPendantLight(Transform root)
         {
-            const float length = 1.3f;
             float top = -PendantLightDrop;
-            foreach (int side in new[] { -1, 1 })
-            {
-                GrayboxUtility.CreateBoxBetween(side < 0 ? "Wire_S" : "Wire_N", root, new Vector3(-0.003f, top, side * 0.5f - 0.003f),
-                    new Vector3(0.003f, 0f, side * 0.5f + 0.003f), SurfaceMaterial.Metal);
-            }
-            GrayboxUtility.CreateBox("Body", root, new Vector3(0f, top - 0.04f, 0f), new Vector3(0.2f, 0.08f, length), SurfaceMaterial.CeilingGrid, false);
-            GrayboxUtility.CreateBox("Diffuser", root, new Vector3(0f, top - 0.085f, 0f), new Vector3(0.16f, 0.01f, length - 0.04f), SurfaceMaterial.LightPanel, false);
+            var lamp = GrayboxUtility.CreateGroup("Lamp", root);
+            lamp.localPosition = new Vector3(0f, top, 0f);
+            BuildLedBatten(lamp);
+            var light = lamp.GetComponentInChildren<Light>();
+            light.spotAngle = 140f;
+            light.innerSpotAngle = 90f;
+            light.range = 10f;
+            light.intensity = 7f;
+            light.color = LedColor;
 
-            AddSpotLight(root, new Vector3(0f, top - 0.1f, 0f), 140f, 90f, 10f, 7f, LedColor);
+            var zinc = new GrayboxMeshBuilder();
+            var chrome = new GrayboxMeshBuilder();
+            var rope = new GrayboxMeshBuilder();
+            var eyes = new GrayboxMeshBuilder();
+            var black = new GrayboxMeshBuilder();
+            var box = new GrayboxMeshBuilder();
+            foreach (float z in new[] { -0.55f, 0.55f })
+            {
+                // Ceiling plate and the cup with the cable gripper under it.
+                zinc.AddRoundedBlock(new Vector3(0f, -0.006f, z), 0.07f, 0.07f, 0.012f, 0.006f, 0.002f);
+                chrome.AddLathe(new[] { P(0.026f, -0.006f, true), P(0.026f, -0.016f), P(0.016f, -0.028f), P(0.0075f, -0.032f, true), P(0.0075f, -0.056f, true), P(0.0035f, -0.058f, true) }, 24, true,
+                    new Vector3(0f, 0f, z), Quaternion.identity);
+                // The wire rope down to the lamp, a crimped ferrule round its end, and the thimble eye on the bracket.
+                float eyeY = top + 0.022f;
+                rope.AddTube(new[] { new Vector3(0f, -0.058f, z), new Vector3(0f, eyeY + 0.01f, z) }, 0.0018f, 8, Vector3.zero, Quaternion.identity);
+                chrome.AddLathe(new[] { P(0.0042f, eyeY + 0.012f, true), P(0.0062f, eyeY + 0.016f), P(0.0062f, eyeY + 0.046f, true), P(0.0042f, eyeY + 0.050f, true) }, 16, true,
+                    new Vector3(0f, 0f, z), Quaternion.identity);
+                var ring = new List<Vector3>();
+                for (int i = 0; i < 16; i++)
+                {
+                    float angle = i / 16f * 2f * Mathf.PI;
+                    ring.Add(new Vector3(Mathf.Cos(angle) * 0.010f, eyeY + Mathf.Sin(angle) * 0.013f, z));
+                }
+                eyes.AddTube(ring, 0.0022f, 8, Vector3.zero, Quaternion.identity, true);
+                // The bracket: a strap over the tray with the eye bolted on.
+                zinc.AddExtrusion(RoundedRectLoop(-0.052f, 0.052f, z - 0.018f, z + 0.018f, 0.006f, 3), new Vector3(0f, top, 0f), new Vector3(0f, top + 0.004f, 0f),
+                    Vector3.right, Vector3.forward, Vector3.down, Vector3.up);
+                chrome.AddLathe(new[] { P(0.0035f, 0f, true), P(0.0035f, 0.014f, true), P(0.0001f, 0.014f, true) }, 10, true, new Vector3(0f, top + 0.004f, z), Quaternion.identity);
+            }
+
+            // Power cable: junction box on the roof, a gentle S down to the gland near the end of the tray.
+            const float cableZ = -0.68f;
+            box.AddRoundedBlock(new Vector3(0.06f, -0.04f, cableZ), 0.09f, 0.09f, 0.01f, 0.04f, 0.004f);
+            black.AddLathe(new[] { P(0.012f, top, true), P(0.012f, top + 0.014f, true), P(0.0075f, top + 0.018f, true), P(0.0075f, top + 0.030f, true) }, 16, true, new Vector3(0f, 0f, cableZ), Quaternion.identity);
+            black.AddTube(SmoothPath(new[]
+            {
+                new Vector3(0f, top + 0.030f, cableZ), new Vector3(0f, top + 0.12f, cableZ), new Vector3(0.03f, top * 0.5f, cableZ), new Vector3(0.06f, -0.16f, cableZ), new Vector3(0.06f, -0.04f, cableZ),
+            }, 6), 0.0045f, 10, Vector3.zero, Quaternion.identity);
+
+            zinc.Attach("Plates", root, SurfaceMaterial.ValveSteel);
+            chrome.Attach("Cups", root, SurfaceMaterial.Chrome);
+            rope.Attach("WireRopes", root, SurfaceMaterial.ValveSteel);
+            eyes.Attach("Thimbles", root, SurfaceMaterial.Chrome);
+            black.Attach("PowerCable", root, SurfaceMaterial.BlackHousing);
+            box.Attach("JunctionBox", root, SurfaceMaterial.ElectricGrey);
         }
 
         /// <summary>
@@ -57,11 +106,17 @@ namespace ColdShutdown.Editor
             float size = HallSignSize;
             float top = -HallSignDrop;
             float center = top - size / 2f;
+            // Two steel rods from round ceiling plates down to eye bolts on the housing's top.
+            var rods = new GrayboxMeshBuilder();
             foreach (int side in new[] { -1, 1 })
             {
-                GrayboxUtility.CreateBoxBetween(side < 0 ? "Rod_S" : "Rod_N", root, new Vector3(-0.008f, top, side * 0.3f - 0.008f),
-                    new Vector3(0.008f, 0f, side * 0.3f + 0.008f), SurfaceMaterial.Metal);
+                float z = side * 0.3f;
+                rods.AddTube(new[] { new Vector3(0f, top + 0.02f, z), new Vector3(0f, -0.004f, z) }, 0.006f, 8, Vector3.zero, Quaternion.identity);
+                rods.AddLathe(new[] { P(0.035f, -0.006f, true), P(0.035f, 0f, true), P(0.0001f, 0f, true) }, 20, true, new Vector3(0f, 0f, z), Quaternion.identity);
+                rods.AddLathe(new[] { P(0.0095f, -0.018f, true), P(0.0095f, -0.006f, true), P(0.0001f, -0.006f, true) }, 6, false, new Vector3(0f, 0f, z), Quaternion.identity);
+                rods.AddLathe(new[] { P(0.016f, top, true), P(0.016f, top + 0.008f, true), P(0.0001f, top + 0.008f, true) }, 16, true, new Vector3(0f, 0f, z), Quaternion.identity);
             }
+            rods.Attach("Rods", root, SurfaceMaterial.Chrome);
             GrayboxUtility.CreateBox("Housing", root, new Vector3(0f, center, 0f), Vector3.one * size, SurfaceMaterial.Upholstery, false);
 
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -122,49 +177,6 @@ namespace ColdShutdown.Editor
             return text;
         }
 
-        /// <summary>
-        /// Ceiling dome camera for the 3 m rooms: a flat round base on the ceiling and a smoked half-sphere bubble under
-        /// it, the camera inside.
-        /// </summary>
-        private static void BuildSecurityDome(Transform root)
-        {
-            GrayboxUtility.CreateCylinder("Base", root, new Vector3(0f, -0.01f, 0f), 0.08f, 0.02f, SurfaceMaterial.Trunking);
-            GrayboxUtility.CreateDome("Bubble", root, new Vector3(0f, -0.02f, 0f), 0.065f, SurfaceMaterial.Screen);
-            AddSecurityCamera(root, new Vector3(0f, -0.05f, 0f), 30f);
-        }
-
-        /// <summary>
-        /// Wall dome camera without an arm: a round back plate on the wall and the smoked dome on it, looking along +Z
-        /// and 25° down. A small wall fitting: the pivot is the center of the back plate. Its cable leaves the plate
-        /// upward; the dressers run it in a conduit up to the ceiling.
-        /// </summary>
-        private static void BuildSecurityWallDome(Transform root)
-        {
-            var plate = GrayboxUtility.CreateCylinder("Plate", root, new Vector3(0f, 0f, 0.01f), 0.085f, 0.02f, SurfaceMaterial.Trunking);
-            plate.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var bubble = GrayboxUtility.CreateDome("Bubble", root, new Vector3(0f, 0f, 0.02f), 0.07f, SurfaceMaterial.Screen);
-            // The dome bulges down (-Y); turned so it bulges away from the wall (+Z).
-            bubble.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
-            AddSecurityCamera(root, new Vector3(0f, -0.01f, 0.06f), 25f);
-        }
-
-        /// <summary>Height above the pivot where the cable of a wall dome leaves its back plate.</summary>
-        public const float WallDomeCableHeight = 0.085f;
-
-        /// <summary>
-        /// Pendant dome camera for the hall: a junction box clamped to a beam, a pole with the cable inside, and
-        /// the dome at its end, so it looks over the racks.
-        /// </summary>
-        private static void BuildSecurityPendant(Transform root)
-        {
-            float bottom = -SecurityPendantDrop;
-            GrayboxUtility.CreateBox("JunctionBox", root, new Vector3(0f, -0.04f, 0f), new Vector3(0.15f, 0.08f, 0.15f), SurfaceMaterial.Trunking, false);
-            GrayboxUtility.CreatePipe("Pole", root, new Vector3(0f, -0.08f, 0f), new Vector3(0f, bottom, 0f), 0.025f, SurfaceMaterial.Trunking);
-            GrayboxUtility.CreateCylinder("Housing", root, new Vector3(0f, bottom - 0.03f, 0f), 0.09f, 0.06f, SurfaceMaterial.Trunking);
-            GrayboxUtility.CreateDome("Bubble", root, new Vector3(0f, bottom - 0.06f, 0f), 0.085f, SurfaceMaterial.Screen);
-            AddSecurityCamera(root, new Vector3(0f, bottom - 0.1f, 0f), 35f);
-        }
-
         /// <summary>Adds the disabled feed camera (looking along +Z, pitched down) and the <see cref="SecurityCamera"/> on the root.</summary>
         private static Camera AddSecurityCamera(Transform root, Vector3 lensPosition, float pitch)
         {
@@ -214,38 +226,58 @@ namespace ColdShutdown.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>19" equipment cabinet 0.6 x 2.0 x 0.8 m with a glass door (NVR, PoE switches, UPS); the front faces +Z.</summary>
-        private static void BuildEquipmentCabinet(Transform root)
-        {
-            const float width = 0.6f;
-            const float height = 2.0f;
-            const float depth = 0.8f;
-            GrayboxUtility.CreateStandingBox("Body", root, Vector3.zero, new Vector3(width, height, depth), SurfaceMaterial.Upholstery, false);
-            float[] units = { 0.3f, 0.55f, 0.9f, 1.05f, 1.2f, 1.5f };
-            for (int i = 0; i < units.Length; i++)
-            {
-                GrayboxUtility.CreateStandingBox($"Unit_{i}", root, new Vector3(0f, units[i], depth / 2f + 0.002f), new Vector3(0.48f, i % 2 == 0 ? 0.13f : 0.044f, 0.004f), i % 3 == 0 ? SurfaceMaterial.Screen : SurfaceMaterial.Metal, false);
-            }
-            GrayboxUtility.CreateStandingBox("Door", root, new Vector3(0f, 0.05f, depth / 2f + 0.02f), new Vector3(width - 0.02f, height - 0.1f, 0.01f), SurfaceMaterial.Glass, false);
-            GrayboxUtility.CreateStandingBox("Handle", root, new Vector3(0.24f, 0.95f, depth / 2f + 0.035f), new Vector3(0.02f, 0.15f, 0.02f), SurfaceMaterial.Metal, false);
-            AddBoxCollider(root, new Vector3(0f, height / 2f, 0.02f), new Vector3(width, height, depth + 0.04f));
-        }
-
         /// <summary>
-        /// Small floor box 150 x 150 mm flush with the floor (a 5 mm lid with a cable outlet), feeding one desk away from
-        /// the walls. It lies under the back of the desk, between its side panels, so the desk never stands on it.
+        /// Floor box 150 x 150 mm (after a product photo), flush with the floor: a dark hammered-pewter square cover plate with
+        /// rounded corners, 6 mm proud at its rim, a recessed rectangular lid inside it with two hinge slots along the back edge
+        /// (-Z) and a round chrome screw lock in the middle of the front edge (+Z). It lies under the back of the desk it feeds.
         /// </summary>
         private static void BuildFloorBox(Transform root)
         {
-            GrayboxUtility.CreateStandingBox("Lid", root, Vector3.zero, new Vector3(0.15f, 0.005f, 0.15f), SurfaceMaterial.Metal, false);
-            GrayboxUtility.CreateStandingBox("CableOutlet", root, new Vector3(0f, 0.005f, -0.06f), new Vector3(0.08f, 0.003f, 0.02f), SurfaceMaterial.Upholstery, false);
+            const float size = 0.150f;
+            var model = GrayboxUtility.CreateGroup("Model", root);
+            // A slab's depth runs along +Z; stand it on the floor (depth up, its +Y edge towards -Z, the back).
+            model.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            var plate = new GrayboxMeshBuilder();
+            var lid = new GrayboxMeshBuilder();
+            var dark = new GrayboxMeshBuilder();
+            var chrome = new GrayboxMeshBuilder();
+            plate.AddRoundedSlab(Vector3.zero, size, size, 0.010f, 0.0060f, 0.0015f, 4);
+            // Inset lid, a millimetre below the rim, with a thin dark groove round it.
+            dark.AddRoundedSlab(new Vector3(0f, 0f, 0.0058f), 0.118f, 0.118f, 0.004f, 0.0004f, 0.0001f, 3);
+            lid.AddRoundedSlab(new Vector3(0f, 0f, 0.0058f), 0.114f, 0.114f, 0.003f, 0.0016f, 0.0006f, 3);
+            // Hinge slots on the back edge (model +Y), the screw lock on the front edge (model -Y).
+            foreach (float x in new[] { -0.040f, 0.040f })
+            {
+                dark.AddBox(new Vector3(x - 0.012f, 0.0525f, 0.0058f), new Vector3(x + 0.012f, 0.0545f, 0.0064f), true, false);
+            }
+            chrome.AddLathe(new[] { P(0f, 0.0080f), P(0.0045f, 0.0078f), P(0.0050f, 0.0074f, true), P(0.0050f, 0.0066f, true), P(0f, 0.0066f, true) }, 24, true,
+                new Vector3(0f, -0.0455f, 0f), Quaternion.Euler(90f, 0f, 0f));
+            plate.Attach("CoverPlate", model, SurfaceMaterial.FloorBoxMetal);
+            lid.Attach("Lid", model, SurfaceMaterial.FloorBoxMetal);
+            dark.Attach("Groove", model, SurfaceMaterial.BlackHousing);
+            chrome.Attach("Lock", model, SurfaceMaterial.Chrome);
         }
 
-        /// <summary>Illuminated emergency exit sign (green pictogram panel), 360 x 160 mm.</summary>
+        /// <summary>
+        /// Illuminated emergency exit sign 360 x 160 mm, 50 mm deep: a white housing with the supplied design on its face (white
+        /// "EXIT" on a green rounded panel with a white border), lit from inside (emissive). The face looks along +Z.
+        /// </summary>
         private static void BuildExitSign(Transform root)
         {
-            GrayboxUtility.CreateBox("Body", root, new Vector3(0f, 0f, 0.025f), new Vector3(0.36f, 0.16f, 0.05f), SurfaceMaterial.Trunking, false);
-            GrayboxUtility.CreateBox("Face", root, new Vector3(0f, 0f, 0.0515f), new Vector3(0.34f, 0.14f, 0.003f), SurfaceMaterial.SafetyGreen, false);
+            const float width = 0.36f;
+            const float height = 0.16f;
+            const float depth = 0.05f;
+            var body = new GrayboxMeshBuilder();
+            var face = new GrayboxMeshBuilder();
+            body.AddBox(new Vector3(-width / 2f, -height / 2f, 0f), new Vector3(width / 2f, height / 2f, depth - 0.0012f));
+            float x = width / 2f - 0.004f;
+            float y = height / 2f - 0.004f;
+            float z = depth;
+            // Viewed from +Z the left is +X, so u runs from +X to -X.
+            face.AddPanel(new Vector3(-x, -y, z), new Vector3(x, -y, z), new Vector3(x, y, z), new Vector3(-x, y, z), Vector3.forward,
+                new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f));
+            body.Attach("Body", root, SurfaceMaterial.Trunking);
+            face.Attach("Face", root, SurfaceMaterial.ExitSignFace);
         }
     }
 }

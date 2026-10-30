@@ -26,6 +26,9 @@ namespace ColdShutdown.Runtime
         [SerializeField] private GameObject cornerEdgeSecond;
         [SerializeField] private GameObject cornerOuter;
 
+        /// <summary>Names inside the side pieces (authored for North) that <see cref="AddPieces"/> keeps or switches off by the side the piece is turned to.</summary>
+        public const string HangingCameraName = "HangingCamera";
+
         public GameObject SidePrefab(HallSideKind kind)
         {
             switch (kind)
@@ -82,13 +85,24 @@ namespace ColdShutdown.Runtime
             for (int i = 0; i < DirectionExtensions.Count; i++)
             {
                 var side = (Direction)i;
-                Place(SidePrefab(plan.Side(side)), cell, $"HallSide_{side}", i, instantiate);
+                var piece = Place(SidePrefab(plan.Side(side)), cell, $"HallSide_{side}", i, instantiate);
+                if (piece != null) ChooseCameras(piece, i);
             }
 
             for (int i = 0; i < DirectionExtensions.Count; i++)
             {
                 Place(CornerPrefab(plan.Corner((HallCorner)i)), cell, $"HallCorner_{(HallCorner)i}", i, instantiate);
             }
+        }
+
+        /// <summary>
+        /// The two hanging cameras of an open edge hang where the girder meets the small beams, which only cross the east and west edges; a neighbour shares the
+        /// edge, so only the east side keeps them.
+        /// </summary>
+        private static void ChooseCameras(GameObject piece, int quarterTurns)
+        {
+            var group = piece.transform.Find($"SecurityCameras/{HangingCameraName}");
+            if (group != null) group.gameObject.SetActive(quarterTurns == 1);
         }
 
         /// <summary>Writes the tile code on the signs of the tile itself (the <c>Room_Hall</c> instance).</summary>

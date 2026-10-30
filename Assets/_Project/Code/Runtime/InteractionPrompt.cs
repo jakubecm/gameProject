@@ -26,14 +26,19 @@ namespace ColdShutdown.Runtime
         private void OnEnable()
         {
             interactor.FocusChanged += ShowFocus;
+            interactor.Interacted += Refresh;
             interactor.HoldProgressChanged += ShowProgress;
         }
 
         private void OnDisable()
         {
             interactor.FocusChanged -= ShowFocus;
+            interactor.Interacted -= Refresh;
             interactor.HoldProgressChanged -= ShowProgress;
         }
+
+        /// <summary>The prompt of an object can change when it is used (a rack door: open / close).</summary>
+        private void Refresh(IInteractable used) => ShowFocus(interactor.Focused);
 
         private void ShowFocus(IInteractable target)
         {
@@ -44,7 +49,7 @@ namespace ColdShutdown.Runtime
 
             if (!hasTarget) return;
 
-            string key = $"[{interactor.KeyLabel}]";
+            string key = $"[{interactor.KeyLabelFor(target)}]";
             label.text = string.IsNullOrEmpty(target.Prompt) ? key : $"{key} {target.Prompt}";
         }
 

@@ -18,11 +18,10 @@ namespace ColdShutdown.Editor
 
         private const float SlabThickness = 0.1f;
 
-        [MenuItem("Tools/Cold Shutdown/Create Room Shell")]
         public static void CreateRoomShell()
         {
             // The room prefabs are variants of the shell: after regenerating the shell, delete them too and
-            // run Create Graybox Rooms again, otherwise they keep pointing at the deleted shell.
+            // run Create Preview Scene again, otherwise they keep pointing at the deleted shell.
             if (!SkipExisting(ShellPath))
             {
                 SaveAsPrefab(BuildShell(), ShellPath);

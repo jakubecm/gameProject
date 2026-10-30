@@ -80,18 +80,22 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             {
                 float center = HallContract.PodZ(pod);
                 var inside = new Bounds();
-                inside.SetMinMax(new Vector3(-HallContract.PodHalfLength, WalkFloor, center - aisle), new Vector3(HallContract.PodHalfLength, RoomContract.RackHeight, center + aisle));
+                inside.SetMinMax(new Vector3(-HallContract.PodHalfLength, WalkFloor, center - aisle), new Vector3(HallContract.PodHalfLength, RoomContract.RackHeight - 0.08f, center + aisle));
+                // (The LED strips hang 5 cm under the roof panels, which lie on the rack tops.)
                 AssertFree(cell, new[] { inside }, $"cold aisle {pod}");
                 Assert.AreEqual(HallContract.RacksPerRow * 2, vents.Count(v => Mathf.Abs(v.transform.localPosition.z - center) < aisle &&
                                                                                Mathf.Abs(v.transform.localPosition.x) < HallContract.PodHalfLength));
 
                 var roof = tile.Find($"Dressing/Pod_{(pod == 0 ? "N" : "S")}/ContainmentRoof");
                 Assert.IsNotNull(roof, $"Aisle {pod} has no roof");
-                Assert.AreEqual(HallContract.ContainmentHeight, roof.GetComponent<Renderer>().bounds.min.y, Epsilon);
+                // The roof lies directly on the rack tops: no gap, no fascia.
+                Assert.AreEqual(HallContract.ContainmentHeight, CombinedBounds(roof, _ => false).min.y, Epsilon);
+                Assert.IsNull(roof.parent.Find("Fascia_N"), "The aisle still has a fascia");
             }
 
             var doors = tile.GetComponentsInChildren<AutoSlidingDoor>();
             Assert.AreEqual(2 * HallContract.PodsPerTile, doors.Length, "Both ends of every aisle need an automatic door");
+            Assert.AreEqual(doors.Length, tile.GetComponentsInChildren<AisleDoor>().Length, "Aisle doors are their own type, apart from the room doors");
             foreach (var door in doors)
             {
                 Assert.AreEqual(HallContract.PodHalfLength, Mathf.Abs(door.transform.localPosition.x), Epsilon);
@@ -126,8 +130,9 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             var cell = Assemble(new MapData(2, 1), (c, r) => true, 0, 0, out _);
             foreach (var renderer in cell.GetComponentsInChildren<Renderer>())
             {
-                // Only the glass leaves of the automatic doors may be glass; small covers (a call point's) are no partition.
-                if (renderer.GetComponentInParent<AutoSlidingDoor>() != null) continue;
+                // Only the glass leaves of the automatic doors and the clear panels of the aisle roofs (horizontal, not partitions) may be glass;
+                // small covers (a call point's) are no partition.
+                if (renderer.GetComponentInParent<AutoSlidingDoor>() != null || renderer.transform.parent.name == "ContainmentRoof") continue;
                 if (Mathf.Max(renderer.bounds.size.x, renderer.bounds.size.z) < 1f) continue;
                 foreach (var material in renderer.sharedMaterials)
                 {
@@ -157,21 +162,38 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
-        public void PerimeterWall_HasLargeGrillesLowAndSmallGrillesHigh()
+        public void PerimeterWalls_HaveNoVentilationGrilles()
         {
             var cell = Assemble(new MapData(1, 1), (c, r) => true, 0, 0, out _);
-            var side = cell.transform.Find("HallSide_North").gameObject;
-            var low = PropInstances(side, "FloorVentGrille").ToList();
-            var high = PropInstances(side, "WallVentGrille").ToList();
-            Assert.IsNotEmpty(low, "No supply grilles at the floor");
-            Assert.IsNotEmpty(high, "No return grilles under the roof");
-            // The low grilles start on top of the plinth, as high above the floor as in the corridors (0.15 m) and as far
-            // as the high grilles stay below the girders.
-            float Bottom(GameObject g) => g.GetComponentsInChildren<Renderer>().Min(r => r.bounds.min.y);
-            float Top(GameObject g) => g.GetComponentsInChildren<Renderer>().Max(r => r.bounds.max.y);
-            Assert.IsTrue(low.All(g => Mathf.Abs(Bottom(g) - 0.15f) < 0.005f), "The low grilles are not 0.15 m above the floor");
-            Assert.IsTrue(high.All(g => g.transform.position.y > HallContract.CeilingHeight - 2f));
-            Assert.IsTrue(high.All(g => Mathf.Abs(Top(g) - 5.05f) < 0.005f), "The high grilles are not 0.15 m below the girders");
+            foreach (var direction in new[] { "North", "East", "South", "West" })
+            {
+                var side = cell.transform.Find($"HallSide_{direction}").gameObject;
+                Assert.IsEmpty(PropInstances(side, "FloorVentGrille"), $"{direction} wall has supply grilles");
+                Assert.IsEmpty(PropInstances(side, "WallVentGrille"), $"{direction} wall has return grilles");
+            }
+        }
+
+        [Test]
+        public void Cameras_OnlyHang_NoneOnWallsOrColumns()
+        {
+            // Walls (with or without a door) and columns carry no camera: a lone tile has four walls and no open edge.
+            var lone = Assemble(new MapData(1, 1), (c, r) => true, 0, 0, out _);
+            Assert.IsEmpty(lone.GetComponentsInChildren<SecurityCamera>(), "A camera on a wall or a column");
+            var map = new MapData(2, 1);
+            map.Connect(0, 0, Direction.East);
+            var withDoor = Assemble(map, (c, r) => c == 0, 0, 0, out _);
+            Assert.IsEmpty(withDoor.transform.Find("HallSide_East").GetComponentsInChildren<SecurityCamera>(), "A camera on the door wall");
+
+            // Hanging cameras: on the east edge only (the neighbour shares it), 3 m either side of its middle, over the intersections with the small beams.
+            var middle = AssembleMiddleOfOpenHall(out _);
+            var hanging = middle.GetComponentsInChildren<SecurityCamera>().Where(c => c.name.StartsWith("SecurityPendant")).ToList();
+            Assert.AreEqual(2, hanging.Count, "Two hanging cameras per open east edge");
+            foreach (var camera in hanging)
+            {
+                var local = middle.transform.Find("Room_Hall").InverseTransformPoint(camera.transform.position);
+                Assert.AreEqual(RoomContract.CellHalfSize, local.x, 0.001f);
+                Assert.AreEqual(3f, Mathf.Abs(local.z), 0.001f);
+            }
         }
 
         [Test]
@@ -229,7 +251,6 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                     "The hall has a fire-water pipe");
             }
             Assert.IsNotNull(lone.transform.Find("HallSide_North/Dressing/Pipes/GasRiser"), "A plain perimeter wall has no gas riser");
-            Assert.IsNotEmpty(PropInstances(withDoor, "GasReleaseStation"), "The perimeter has no gas release station");
             Assert.IsNotEmpty(PropInstances(lone, "FireCallPoint"), "The perimeter has no call point");
         }
 
@@ -247,8 +268,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 Assert.IsNotNull(run, path);
                 foreach (var renderer in run.GetComponentsInChildren<Renderer>())
                 {
-                    // Hanger rods reach down to the run; only the run itself is checked.
-                    if (renderer.name.StartsWith("Rod") || renderer.name.StartsWith("Trapeze")) continue;
+                    // Hangers (rods, nuts, struts) reach down to the run; only the run itself is checked.
+                    if (renderer.name.Contains("Hanger") || renderer.name.StartsWith("Rod") || renderer.name.StartsWith("Trapeze")) continue;
                     Assert.GreaterOrEqual(renderer.bounds.min.y, signTop, $"{path}/{renderer.name} hangs among the signs");
                 }
             }
@@ -262,12 +283,13 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             for (int pod = 0; pod < HallContract.PodsPerTile; pod++)
             {
                 string name = pod == 0 ? "N" : "S";
-                var duct = tile.Find($"Dressing/Ventilation/SupplyDuct_{name}").GetComponent<Renderer>().bounds;
-                var drop = tile.Find($"Dressing/Ventilation/SupplyDrop_{name}").GetComponent<Renderer>().bounds;
+                var duct = CombinedBounds(tile.Find($"Dressing/Ventilation/SupplyDuct_{name}"), r => r.name.Contains("Hanger"));
+                var drop = CombinedBounds(tile.Find($"Dressing/Ventilation/SupplyDrop_{name}"), _ => false);
                 // The duct runs through the whole tile (on into the neighbours), the drop from it down onto the aisle's roof.
                 Assert.AreEqual(RoomContract.CellSize, duct.size.x, Epsilon);
-                Assert.AreEqual(duct.min.y, drop.max.y, Epsilon, $"The drop of pod {name} does not reach its duct");
-                Assert.AreEqual(HallContract.ContainmentHeight, drop.min.y, 0.05f, $"The drop of pod {name} does not reach the aisle");
+                Assert.GreaterOrEqual(drop.max.y, duct.min.y, $"The drop of pod {name} does not reach its duct");
+                Assert.LessOrEqual(drop.max.y, duct.max.y, $"The drop of pod {name} sticks out above its duct");
+                Assert.AreEqual(HallContract.ContainmentHeight + HallContract.ContainmentPanel, drop.min.y, 0.01f, $"The drop of pod {name} does not reach the aisle roof");
                 Assert.AreEqual(HallContract.PodZ(pod), drop.center.z, Epsilon);
             }
         }
@@ -363,6 +385,26 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             return cell;
         }
 
+        /// <summary>World bounds of every renderer under <paramref name="root"/> that <paramref name="exclude"/> does not drop.</summary>
+        private static Bounds CombinedBounds(Transform root, System.Func<Renderer, bool> exclude)
+        {
+            Assert.IsNotNull(root);
+            Bounds? total = null;
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>())
+            {
+                if (exclude(renderer)) continue;
+                if (total == null) total = renderer.bounds;
+                else
+                {
+                    var b = total.Value;
+                    b.Encapsulate(renderer.bounds);
+                    total = b;
+                }
+            }
+            Assert.IsTrue(total.HasValue, $"{root.name} has no geometry");
+            return total.Value;
+        }
+
         /// <summary>Distance from the roof deck down to the top of a hanging sign (GrayboxPropsTool.HallSignDrop).</summary>
         private const float GrayboxPropsDrop = 1.8f;
 
@@ -420,12 +462,16 @@ namespace ColdShutdown.Tests.EditMode.Rooms
 
         private static IEnumerable<(string name, Bounds bounds)> ContentBounds(GameObject cell)
         {
+            // A hanging camera hangs on the girder right on the cell edge (shared with the neighbour): its dome reaches over the edge by design.
+            bool IsHangingCamera(Component component) => component.GetComponentInParent<SecurityCamera>() is SecurityCamera camera && camera.name == HallKit.HangingCameraName;
             foreach (var renderer in cell.GetComponentsInChildren<Renderer>())
             {
+                if (IsHangingCamera(renderer)) continue;
                 yield return ($"{renderer.transform.parent.name}/{renderer.name}", renderer.bounds);
             }
             foreach (var collider in cell.GetComponentsInChildren<Collider>())
             {
+                if (IsHangingCamera(collider)) continue;
                 yield return ($"{collider.name} (collider)", collider.bounds);
             }
         }
