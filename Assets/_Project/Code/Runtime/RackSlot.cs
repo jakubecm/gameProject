@@ -6,7 +6,7 @@ namespace ColdShutdown.Runtime
     /// <summary>
     /// Marks a spot where a rack may stand. The pivot is on the floor, centered under the rack,
     /// and the transform's forward axis points the way the rack faces (into the room).
-    /// The generator decides which slots actually get a rack.
+    /// The level builder puts a rack on every slot (<see cref="RackPlacement"/>).
     /// </summary>
     public class RackSlot : MonoBehaviour
     {

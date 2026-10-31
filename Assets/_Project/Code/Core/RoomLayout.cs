@@ -3,103 +3,109 @@ using System.Collections.Generic;
 
 namespace ColdShutdown.Core
 {
-    /// <summary>A room on the grid: its cell, its type and how far it is turned (in quarter turns around +Y).</summary>
+    /// <summary>
+    /// A room on the grid: its cell, its type, which of the type's fixed layouts it uses (0 to
+    /// <see cref="RoomRules.LayoutCount"/> - 1) and how far it is turned (in quarter turns around +Y).
+    /// </summary>
     public readonly struct PlacedRoom
     {
         public readonly int Column;
         public readonly int Row;
         public readonly RoomType Type;
         public readonly int QuarterTurns;
+        public readonly int Layout;
 
-        public PlacedRoom(int column, int row, RoomType type, int quarterTurns)
+        public PlacedRoom(int column, int row, RoomType type, int quarterTurns, int layout = 0)
         {
             Column = column;
             Row = row;
             Type = type;
             QuarterTurns = quarterTurns;
+            Layout = layout;
         }
 
         public float YawDegrees => QuarterTurns * RoomContract.RotationStepDegrees;
     }
 
     /// <summary>
-    /// A map plus the room placed in every cell. Plain data, so the same seed always gives the same layout
-    /// and a level builder only has to turn it into objects.
+    /// The map plus the room placed in each of its cells (a cell may be empty). Plain data made by <see cref="WorldMapText"/>; a level
+    /// builder only has to turn it into objects.
     /// </summary>
     public sealed class RoomLayout
     {
-        private readonly PlacedRoom[] rooms;
+        private readonly PlacedRoom?[] rooms;
+        private readonly List<PlacedRoom> placed = new List<PlacedRoom>();
 
         public MapData Map { get; }
 
-        internal RoomLayout(MapData map, PlacedRoom[] rooms)
+        /// <summary>Whether the layout has a lift end, where the player starts (<see cref="StartCell"/>).</summary>
+        public bool HasLift { get; }
+
+        /// <summary>The cell the player starts in: the lift end, otherwise the middle of the map.</summary>
+        public (int column, int row) StartCell { get; }
+
+        public RoomLayout(MapData map, PlacedRoom?[] rooms)
         {
-            Map = map;
+            Map = map ?? throw new ArgumentNullException(nameof(map));
+            if (rooms == null || rooms.Length != map.Width * map.Height) throw new ArgumentException("One entry per cell is needed.", nameof(rooms));
             this.rooms = rooms;
+            StartCell = (map.Width / 2, map.Height / 2);
+            foreach (var room in rooms)
+            {
+                if (!room.HasValue) continue;
+                placed.Add(room.Value);
+                if (room.Value.Type == RoomType.LiftEnd && !HasLift)
+                {
+                    HasLift = true;
+                    StartCell = (room.Value.Column, room.Value.Row);
+                }
+            }
         }
 
-        public IReadOnlyList<PlacedRoom> Rooms => rooms;
+        /// <summary>Every placed room, row by row from the south-west corner.</summary>
+        public IReadOnlyList<PlacedRoom> Rooms => placed;
+
+        public bool HasRoom(int column, int row) => Map.InBounds(column, row) && rooms[row * Map.Width + column].HasValue;
 
         public PlacedRoom GetRoom(int column, int row)
         {
-            if (!Map.InBounds(column, row)) throw new ArgumentOutOfRangeException($"Cell ({column}, {row}) is outside the map.");
-            return rooms[row * Map.Width + column];
+            if (!HasRoom(column, row)) throw new ArgumentOutOfRangeException($"Cell ({column}, {row}) has no room.");
+            return rooms[row * Map.Width + column].Value;
         }
 
         /// <summary>
-        /// PLACEHOLDER weight of a room type, until task 2.1 (room types, quotas, entry and gateway) replaces
-        /// the random choice with real quotas. Roughly: half corridors, a third server aisles, a few offices.
-        /// A type without an entry here counts as 10.
+        /// The turns and layouts with which a corridor of <paramref name="type"/> fits its cell and has its fire arm
+        /// (<see cref="RoomRules.FireArmSide"/>) towards a connected neighbour for which <paramref name="isRoom"/> holds.
+        /// Empty if no arm leads into a room.
         /// </summary>
-        public static int PlaceholderWeight(RoomType type)
+        public static List<(int turns, int layout)> FireArmOptions(MapData map, int column, int row, RoomType type, Func<int, int, bool> isRoom)
         {
-            switch (type)
+            var options = new List<(int turns, int layout)>();
+            foreach (int turns in RoomRules.FittingTurns(type, ConnectedSides(map, column, row)))
             {
-                case RoomType.Corridor: return 50;
-                case RoomType.ServerAisle: return 35;
-                case RoomType.Office: return 15;
-                default: return 10;
-            }
-        }
-
-        /// <summary>
-        /// PLACEHOLDER until task 2.1: every cell gets a random type from <paramref name="availableTypes"/>,
-        /// weighted by <see cref="PlaceholderWeight"/>, and a random quarter turn. Deterministic for a seed.
-        /// </summary>
-        public static RoomLayout Generate(MapData map, int seed, IReadOnlyList<RoomType> availableTypes)
-        {
-            if (map == null) throw new ArgumentNullException(nameof(map));
-            if (availableTypes == null || availableTypes.Count == 0) throw new ArgumentException("At least one room type is needed.", nameof(availableTypes));
-
-            int totalWeight = 0;
-            foreach (var type in availableTypes)
-            {
-                totalWeight += PlaceholderWeight(type);
-            }
-
-            // A separate stream from the map's own, so changing how rooms are chosen never changes the map.
-            var random = new Random(unchecked(seed * 31 + 17));
-            var rooms = new PlacedRoom[map.Width * map.Height];
-            for (int row = 0; row < map.Height; row++)
-            {
-                for (int column = 0; column < map.Width; column++)
+                for (int layout = 0; layout < RoomRules.LayoutCount(type); layout++)
                 {
-                    var type = PickType(availableTypes, random.Next(totalWeight));
-                    int turns = random.Next(4);
-                    rooms[row * map.Width + column] = new PlacedRoom(column, row, type, turns);
+                    int fire = RoomRules.Rotate(RoomRules.Mask(RoomRules.FireArmSide(type, layout)), turns);
+                    for (int d = 0; d < DirectionExtensions.Count; d++)
+                    {
+                        var side = (Direction)d;
+                        if (fire != RoomRules.Mask(side) || !map.IsConnected(column, row, side)) continue;
+                        if (isRoom(column + side.ColumnOffset(), row + side.RowOffset())) options.Add((turns, layout));
+                    }
                 }
             }
-            return new RoomLayout(map, rooms);
+            return options;
         }
 
-        private static RoomType PickType(IReadOnlyList<RoomType> availableTypes, int roll)
+        /// <summary>Mask of the connected sides of a cell (see <see cref="RoomRules"/>).</summary>
+        public static int ConnectedSides(MapData map, int column, int row)
         {
-            foreach (var type in availableTypes)
+            int mask = 0;
+            for (int d = 0; d < DirectionExtensions.Count; d++)
             {
-                roll -= PlaceholderWeight(type);
-                if (roll < 0) return type;
+                if (map.IsConnected(column, row, (Direction)d)) mask |= RoomRules.Mask((Direction)d);
             }
-            return availableTypes[availableTypes.Count - 1];
+            return mask;
         }
     }
 }

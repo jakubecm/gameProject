@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c378849b05d408a43b3703548276ed96, type: 3}
+  m_Name: RoomDefinition_CorridorCorner
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RoomDefinition
+  type: 10
+  prefab: {fileID: 6538223195301816406, guid: 687abf03dafbe4bdc8283e995129f690, type: 3}
+  otherLayouts:
+  - {fileID: 5544481347119978567, guid: 46a823164487547e8920b006326f3fdb, type: 3}

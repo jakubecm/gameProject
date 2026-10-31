@@ -73,82 +73,23 @@ namespace ColdShutdown.Tests.EditMode
         }
 
         [Test]
-        public void ServerAisle_HasTwelveSlots()
+        public void DoorPocket_HoldsTheOpenLeavesBesideTheOpening()
         {
-            Assert.AreEqual(RoomContract.ServerAisleRackSlots, RoomContract.GetServerAisleRackSlots().Length);
+            // Each leaf of the bi-parting door is half the opening wide and slides fully beside it.
+            Assert.GreaterOrEqual(RoomContract.DoorPocketEnd, RoomContract.OpeningWidth);
+            Assert.GreaterOrEqual(RoomContract.DoorPocketHeight, RoomContract.OpeningHeight);
+            Assert.LessOrEqual(RoomContract.DoorPocketHeight, RoomContract.CeilingHeight);
+            // Two pockets of neighbouring openings never meet in a corner.
+            Assert.Less(RoomContract.DoorPocketEnd, RoomContract.InteriorHalfSize - RoomContract.DoorPocketDepth);
         }
 
         [Test]
-        public void ServerAisle_RacksStayInsideInterior()
+        public void SmallRoom_IsHalfTheCellByItsSouthDoor()
         {
-            foreach (var (minX, maxX, minZ, maxZ) in Footprints())
-            {
-                Assert.GreaterOrEqual(minX, -RoomContract.InteriorHalfSize - Epsilon);
-                Assert.LessOrEqual(maxX, RoomContract.InteriorHalfSize + Epsilon);
-                Assert.GreaterOrEqual(minZ, -RoomContract.InteriorHalfSize - Epsilon);
-                Assert.LessOrEqual(maxZ, RoomContract.InteriorHalfSize + Epsilon);
-            }
-        }
-
-        [Test]
-        public void ServerAisle_RacksDoNotBlockKeepClearCross()
-        {
-            float half = RoomContract.KeepClearWidth / 2f;
-            foreach (var (minX, maxX, minZ, maxZ) in Footprints())
-            {
-                // The cross is the union of a strip along X and a strip along Z, both centered on the origin.
-                bool hitsStripAlongX = minZ < half - Epsilon && maxZ > -half + Epsilon;
-                bool hitsStripAlongZ = minX < half - Epsilon && maxX > -half + Epsilon;
-                Assert.IsFalse(hitsStripAlongX || hitsStripAlongZ);
-            }
-        }
-
-        [Test]
-        public void ServerAisle_RacksDoNotOverlapEachOther()
-        {
-            var boxes = Footprints().ToArray();
-            for (int i = 0; i < boxes.Length; i++)
-            {
-                for (int j = i + 1; j < boxes.Length; j++)
-                {
-                    bool overlapX = boxes[i].minX < boxes[j].maxX - Epsilon && boxes[j].minX < boxes[i].maxX - Epsilon;
-                    bool overlapZ = boxes[i].minZ < boxes[j].maxZ - Epsilon && boxes[j].minZ < boxes[i].maxZ - Epsilon;
-                    Assert.IsFalse(overlapX && overlapZ, $"Slots {i} and {j} overlap");
-                }
-            }
-        }
-
-        [Test]
-        public void ServerAisle_RackBacksStandAgainstWalls()
-        {
-            foreach (var (minX, maxX, _, _) in Footprints())
-            {
-                bool againstWest = System.Math.Abs(minX + RoomContract.InteriorHalfSize) < Epsilon;
-                bool againstEast = System.Math.Abs(maxX - RoomContract.InteriorHalfSize) < Epsilon;
-                Assert.IsTrue(againstWest || againstEast);
-            }
-        }
-
-        [Test]
-        public void ServerAisle_RacksFaceTheRoomInterior()
-        {
-            foreach (var slot in RoomContract.GetServerAisleRackSlots())
-            {
-                float expectedYaw = slot.X < 0 ? 90f : 270f;
-                Assert.AreEqual(expectedYaw, slot.YawDegrees, Epsilon);
-            }
-        }
-
-        // Rack footprints in room-local space. Slots are on the east/west walls and face along X,
-        // so the rack depth runs along X and its width along Z.
-        private static System.Collections.Generic.IEnumerable<(float minX, float maxX, float minZ, float maxZ)> Footprints()
-        {
-            foreach (var slot in RoomContract.GetServerAisleRackSlots())
-            {
-                float halfDepth = RoomContract.RackDepth / 2f;
-                float halfWidth = RoomContract.RackWidth / 2f;
-                yield return (slot.X - halfDepth, slot.X + halfDepth, slot.Z - halfWidth, slot.Z + halfWidth);
-            }
+            Assert.AreEqual(RoomContract.InteriorHalfSize, RoomContract.SmallRoomDepth, Epsilon);
+            Assert.Less(RoomContract.SmallRoomKeepClearDepth, RoomContract.SmallRoomDepth);
+            // The back wall stays behind the east and west openings' middle, so their plugs close the room.
+            Assert.GreaterOrEqual(RoomContract.SmallRoomBackWall, -Epsilon);
         }
     }
 }

@@ -4,7 +4,8 @@
     "references": [
         "ColdShutdown.Core",
         "ColdShutdown.Runtime",
-        "Unity.ProBuilder"
+        "Unity.ProBuilder",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [
         "Editor"

@@ -17,6 +17,7 @@ namespace ColdShutdown.Runtime
         [SerializeField] private LayerMask layerMask = ~0;
 
         private InputAction interactAction;
+        private InputAction secondaryAction;
         private IInteractable focused;
         private bool holding;
         private float holdTime;
@@ -35,6 +36,11 @@ namespace ColdShutdown.Runtime
         /// <summary>Display name of the interact key, for on-screen hints (for example "E").</summary>
         public string KeyLabel => interactAction.GetBindingDisplayString();
 
+        /// <summary>Display name of the key that uses <paramref name="target"/> (E, or F for a rack door).</summary>
+        public string KeyLabelFor(IInteractable target) => ActionFor(target).GetBindingDisplayString();
+
+        private InputAction ActionFor(IInteractable target) => target != null && target.Key == InteractKey.Secondary ? secondaryAction : interactAction;
+
         private void Awake()
         {
             if (viewCamera == null)
@@ -42,18 +48,28 @@ namespace ColdShutdown.Runtime
                 viewCamera = GetComponent<Camera>();
             }
             interactAction = new InputAction("Interact", InputActionType.Button, "<Keyboard>/e");
+            secondaryAction = new InputAction("InteractSecondary", InputActionType.Button, "<Keyboard>/f");
         }
 
-        private void OnEnable() => interactAction.Enable();
+        private void OnEnable()
+        {
+            interactAction.Enable();
+            secondaryAction.Enable();
+        }
 
         private void OnDisable()
         {
             interactAction.Disable();
+            secondaryAction.Disable();
             CancelHold();
             SetFocus(null);
         }
 
-        private void OnDestroy() => interactAction.Dispose();
+        private void OnDestroy()
+        {
+            interactAction.Dispose();
+            secondaryAction.Dispose();
+        }
 
         private void Update()
         {
@@ -62,15 +78,16 @@ namespace ColdShutdown.Runtime
             SetFocus(FindTarget());
             if (focused == null) return;
 
+            var action = ActionFor(focused);
             if (focused.HoldDuration <= 0f)
             {
-                if (interactAction.WasPressedThisFrame()) Use();
+                if (action.WasPressedThisFrame()) Use();
                 return;
             }
 
             // A hold has to start with a fresh press while looking at the object,
             // so holding the key while sweeping the view over it does nothing.
-            if (interactAction.WasPressedThisFrame())
+            if (action.WasPressedThisFrame())
             {
                 holding = true;
                 holdTime = 0f;
@@ -78,7 +95,7 @@ namespace ColdShutdown.Runtime
 
             if (!holding) return;
 
-            if (!interactAction.IsPressed())
+            if (!action.IsPressed())
             {
                 CancelHold();
                 return;
@@ -102,7 +119,12 @@ namespace ColdShutdown.Runtime
             // Everything blocks the ray, so a wall between the player and a terminal hides it.
             if (Physics.Raycast(ray, out var hit, maxDistance, layerMask, QueryTriggerInteraction.Ignore))
             {
-                return hit.collider.GetComponentInParent<IInteractable>();
+                // A disabled component (a closed rack's door) is not interactable.
+                foreach (var candidate in hit.collider.GetComponentsInParent<IInteractable>())
+                {
+                    if (candidate is Behaviour behaviour && !behaviour.isActiveAndEnabled) continue;
+                    return candidate;
+                }
             }
             return null;
         }

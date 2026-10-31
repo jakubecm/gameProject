@@ -88,3 +88,13 @@ crashlytics-build.properties
 
 # Temporarily gitignore docs
 docs
+
+# ---- Local tool state (Claude Code write tracking, IDE folders, test output) ----
+**/.cc-writes/
+/[Aa]ssets/**/.claude/
+.idea/
+.vscode/
+/TestResults*.xml
+/TestResults/
+*.orig
+Thumbs.db
