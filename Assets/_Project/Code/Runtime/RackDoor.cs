@@ -20,8 +20,8 @@ namespace ColdShutdown.Runtime
         [SerializeField, Range(0f, 180f)] private float openAngle = 112f;
         [Tooltip("Degrees per second.")]
         [SerializeField, Min(1f)] private float swingSpeed = 130f;
-        [SerializeField] private string openPrompt = "Otevřít dveře racku";
-        [SerializeField] private string closePrompt = "Zavřít dveře racku";
+        [SerializeField] private string openPrompt = "Open rack door";
+        [SerializeField] private string closePrompt = "Close rack door";
 
         private float angle;
         private float target;

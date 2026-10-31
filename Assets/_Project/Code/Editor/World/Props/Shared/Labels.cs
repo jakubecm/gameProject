@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ColdShutdown.Editor
 {
-    /// <summary>Stickers and name plates: quads showing one cell of the Czech label atlas T_PlantLabels.png.</summary>
+    /// <summary>Stickers and name plates: quads showing one cell of the English label atlas T_PlantLabels.png.</summary>
     public static partial class Props
     {
         /// <summary>How far a sticker stands off the surface it is on: enough for the depth buffer at any distance, so it never flickers.</summary>

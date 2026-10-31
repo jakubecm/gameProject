@@ -11,7 +11,7 @@ namespace ColdShutdown.Runtime
     public class AnalogGauge : MonoBehaviour
     {
         [SerializeField] private Transform needle;
-        [Tooltip("What the gauge measures, for the clue system (for example \"Sekce B\" or \"Výstup chladiva\").")]
+        [Tooltip("What the gauge measures, for the clue system (for example \"Section B\" or \"Coolant outlet\").")]
         [SerializeField] private string label;
         [SerializeField, Range(0f, 1f)] private float value = 0.35f;
         [SerializeField] private float minAngle = 135f;
