@@ -21,6 +21,7 @@ namespace ColdShutdown.Editor
         AisleDoor,
         PassengerLift,
         FreightLift,
+        LiftCeiling,
 
         // Lighting
         LedPanel,
@@ -28,6 +29,7 @@ namespace ColdShutdown.Editor
         PendantLight,
         PendantLightGirder,
         AisleLight,
+        LiftCeilingLight,
         ExitSign,
 
         // Safety and security

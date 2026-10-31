@@ -54,7 +54,7 @@ All code and tests live under `Assets/` (Unity compiles nothing outside it).
 | Server hall | Core: `HallContract` (numbers), `HallPlan` (side/corner kinds, node codes A1...); Runtime: `HallKit` (pieces), `HallSign` |
 | Building the level | Runtime: `LevelBuilder` (`Build()` the world map: rooms, wall plugs, doors, the baked hall, racks, player in the lift; event `LevelBuilt`; same code in Main at Play and in Sandbox_B in the editor), `RoomDefinition` (type → layout prefabs) |
 | Slots | Runtime: `RackSlot`, `TerminalSlot` (pivot on floor, forward = into the room), `SlotGizmos`, `SlotPoseExtensions` |
-| Racks | Runtime: `Rack` (`Configure(openable, seed)`), `RackDoor` (on the door hinge; F opens/shuts only when looking at the door; `OpenChanged`), `RackGlow`, `RackPlacement` (which racks open), `RackContentLibrary` |
+| Racks | Runtime: `Rack` (`Configure(openable, seed)`), `RackDoor` (on the door hinge; F opens/shuts only when looking at the door; `OpenChanged`), `RackGlow`, `RackPlacement` (which racks open: one per row, never the first or last rack of a run), `RackContentLibrary` |
 | Doors | Runtime: `AutoSlidingDoor` (photo cells, readers, `IsLocked`), `AisleDoor` (derived, single leaf) |
 | CCTV | Runtime: `SecurityCamera`, `SecurityMonitor`, `SecurityMonitorWall` (pages feeds, only near the player, Play mode) |
 | Clue displays | Runtime: `AnalogGauge` (needle follows `Value` 0-1) |

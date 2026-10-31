@@ -12,7 +12,8 @@ namespace ColdShutdown.Editor
         /// <summary>Along the wall on the other side: the reader beside the frame, inside the 3 m wide corridor arm.</summary>
         public const float OuterReaderAlongWall = 1.37f;
 
-        public const float ReaderHeight = 1.1f;
+        /// <summary>Height of the middle of an RFID reader (125 mm tall): its top edge is <see cref="FittingTopHeight"/>, in line with the call points and light switches.</summary>
+        public const float ReaderHeight = FittingTopHeight - 0.0625f;
 
         /// <summary>
         /// Two glass leaves, side by side in the opening, after a product photo of an automatic sliding door: a slim frame of stainless
@@ -89,8 +90,8 @@ namespace ColdShutdown.Editor
         /// - a two-panel centre-opening stainless door 1.1 x 2.1 m: the landing panels behind the wall and the car panels
         ///   behind them move together, like a real lift, and open by themselves (<see cref="AutoSlidingDoor"/>) for anyone
         ///   standing in front of the door or just inside the car;
-        /// - the car for 6 to 8 people (1.6 x 1.5 m inside, 2.3 m high): stainless walls, a mirror on the back wall,
-        ///   handrails, a rubber floor, a lit ceiling and the car operating panel; the player starts every run in it;
+        /// - the car for 6 to 8 people (1.6 x 1.5 m inside, 2.3 m high): stainless walls, handrails,
+        ///   a rubber floor, a brushed ceiling with a recessed light and the car operating panel; the player starts every run in it;
         /// - on the landing: a stainless frame, the sill, the call buttons, the floor indicator, the exit sign over the door
         ///   (the lift is the way out), the evacuation lift sign (EN 81-72).
         /// </summary>

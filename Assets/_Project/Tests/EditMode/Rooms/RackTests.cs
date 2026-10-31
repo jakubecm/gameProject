@@ -164,6 +164,20 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 Assert.AreEqual(1, openable.Count(p => p.z < center && p.z > center - 2f), $"Pod {pod}: south row");
             }
 
+            // The openable rack is never the first or the last of its row.
+            float rowEnd = HallContract.PodHalfLength - RoomContract.RackWidth / 2f;
+            foreach (var position in openable)
+            {
+                Assert.Less(Mathf.Abs(position.x), rowEnd - 0.01f, $"An openable rack stands at the end of its row: {position}");
+            }
+            for (int seed = 0; seed < 50; seed++)
+            {
+                foreach (var rack in RackPlacement.Assign(room.GetComponentsInChildren<RackSlot>(), slot => MakeRack(slot), seed).Where(r => r.IsOpenable))
+                {
+                    Assert.Less(Mathf.Abs(rack.transform.position.x), rowEnd - 0.01f, $"Seed {seed}: an openable rack stands at the end of its row");
+                }
+            }
+
             // The same seed makes the same racks.
             var again = RackPlacement.Assign(room.GetComponentsInChildren<RackSlot>(), slot => MakeRack(slot), 3);
             CollectionAssert.AreEqual(racks.Select(r => r.IsOpenable), again.Select(r => r.IsOpenable));

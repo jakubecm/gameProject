@@ -9,7 +9,8 @@ namespace ColdShutdown.Runtime
     /// Puts a <see cref="Rack"/> on every <see cref="RackSlot"/> and decides which racks are openable (attackable): exactly one of the
     /// two racks of the security office, and in every server aisle (the two rows of racks facing each other) exactly one rack in each
     /// row, so two per aisle, one on each side. The choice and the random fillings depend only on the seed and the slot positions, so
-    /// the same seed builds the same racks.
+    /// the same seed builds the same racks. In a row of server racks the openable rack is never the first or the last one of its run
+    /// (a run is a stretch of racks standing side by side, so a pod's row of 14 has 12 candidates).
     ///
     /// A slot's room is its parent's parent (slots sit in a <c>RackSlots</c> group directly under the room); the rows of a hall tile are
     /// the slots of one room that share the same local Z.
@@ -49,7 +50,8 @@ namespace ColdShutdown.Runtime
                 var list = pair.Value;
                 var first = list[0].transform.position;
                 int hash = Hash(first, seed);
-                openable.Add(list[new System.Random(hash).Next(list.Count)]);
+                var candidates = Candidates(pair.Key.room, list);
+                openable.Add(candidates[new System.Random(hash).Next(candidates.Count)]);
             }
 
             var racks = new List<Rack>();
@@ -61,6 +63,30 @@ namespace ColdShutdown.Runtime
                 racks.Add(rack);
             }
             return racks;
+        }
+
+        /// <summary>Largest distance between the middles of two neighbouring racks of one run (a rack is 0.6 m wide).</summary>
+        private const float RunGap = 0.9f;
+
+        /// <summary>
+        /// The slots of a row that may hold the openable rack: all but the first and the last slot of every run of racks standing side by side.
+        /// A group without a run of three or more (the two racks of the security office) keeps all its slots.
+        /// </summary>
+        private static List<RackSlot> Candidates(Transform room, List<RackSlot> row)
+        {
+            float LocalX(RackSlot slot) => room != null ? room.InverseTransformPoint(slot.transform.position).x : slot.transform.position.x;
+            var sorted = new List<RackSlot>(row);
+            sorted.Sort((a, b) => LocalX(a).CompareTo(LocalX(b)));
+            var candidates = new List<RackSlot>();
+            int start = 0;
+            for (int i = 1; i <= sorted.Count; i++)
+            {
+                if (i < sorted.Count && LocalX(sorted[i]) - LocalX(sorted[i - 1]) <= RunGap) continue;
+                // The run is sorted[start .. i - 1]: its two ends are never candidates.
+                for (int k = start + 1; k < i - 1; k++) candidates.Add(sorted[k]);
+                start = i;
+            }
+            return candidates.Count > 0 ? candidates : row;
         }
 
         private static int Hash(Vector3 position, int seed)

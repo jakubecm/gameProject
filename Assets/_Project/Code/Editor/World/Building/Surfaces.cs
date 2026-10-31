@@ -22,7 +22,7 @@ namespace ColdShutdown.Editor
         Upholstery,
         Screen,
         LightPanel,
-        Whiteboard,
+        MugCeramic,
         SafetyRed,
         CeilingGrid,
         Trunking,
@@ -112,17 +112,20 @@ namespace ColdShutdown.Editor
         ResinCoil,
         PowerDialFace,
         // Server racks and the servers in them (product photos): painted black cabinet, hex-perforated door (alpha-cut texture), black and
-        // silver server bezels, dark drive carriers, orange and red release latches, amber status LED, slotted and honeycomb vent textures.
+        // silver server bezels, dark drive carriers, red status windows, amber status LED, honeycomb and slotted vent textures.
         RackBlack,
         RackMesh,
         ServerBlack,
         ServerSilver,
         DriveBay,
-        LatchOrange,
         LatchRed,
         LedAmber,
-        ServerSlots,
         ServerHoneycomb,
+        // Rack items: the 3 U chassis' slotted drive-bay covers (texture), the black void behind drive carriers and inside ports, the rack UPS' blue LCD (texture), the dark grey switch faceplate.
+        ChassisVent,
+        ServerVoid,
+        UpsDisplay,
+        SwitchFace,
         // Hall: slotted galvanised cable tray (alpha-cut slots), perforated raised-floor tile (round holes).
         TrayPerforated,
         FloorTilePerforated,
@@ -139,6 +142,8 @@ namespace ColdShutdown.Editor
         // Cable drops into the aisles: brown (power) and green (data).
         ConduitBrown,
         ConduitGreen,
+        // Passenger lift: brushed stainless ceiling panels (texture T_LiftCeiling).
+        LiftCeiling,
     }
 
     /// <summary>
@@ -185,7 +190,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.Screen, new Look(0.04f, 0f, 0.85f) },
             // Fluorescent tubes: emissive so the fitting reads as lit; the light itself is a Light component.
             { SurfaceMaterial.LightPanel, new Look(Color.white, 0f, 0.5f, new Color(1f, 0.96f, 0.9f) * 1.5f) },
-            { SurfaceMaterial.Whiteboard, new Look(0.9f, 0f, 0.7f) },
+            { SurfaceMaterial.MugCeramic, new Look(0.9f, 0f, 0.7f) },
             { SurfaceMaterial.SafetyRed, new Look(new Color(0.7f, 0.08f, 0.06f), 0.1f, 0.6f) },
             { SurfaceMaterial.CeilingGrid, new Look(new Color(0.94f, 0.94f, 0.93f), 0.05f, 0.5f) },
             { SurfaceMaterial.Trunking, new Look(0.93f, 0f, 0.35f) },
@@ -286,13 +291,15 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.ServerBlack, new Look(new Color(0.025f, 0.025f, 0.028f), 0.2f, 0.35f) },
             { SurfaceMaterial.ServerSilver, new Look(new Color(0.62f, 0.63f, 0.64f), 0.85f, 0.45f) },
             { SurfaceMaterial.DriveBay, new Look(new Color(0.07f, 0.07f, 0.075f), 0.3f, 0.4f) },
-            { SurfaceMaterial.LatchOrange, new Look(new Color(0.95f, 0.42f, 0.05f), 0.1f, 0.5f) },
             { SurfaceMaterial.LatchRed, new Look(new Color(0.62f, 0.04f, 0.09f), 0.1f, 0.5f) },
             { SurfaceMaterial.LedAmber, new Look(new Color(1f, 0.55f, 0.05f), 0f, 0.5f, new Color(1f, 0.5f, 0.05f) * 2f) },
-            { SurfaceMaterial.ServerSlots, new Look(Color.white, 0.2f, 0.35f) },
             { SurfaceMaterial.ServerHoneycomb, new Look(Color.white, 0.2f, 0.35f) },
+            { SurfaceMaterial.ChassisVent, new Look(Color.white, 0.3f, 0.4f) },
+            { SurfaceMaterial.ServerVoid, new Look(new Color(0.003f, 0.003f, 0.004f), 0f, 0.15f) },
+            { SurfaceMaterial.UpsDisplay, new Look(Color.white, 0f, 0.35f, new Color(0.15f, 0.25f, 0.7f) * 0.8f) },
+            { SurfaceMaterial.SwitchFace, new Look(new Color(0.17f, 0.175f, 0.18f), 0.6f, 0.4f) },
             { SurfaceMaterial.TrayPerforated, new Look(new Color(0.66f, 0.68f, 0.7f), 0.85f, 0.5f) },
-            { SurfaceMaterial.FloorTilePerforated, new Look(Color.white, 0.4f, 0.4f) },
+            { SurfaceMaterial.FloorTilePerforated, new Look(Color.white, 0.05f, 0.5f) },
             { SurfaceMaterial.Concrete, new Look(new Color(0.58f, 0.58f, 0.57f), 0f, 0.12f) },
             { SurfaceMaterial.DuctStainless, new Look(new Color(0.62f, 0.64f, 0.66f), 0.7f, 0.55f) },
             { SurfaceMaterial.ConduitViolet, new Look(new Color(0.55f, 0.28f, 0.8f), 0.1f, 0.5f) },
@@ -302,6 +309,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.RackGlow, new Look(new Color(1f, 0.95f, 0.8f, 0.85f), 0f, 0f) },
             { SurfaceMaterial.ConduitBrown, new Look(new Color(0.45f, 0.27f, 0.12f), 0.1f, 0.5f) },
             { SurfaceMaterial.ConduitGreen, new Look(new Color(0.2f, 0.62f, 0.3f), 0.1f, 0.5f) },
+            { SurfaceMaterial.LiftCeiling, new Look(Color.white, 0.85f, 0.35f) },
         };
 
         public static string PathOf(SurfaceMaterial surface) => $"{Folder}/M_{surface}.mat";
@@ -324,7 +332,8 @@ namespace ColdShutdown.Editor
                 || surface == SurfaceMaterial.MonitorImage || surface == SurfaceMaterial.ChairQuilt || surface == SurfaceMaterial.PaperPage
                 || surface == SurfaceMaterial.ExitSignFace || surface == SurfaceMaterial.PhotoPicture || surface == SurfaceMaterial.DialFace || surface == SurfaceMaterial.PlantLabels || surface == SurfaceMaterial.PowerDialFace
                 || surface == SurfaceMaterial.CeilingTile600 || surface == SurfaceMaterial.RackGlow || surface == SurfaceMaterial.TrayPerforated || surface == SurfaceMaterial.FloorTilePerforated
-                || surface == SurfaceMaterial.RackMesh || surface == SurfaceMaterial.ServerSlots || surface == SurfaceMaterial.ServerHoneycomb) ApplyTextures();
+                || surface == SurfaceMaterial.LiftCeiling || surface == SurfaceMaterial.RackMesh || surface == SurfaceMaterial.ServerHoneycomb
+                || surface == SurfaceMaterial.ChassisVent || surface == SurfaceMaterial.UpsDisplay) ApplyTextures();
             return material;
         }
 
@@ -418,17 +427,25 @@ namespace ColdShutdown.Editor
             ceilingTile.SetTexture("_BaseMap", CeilingTileTexture());
             EditorUtility.SetDirty(ceilingTile);
 
+            var liftCeiling = Get(SurfaceMaterial.LiftCeiling);
+            liftCeiling.SetTexture("_BaseMap", LiftCeilingTexture());
+            EditorUtility.SetDirty(liftCeiling);
+
             var floorTile = Get(SurfaceMaterial.FloorTilePerforated);
             floorTile.SetTexture("_BaseMap", FloorTileTexture());
             EditorUtility.SetDirty(floorTile);
 
-            var slots = Get(SurfaceMaterial.ServerSlots);
-            slots.SetTexture("_BaseMap", SlotTexture());
-            EditorUtility.SetDirty(slots);
-
             var honeycomb = Get(SurfaceMaterial.ServerHoneycomb);
             honeycomb.SetTexture("_BaseMap", HoneycombTexture());
             EditorUtility.SetDirty(honeycomb);
+
+            var chassisVent = Get(SurfaceMaterial.ChassisVent);
+            chassisVent.SetTexture("_BaseMap", ChassisVentTexture());
+            EditorUtility.SetDirty(chassisVent);
+
+            var upsDisplay = Get(SurfaceMaterial.UpsDisplay);
+            upsDisplay.SetTexture("_BaseMap", UpsDisplayTexture());
+            EditorUtility.SetDirty(upsDisplay);
 
             var lid = Get(SurfaceMaterial.FloorBoxMetal);
             lid.SetTexture("_BaseMap", null);
@@ -674,7 +691,7 @@ namespace ColdShutdown.Editor
             float outer = Mathf.Min(Mathf.Min(px, w - px), Mathf.Min(py, h - py));
             // Distance to the inner edge of the frame (the grille opening), negative inside the frame.
             float inner = Mathf.Max(Mathf.Max(0.045f - px, px - (w - 0.065f)), Mathf.Max(0.10f - py, py - (h - 0.10f)));
-            float alpha = 0.07f * Mathf.Exp(-outer * 160f) + 0.08f * Mathf.Exp(-Mathf.Abs(inner) * 220f);
+            float alpha = 0.14f * Mathf.Exp(-outer * 160f) + 0.16f * Mathf.Exp(-Mathf.Abs(inner) * 220f);
             return new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
         });
 
@@ -700,23 +717,59 @@ namespace ColdShutdown.Editor
             return new Color(shade, shade, shade * 0.98f);
         });
 
-        /// <summary>One cell (25 mm) of a perforated floor tile: a round hole in light galvanised steel.</summary>
-        private static Texture2D FloorTileTexture() => GeneratedTexture("T_FloorTilePerforated", 64, 64, (x, y) =>
+        /// <summary>
+        /// One 400 mm panel of the lift ceiling: matt brushed stainless in exactly the grey of the car's walls (a faint grain along the panel) with a dark joint
+        /// round it and a thin bright bevel inside the joint. Seamless, since the joint hides the edge.
+        /// </summary>
+        private static Texture2D LiftCeilingTexture() => GeneratedTexture("T_LiftCeiling", 512, 512, (x, y) =>
         {
-            float u = (x + 0.5f) / 64f - 0.5f;
-            float v = (y + 0.5f) / 64f - 0.5f;
-            float distance = Mathf.Sqrt(u * u + v * v);
-            return distance < 0.3f ? new Color(0.03f, 0.03f, 0.035f) : new Color(0.74f, 0.75f, 0.76f);
+            const int size = 512;
+            float u = (x + 0.5f) / size;
+            float v = (y + 0.5f) / size;
+            int edgePixels = Mathf.Min(Mathf.Min(x, size - 1 - x), Mathf.Min(y, size - 1 - y));
+            if (edgePixels < 2) return new Color(0.07f, 0.07f, 0.08f);
+            // Brushing runs along u. The grey is exactly the car walls' (StainlessSteel, 0.30 / 0.31 / 0.32) with only a faint grain, so the ceiling and
+            // the walls read as the same steel; the joints are the only visible structure.
+            float streak = (Mathf.PerlinNoise(u * 6f, v * 220f) - 0.5f) * 0.03f;
+            float grain = (((x * 73856093 ^ y * 19349663) & 255) / 255f - 0.5f) * 0.012f;
+            float shade = streak + grain;
+            if (edgePixels < 5) shade += 0.025f * (1f - (edgePixels - 2) / 3f);
+            return new Color(0.30f + shade, 0.31f + shade, 0.32f + shade);
         });
 
-        /// <summary>Vertical vent slots of a server chassis, one cell per slot (<c>Props.SlotCellWidth</c> x <c>SlotCellHeight</c> m).</summary>
-        private static Texture2D SlotTexture() => GeneratedTexture("T_ServerSlots", 32, 56, (x, y) =>
+        /// <summary>
+        /// A 0.1 m square of the perforated floor tile: 4 x 4 round holes at a 25 mm pitch, every second row shifted by half a pitch. Powder-coated steel in the
+        /// grey of the hall floor with fine paint grain and a few scratches, a chamfered lighter rim round every hole, and in the hole a dark gradient (the
+        /// plenum), darker towards the middle. Seamless.
+        /// </summary>
+        private static Texture2D FloorTileTexture() => GeneratedTexture("T_FloorTilePerforated", 256, 256, (x, y) =>
         {
-            float u = (x + 0.5f) / 32f;
-            float v = (y + 0.5f) / 56f;
-            bool slot = Mathf.Abs(u - 0.5f) < 0.2f && Mathf.Abs(v - 0.5f) < 0.36f;
-            return slot ? new Color(0.004f, 0.004f, 0.005f) : new Color(0.03f, 0.03f, 0.034f);
-        });
+            const float cells = 4f;
+            float u = (x + 0.5f) / 256f * cells;
+            float v = (y + 0.5f) / 256f * cells;
+            int row = Mathf.FloorToInt(v);
+            float shift = (row % 2 == 0) ? 0f : 0.5f;
+            float fu = u + shift;
+            float cellU = fu - Mathf.Floor(fu) - 0.5f;
+            float cellV = v - Mathf.Floor(v) - 0.5f;
+            float distance = Mathf.Sqrt(cellU * cellU + cellV * cellV);
+            const float radius = 0.27f;
+            float grain = (Mathf.PerlinNoise(x * 0.35f, y * 0.35f) - 0.5f) * 0.05f + (((x * 73856093) ^ (y * 19349663)) & 255) / 255f * 0.025f;
+            float scratch = Mathf.PerlinNoise(x * 0.02f, y * 0.9f) > 0.78f ? 0.03f : 0f;
+            var paint = new Color(0.37f, 0.39f, 0.41f);
+            if (distance < radius)
+            {
+                float depth = Mathf.Clamp01(distance / radius);
+                float shade = Mathf.Lerp(0.012f, 0.07f, depth * depth);
+                return new Color(shade, shade, shade * 1.1f);
+            }
+            float rim = distance - radius;
+            float bevel = rim < 0.045f ? Mathf.Lerp(0.16f, 0f, rim / 0.045f) : 0f;
+            // A soft darker halo of dirt round the rim.
+            float halo = rim < 0.12f ? -0.05f * (1f - rim / 0.12f) : 0f;
+            float lift = grain + scratch + bevel + halo;
+            return new Color(paint.r + lift, paint.g + lift, paint.b + lift);
+        }, 4);
 
         /// <summary>Honeycomb vent of a drive carrier, one tile of <c>Props.HoneycombTile</c> m wide: dark hexagonal holes in grey plastic.</summary>
         private static Texture2D HoneycombTexture() => GeneratedTexture("T_ServerHoneycomb", 64, 111, (x, y) =>
@@ -730,6 +783,78 @@ namespace ColdShutdown.Editor
             }
             return best < 0.4f ? new Color(0.004f, 0.004f, 0.005f) : new Color(0.1f, 0.1f, 0.105f);
         });
+
+        /// <summary>
+        /// One cell of the drive-bay covers of the 3 U chassis (<c>Props.ChassisVentTile</c> square): a tall slot and a round hole under it in
+        /// black sheet steel, with a faint lighter rim round each hole where the punched edge catches the light.
+        /// </summary>
+        private static Texture2D ChassisVentTexture() => GeneratedTexture("T_ChassisVent", 64, 64, (x, y) =>
+        {
+            float u = (x + 0.5f) / 64f;
+            float v = (y + 0.5f) / 64f;
+            // Slot (rounded ends) in the upper part, a round hole in the lower.
+            float slotDistance = SlotDistance(u, v, 0.5f, 0.50f, 0.07f, 0.17f);
+            float dotDistance = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.13f) * (v - 0.13f)) - 0.07f;
+            float d = Mathf.Min(slotDistance, dotDistance);
+            if (d < 0f) return new Color(0.004f, 0.004f, 0.005f);
+            if (d < 0.035f) return new Color(0.11f, 0.11f, 0.12f);
+            float grain = Mathf.PerlinNoise(u * 18f, v * 18f) * 0.012f;
+            return new Color(0.045f + grain, 0.046f + grain, 0.05f + grain);
+        });
+
+        /// <summary>Signed distance to a vertical slot (a rounded segment) centred on (cx, cy), half width r, half length of the straight part l.</summary>
+        private static float SlotDistance(float u, float v, float cx, float cy, float r, float l)
+        {
+            float dy = Mathf.Max(Mathf.Abs(v - cy) - l, 0f);
+            return Mathf.Sqrt((u - cx) * (u - cx) + dy * dy) - r;
+        }
+
+        /// <summary>
+        /// The LCD of the rack UPS: a blue 96 x 40 pixel display with two lines of light text in a 5 x 7 pixel font ("ONLINE MODE", "OUT:230V 49.9HZ").
+        /// </summary>
+        private static Texture2D UpsDisplayTexture() => GeneratedTexture("T_UpsDisplay", 96, 40, (x, y) =>
+        {
+            var glyphs = LcdGlyphs;
+            int row = 39 - y;
+            float shade = 0.9f + 0.1f * (y / 39f);
+            var background = new Color(0.10f * shade, 0.24f * shade, 0.92f * shade);
+            // Two text lines of 7 pixel rows each, starting at rows 8 and 21.
+            foreach (var (text, top) in new[] { ("ONLINE MODE", 8), ("OUT:230V 49.9HZ", 21) })
+            {
+                int textRow = row - top;
+                int column = x - 3;
+                if (textRow < 0 || textRow >= 7 || column < 0) continue;
+                int index = column / 6;
+                if (index >= text.Length) continue;
+                int inside = column % 6;
+                if (inside < 5 && glyphs[text[index]][textRow][inside] == '#') return new Color(0.86f, 0.92f, 1f);
+            }
+            return background;
+        });
+
+        private static readonly Dictionary<char, string[]> LcdGlyphs = new Dictionary<char, string[]>
+        {
+            { 'O', new[] { ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
+            { 'N', new[] { "#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#" } },
+            { 'L', new[] { "#....", "#....", "#....", "#....", "#....", "#....", "#####" } },
+            { 'I', new[] { ".###.", "..#..", "..#..", "..#..", "..#..", "..#..", ".###." } },
+            { 'E', new[] { "#####", "#....", "#....", "####.", "#....", "#....", "#####" } },
+            { 'M', new[] { "#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#" } },
+            { 'D', new[] { "####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####." } },
+            { 'U', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
+            { 'T', new[] { "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.." } },
+            { 'V', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.." } },
+            { 'H', new[] { "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#" } },
+            { 'Z', new[] { "#####", "....#", "...#.", "..#..", ".#...", "#....", "#####" } },
+            { ':', new[] { ".....", "..#..", "..#..", ".....", "..#..", "..#..", "....." } },
+            { '.', new[] { ".....", ".....", ".....", ".....", ".....", ".##..", ".##.." } },
+            { '0', new[] { ".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###." } },
+            { '2', new[] { ".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####" } },
+            { '3', new[] { ".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###." } },
+            { '4', new[] { "...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#." } },
+            { '9', new[] { ".###.", "#...#", "#...#", ".####", "....#", "#...#", ".###." } },
+            { ' ', new[] { ".....", ".....", ".....", ".....", ".....", ".....", "....." } },
+        };
 
         /// <summary>Resets every material to the look defined here, keeping the asset (and its GUID). Rebuild only.</summary>
         public static void ResetAll()

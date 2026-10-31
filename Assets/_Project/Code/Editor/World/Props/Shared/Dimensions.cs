@@ -12,8 +12,14 @@ namespace ColdShutdown.Editor
     /// <summary>Prop dimensions the rooms place things by (mounting heights, worktop and shelf heights, box sizes).</summary>
     public static partial class Props
     {
-        /// <summary>Height of the manual call points and the gas release station.</summary>
-        public const float CallPointHeight = 1.4f;
+        /// <summary>
+        /// The one plane the tops of the wall fittings at hand height share: the manual call points (92 mm), the light switches (80 mm) and the RFID readers
+        /// (125 mm) are all hung so their upper edge is at this height.
+        /// </summary>
+        public const float FittingTopHeight = 1.37f;
+
+        /// <summary>Height of the middle of a manual call point (92 mm square) and the gas release station: its top edge is <see cref="FittingTopHeight"/>.</summary>
+        public const float CallPointHeight = FittingTopHeight - 0.046f;
 
         /// <summary>
         /// Gap between a wall grille and the floor or the ceiling: a low grille starts this high above the floor, a high
@@ -25,8 +31,11 @@ namespace ColdShutdown.Editor
         /// <summary>Center height of a small high grille under a ceiling at <paramref name="ceiling"/>.</summary>
         public static float HighGrilleCenter(float ceiling) => ceiling - GrilleGap - WallGrilleHeight / 2f;
 
-        /// <summary>Height of the middle of a light switch (1.05 m, the usual height in Europe, beside the door).</summary>
-        public const float LightSwitchHeight = 1.05f;
+        /// <summary>Height of the middle of a light switch (80 mm plate): its top edge is <see cref="FittingTopHeight"/>.</summary>
+        public const float LightSwitchHeight = FittingTopHeight - 0.040f;
+
+        /// <summary>Height of the middle of a lift's landing call panel (0.18 m tall): its top edge (1.35 m) is below the top of a light switch's plate (1.37 m).</summary>
+        public const float LiftCallPanelHeight = LightSwitchHeight - 0.07f;
 
         /// <summary>Clear opening of the freight lift's landing door (a 2000 kg goods lift).</summary>
         public const float FreightDoorWidth = 2.0f;

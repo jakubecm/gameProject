@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using ColdShutdown.Core;
 using ColdShutdown.Runtime;
 using UnityEditor;
@@ -71,9 +70,9 @@ namespace ColdShutdown.Editor
             // Call buttons on a small light plate, to the right of the door as seen from the corridor: two round buttons, backlit,
             // each with a dark arrow (up, down).
             float buttonsX = -(doorHalf + jamb + 0.2f);
-            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, 1.0f, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
+            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
             var arrows = new MeshBuilder();
-            foreach (var (y, name, up) in new[] { (1.04f, "Up", true), (0.96f, "Down", false) })
+            foreach (var (y, name, up) in new[] { (LiftCallPanelHeight + 0.04f, "Up", true), (LiftCallPanelHeight - 0.04f, "Down", false) })
             {
                 var button = ModelUtility.CreateCylinder($"Button_{name}", root, new Vector3(buttonsX, y, 0.0185f), 0.02f, 0.006f, SurfaceMaterial.LightPanel);
                 button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -95,8 +94,8 @@ namespace ColdShutdown.Editor
             exit.name = "ExitSign";
 
             // Car, after a product photo: dark grey matt steel panels with vertical joints, a light floor, a frame round the door, a
-            // light strip across the ceiling, a handrail across the whole back wall under the mirror and the operating panel on the
-            // right-hand wall. The walls stop the player, so they have colliders; the fittings on them do not.
+            // brushed steel ceiling with one recessed light, and the operating panel on the
+            // right-hand wall (no handrail, no mirror). The walls stop the player, so they have colliders; the fittings on them do not.
             var car = ModelUtility.CreateGroup("Car", root);
             float outer = carHalf + panel;
             float frontFace = carFront + panel;
@@ -115,43 +114,21 @@ namespace ColdShutdown.Editor
                 // A vertical joint between two wall panels, halfway along the side wall.
                 ModelUtility.CreateBox($"Joint_{name}", car, new Vector3(side * (carHalf - 0.001f), carHeight / 2f, middle), new Vector3(0.003f, carHeight, 0.004f), SurfaceMaterial.BlackHousing, false);
             }
+            // A skirting board (150 mm) all round the inside of the car except the door opening: along both side walls (above), the back wall and
+            // the returns beside the door.
+            ModelUtility.CreateBoxBetween("Kickplate_Back", car, new Vector3(-carHalf + 0.003f, 0f, carBack), new Vector3(carHalf - 0.003f, 0.15f, carBack + 0.003f), SurfaceMaterial.Trim);
+            foreach (int side in new[] { -1, 1 })
+            {
+                ModelUtility.CreateBoxBetween($"Kickplate_Return_{(side < 0 ? "Left" : "Right")}", car, new Vector3(side * doorHalf, 0f, carFront - 0.003f), new Vector3(side * (carHalf - 0.003f), 0.15f, carFront), SurfaceMaterial.Trim);
+            }
             ModelUtility.CreateBoxBetween("Transom", car, new Vector3(-doorHalf, doorHeight, carFront), new Vector3(doorHalf, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
             ModelUtility.CreateBox("DoorFrame_Head", car, new Vector3(0f, doorHeight + 0.03f, carFront - 0.0075f), new Vector3(2f * doorHalf + 0.12f, 0.06f, 0.015f), SurfaceMaterial.StainlessSteel, false);
-            // Handrail under the mirror: a round steel tube, shorter than the wall (0.25 m clear at each end) and bent back into the
-            // wall at both ends, each end covered by a round rosette (the way a real lift rail is finished).
-            {
-                const float railRadius = 0.0175f;
-                const float standOff = 0.065f;
-                const float bend = 0.035f;
-                float railX = carHalf - 0.25f;
-                float railY = 0.90f;
-                var rail = new MeshBuilder();
-                var path = new List<Vector3>();
-                void Corner(float centreX, float fromDegrees, float toDegrees)
-                {
-                    for (int step = 0; step <= 5; step++)
-                    {
-                        float angle = Mathf.Lerp(fromDegrees, toDegrees, step / 5f) * Mathf.Deg2Rad;
-                        path.Add(new Vector3(centreX + Mathf.Cos(angle) * bend, railY, carBack + standOff - bend + Mathf.Sin(angle) * bend));
-                    }
-                }
-                path.Add(new Vector3(-railX, railY, carBack));
-                Corner(-railX + bend, 180f, 90f);
-                Corner(railX - bend, 90f, 0f);
-                path.Add(new Vector3(railX, railY, carBack));
-                rail.AddTube(path, railRadius, 12, Vector3.zero, Quaternion.identity);
-                foreach (float x in new[] { -railX, railX })
-                {
-                    rail.AddLathe(new[] { MeshBuilder.P(0f, 0f, true), MeshBuilder.P(0.032f, 0f, true), MeshBuilder.P(0.032f, 0.006f, true), MeshBuilder.P(0.024f, 0.010f), MeshBuilder.P(0f, 0.010f, true) },
-                        24, true, new Vector3(x, railY, carBack), Quaternion.Euler(90f, 0f, 0f));
-                }
-                rail.Attach("Handrail_Back", car, SurfaceMaterial.StainlessSteel);
-            }
-            ModelUtility.CreateBoxBetween("Mirror", car, new Vector3(-carHalf + 0.05f, 0.95f, carBack), new Vector3(carHalf - 0.05f, 2.1f, carBack + 0.004f), SurfaceMaterial.Glass);
-            ModelUtility.CreateBoxBetween("Ceiling", car, new Vector3(-outer, carHeight, carBack - panel), new Vector3(outer, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
-            // Light strip across the ceiling over the door.
-            ModelUtility.CreateBoxBetween("CeilingLight", car, new Vector3(-carHalf + 0.15f, carHeight - 0.006f, carFront - 0.2f), new Vector3(carHalf - 0.15f, carHeight, carFront - 0.12f), SurfaceMaterial.LightPanel);
-            AddSpotLight(car, new Vector3(0f, carHeight - 0.03f, (carFront + carBack) / 2f), 160f, 120f, 3.5f, 2.2f, LedPanelColor);
+            // The back wall is two panels like each side wall: a vertical joint in the middle.
+            ModelUtility.CreateBox("Joint_Back", car, new Vector3(0f, carHeight / 2f, carBack + 0.001f), new Vector3(0.004f, carHeight, 0.003f), SurfaceMaterial.BlackHousing, false);
+            ModelUtility.CreateBoxBetween("Ceiling", car, new Vector3(-outer, carHeight + 0.03f, carBack - panel), new Vector3(outer, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
+            // The brushed-steel ceiling panels lie just under the slab; the one round light sits in the middle of the car.
+            Place(Prop.LiftCeiling, car, new Vector3(0f, carHeight - 0.002f, middle), 0f, "CeilingPanels");
+            Place(Prop.LiftCeilingLight, car, new Vector3(0f, carHeight - 0.002f, middle), 0f, "CeilingLight");
 
             // Car operating panel on the right-hand wall (+X, as you face the door), in the middle of the wall panel next to the door (the
             // joint halfway along the wall splits the wall in two): the same light plate and backlit round buttons as the call buttons

@@ -59,9 +59,9 @@ namespace ColdShutdown.Editor
 
             // Call buttons on a small light plate, as at the passenger lift: two round backlit buttons, each with a dark arrow (up, down).
             float buttonsX = -(doorHalf + jamb + 0.2f);
-            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, 1.0f, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
+            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
             var arrows = new MeshBuilder();
-            foreach (var (y, name, up) in new[] { (1.04f, "Up", true), (0.96f, "Down", false) })
+            foreach (var (y, name, up) in new[] { (LiftCallPanelHeight + 0.04f, "Up", true), (LiftCallPanelHeight - 0.04f, "Down", false) })
             {
                 var button = ModelUtility.CreateCylinder($"Button_{name}", root, new Vector3(buttonsX, y, 0.0185f), 0.02f, 0.006f, SurfaceMaterial.LightPanel);
                 button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);

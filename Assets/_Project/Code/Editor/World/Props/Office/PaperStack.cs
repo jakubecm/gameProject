@@ -44,7 +44,7 @@ namespace ColdShutdown.Editor
                 plain.AddPanel(Corner(-halfX, halfZ, y1), Corner(halfX, halfZ, y1), Corner(halfX, -halfZ, y1), Corner(-halfX, -halfZ, y1), Vector3.up,
                     new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f));
             }
-            edges.Attach("Paper", root, SurfaceMaterial.Whiteboard);
+            edges.Attach("Paper", root, SurfaceMaterial.MugCeramic);
             top.Attach("TopSheet", root, SurfaceMaterial.PaperPage);
         }
     }

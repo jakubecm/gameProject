@@ -119,10 +119,12 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 - **Ventilation:** `FloorVentGrille` 0.6 x 0.6 m 0.15 m above floor, `WallVentGrille` 0.6 x 0.3 m 0.15 m below ceiling;
   offices use `CeilingDiffuser`.
 - **Safety (NFPA 13 / EN 12845 / EN 54):** sprinklers ≤ ~4 m apart, ≤ 2.3 m from walls; one smoke detector per
-  corridor cell / small room; extinguisher + call point (1.4 m) by the exit; `CeilingSpeaker` in every suspended
-  ceiling (none in the hall); light switch 80 x 80 mm at 1.05 m, one per room door / corridor cell / hall door.
+  corridor cell / small room; extinguisher + call point (top at 1.37 m) by the exit; `CeilingSpeaker` in every suspended
+  ceiling (none in the hall); light switch 80 x 80 mm (centre 1.33 m), one per room door / corridor cell / hall door.
+  **Hand-height fittings share one top edge, `Props.FittingTopHeight` = 1.37 m:** manual call points and the gas release station (centre 1.324 m),
+  light switches (centre 1.33 m) and RFID readers (centre 1.3075 m). The lifts' landing call panels (180 mm tall, centre 1.26 m) end 2 cm lower, at 1.35 m.
 - **Doors:** every connected opening into a room has a `RoomDoor` (component `AutoSlidingDoor`; glass, bi-parting, photo cells, reader with
-  LED both sides, exit sign on the room side only). All unlocked at start (`IsLocked` is game logic). No decorative
+  LED both sides (top edge 1.37 m), exit sign on the room side only). All unlocked at start (`IsLocked` is game logic). No decorative
   doors; the only non-working door is the storage room's `FreightLift`.
 
 ## Corridors (`Rooms/Corridor.cs`)
@@ -147,7 +149,7 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 
 A dead end whose closed north end is the lift landing; no room in between. Structure: `LiftWall_W/E` + `LiftWall_Lintel`
 at z = 1.5 (`LiftWallFace`) with the 1.1 x 2.1 m door opening, `ShaftBack` block behind the shaft. `PassengerLift`
-prop on the landing (car 1.6 x 1.5 x 2.3 m, working door). Dressed like a dead end (fire kit in its arm); its grille and
+prop on the landing (car 1.6 x 1.5 x 2.3 m, working door; brushed-steel `LiftCeiling` with one recessed square `LiftCeilingLight` in the middle). Dressed like a dead end (fire kit in its arm); its grille and
 switch sit in the middle of the west wall of the crossing.
 
 ## Small rooms (all five)
@@ -228,7 +230,7 @@ south-west cell. The level builder places it once; it never turns and gets no wa
   facing across a 1.2 m aisle; every slot holds a rack, so an aisle is entered only by its doors. Hot aisle 1.4 m
   between the pods' backs. Aisle floor: `PerforatedFloorTile`s only. Containment roof: solid black 4 cm panels lying on the
   rack tops (white labels on two). `AisleDoor` at both ends (single black leaf, slides left seen from outside, reader on
-  the right rack end). 2 `AisleLight` strips under the roof. Yellow outline 0.3 m round each pod. 56 rack slots/tile.
+  the right rack end). 2 low-profile `AisleLight` luminaires under the roof (at a quarter and three quarters of the aisle, two spots each). Yellow outline 0.3 m round each pod. 56 rack slots/tile.
 - **Walkways:** 1.6 m pod end → east/west wall (3.6 m between tiles), 1.5 m pod side → north/south wall (3.4 m between
   tiles). Nothing below 2.6 m in them.
 - **Overhead (all above the signs, which reach down to 4.2 m):** return duct over the hot aisle (4.4-4.9 m, 4 grilles in
@@ -263,7 +265,7 @@ south-west cell. The level builder places it once; it never turns and gets no wa
 
 - `Sandbox_B` (Create Preview Scene): the world map built by the `LevelBuilder` in the editor (kept at Play), the player
   prefab in the lift, F1 menu; racks on every slot (`RackPlacement`, seed `LevelBuilder.RackSeed`: one openable rack in
-  the security office, one per row of every aisle); trilight ambient instead of bounce light; no scene lights.
+  the security office, one per row of every aisle, never the first or last rack of its run); trilight ambient instead of bounce light; no scene lights.
 - `Main` (Create Main Scene; rewired by every Create Preview Scene): the same builder, building the map at Play.
 
 ## Tests (run after every room change)

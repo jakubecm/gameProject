@@ -20,7 +20,7 @@ namespace ColdShutdown.Editor
 
         private const float HoneycombTile = 0.0045f;
 
-        /// <summary>One cell of the slotted vent texture of the 3 U chassis.</summary>
-        private const float SlotCellWidth = 0.0055f;
+        /// <summary>One cell of the 3 U chassis' drive-bay cover texture (<c>T_ChassisVent</c>), square, in metres.</summary>
+        private const float ChassisVentTile = 0.011f;
     }
 }

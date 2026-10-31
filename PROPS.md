@@ -31,10 +31,11 @@ Sizes W x H x D in metres. Where each one stands: `ROOMS.md`.
 | Prop | Model | Used |
 |---|---|---|
 | `DoorFrame` [Structure] | casing round a 2.4 x 2.6 m opening on the room side, 0.1 m wide, 4 cm deep; does not enter the opening | every shell wall, hall door wall |
-| `RoomDoor` [Structure] | bi-parting glass sliding door for a room opening; operator box, photo cells and RFID reader (55 x 125 x 20 mm, lock LED strip green/red) on both sides, exit sign on the owner's side only; Runtime `AutoSlidingDoor` | every connected room opening (owner side), hall door walls |
+| `RoomDoor` [Structure] | bi-parting glass sliding door for a room opening; operator box, photo cells and RFID reader (55 x 125 x 20 mm, lock LED strip green/red, top edge 1.37 m, centre 1.3075 m, `Props.ReaderHeight`) on both sides, exit sign on the owner's side only; Runtime `AutoSlidingDoor` | every connected room opening (owner side), hall door walls |
 | `AisleDoor` [Structure] | single black-framed glass leaf, aisle width + 2 cm, slides to local +X, jamb right, header flush with containment roof, no floor rail, reader on the right rack end; Runtime `AisleDoor` | both ends of every hall pod |
-| `PassengerLift` [Structure] | evacuation lift: 1.1 x 2.1 m two-panel centre-opening door (landing + car panels move together, photo cells into the car), car 1.6 x 1.5 x 2.3 m for 6-8 people (mirror, handrails, lit ceiling, operating panel), landing call buttons, floor indicator, exit sign over the door, evacuation-lift sign | lift end |
-| `FreightLift` [Structure] | goods-lift landing, passenger lift design in galvanised steel: 2.0 x 2.2 m chamfered two-panel door, frame, sill, call buttons, floor indicator; never opens, one collider | storage room east wall |
+| `PassengerLift` [Structure] | evacuation lift (skirting 150 mm all round the car except the door; back wall two panels, no handrail): 1.1 x 2.1 m two-panel centre-opening door (landing + car panels move together, photo cells into the car), car 1.6 x 1.5 x 2.3 m for 6-8 people (`LiftCeiling` with the recessed `LiftCeilingLight` in the middle, operating panel), landing call panel (centre 1.26 m, top 1.35 m, below the top of a light switch), floor indicator, exit sign over the door, evacuation-lift sign | lift end |
+| `LiftCeiling` [Structure] | passenger-lift car ceiling 1.6 x 1.5 m: matt brushed stainless panels 400 mm square with dark joints in exactly the grey of the car walls (`T_LiftCeiling`, material `LiftCeiling`), square 320 mm opening for the light, narrow steel edge trim; hangs from the ceiling surface | `PassengerLift` car |
+| `FreightLift` [Structure] | goods-lift landing, passenger lift design in galvanised steel: 2.0 x 2.2 m chamfered two-panel door, frame, sill, call panel (centre 1.26 m, top 1.35 m, `Props.LiftCallPanelHeight`) and floor indicator; never opens, one collider | storage room east wall |
 
 ## Lighting
 
@@ -44,7 +45,8 @@ Sizes W x H x D in metres. Where each one stands: `ROOMS.md`.
 | `LedBatten` [Lighting] | surface tri-proof batten 1.5 m (along Z): white tray, curved opal diffuser, clips, end caps | power room, cooling plant, storage room |
 | `PendantLight` [Lighting] | `LedBatten` hanging from the deck on two wire ropes 1.1 m apart (ceiling plates, cups, ferrules, thimbles), top at 4.1 m, black power cable from a roof junction box | hall walkways along the walls |
 | `PendantLightGirder` [Lighting] | the same fitting hung from a girder's bottom flange (5.2 m) by two beam clamps, top at 4.1 m, junction box under the flange (`PendantLight.cs`) | hall walkways between tiles |
-| `AisleLight` [Lighting] | LED strip 1.2 m under the containment roof | hall pods (2 each) |
+| `AisleLight` [Lighting] | low-profile LED luminaire 1.2 x 0.07 m, 12 mm deep: tray with chamfered corners and a bevelled lower edge in `RackBlack` (the colour of the containment roof), diffuser with chamfered corners 2 mm proud, no clips, two spots, under the containment roof | hall pods (2 each) |
+| `LiftCeilingLight` [Lighting] | the one light of the lift car, recessed in its ceiling like a lay-in panel: 300 x 300 mm LED panel, opal diffuser 12 mm up in the void, satin stainless bezel 30 mm wide with a 14 mm reveal; spot down, no shadows | `PassengerLift` car |
 | `ExitSign` [Lighting] | 360 x 160 x 50 mm white housing, emissive green "EXIT" face (`T_ExitSign`) | on `RoomDoor`, `PassengerLift` |
 
 ## Safety and security
@@ -55,10 +57,10 @@ Sizes W x H x D in metres. Where each one stands: `ROOMS.md`.
 | `SmokeDetector` [Safety] | 100 x 46 mm glossy white, status lens, mesh chamber, domed cap | corridors, small rooms, hall deck |
 | `CeilingSpeaker` [Safety] | recessed PA speaker 216 mm, white trim, domed grille 185 mm (`T_SpeakerGrille`) | corridors, offices (not the hall, not technical rooms) |
 | `FireExtinguisher` [Safety] | 6 kg ABC powder, Ø160 mm, ~0.6 m on its bracket, label `T_ExtinguisherLabel`, chrome head with gauge, hose to a nozzle | corridor fire arm, every small room |
-| `FireCallPoint` [Safety] | 92 x 92 x 52 mm red manual call point, push symbol, fire pictogram, at 1.4 m | corridor fire arm, small rooms, hall walls |
+| `FireCallPoint` [Safety] | 92 x 92 x 52 mm red manual call point, push symbol, fire pictogram, top edge at 1.37 m (centre 1.324 m) | corridor fire arm, small rooms, hall walls |
 | `HoseCabinet` [Safety] | 0.65 x 0.65 x 0.24 red hose cabinet, window with gasket, white hose on a red reel, bottom at 0.9 m | corridor fire arm |
 | `GasNozzle` [Safety] | 360° inert-gas nozzle | hall gas lines (2 per pod) |
-| `LightSwitch` [Services] | 80 x 80 mm plate, 56 mm rocker, 11 mm proud, centre at 1.05 m | corridors, small rooms, hall door walls |
+| `LightSwitch` [Services] | 80 x 80 mm plate, 56 mm rocker, 11 mm proud, top edge at 1.37 m like `FireCallPoint` and the readers (centre 1.33 m, `Props.LightSwitchHeight`) | corridors, small rooms, hall door walls |
 | `CameraDome` [Safety] | ceiling dome camera 111 x 80 mm, clear dome over a black inner dome; feed 30° down; Runtime `SecurityCamera` | corridor crossings/T/corners, small rooms |
 | `CameraPendant` [Safety] | junction box clamped to a beam, pole with cable, dome at its end (dome at 3.0 m) | hall girders (2 per open east edge) |
 
@@ -67,12 +69,12 @@ Sizes W x H x D in metres. Where each one stands: `ROOMS.md`.
 | Prop | Model | Used |
 |---|---|---|
 | `PowerSocket` [Services] | flush 230 V type E on 80 x 80 plate, 10 mm proud | offices, security office, corridor arm 1, kitchenette, printer |
-| `DataSocket` [Services] | flush double RJ45 on 80 x 80 plate, 8 mm proud | corridor arm 1, terminal outlets, security racks |
+| `DataSocket` [Services] | flush double RJ45 on an 80 x 80 mm plate, 12.5 mm proud: real jack openings with latch notch, black inside, contact carrier and 8 gold contacts (same helpers as the rack ports), raised surrounds, two cross-head screws, blue label strips | corridor arm 1, terminal outlets, security racks |
 | `FloorBox` [Services] | 150 x 150 mm floor box, pewter plate, hinged lid, screw lock; under the back of the desk it feeds | security office consoles |
 | `WallVentGrille` [Services] | 600 x 300 louvred grille under the ceiling | technical rooms back wall (2) |
 | `FloorVentGrille` [Services] | 600 x 600 louvred grille 0.15 m above the floor | one per corridor cell |
 | `CeilingDiffuser` [Services] | 600 mm four-way diffuser, nested square cones | offices, security office |
-| `PerforatedFloorTile` [Services] | 0.6 x 0.6 perforated raised-floor tile (25 mm hole pitch texture), 12 mm proud | hall cold aisles |
+| `PerforatedFloorTile` [Services] | 0.6 x 0.6 perforated raised-floor tile, 12 mm proud: powder-coated steel in the hall-floor grey (`HallFloor`), staggered 25 mm holes with chamfered rims, paint grain and a dark plenum in the holes (`T_FloorTilePerforated`, 4 x 4 holes per 0.1 m) | hall cold aisles |
 | `PipeThermometer` [Services] | dial thermometer on a brass stem, dial +Z | cooling-plant pumps |
 
 Non-prop services (built inside rooms by `RoomInfrastructure` / `RoomPipes` / `InfrastructureModels`): pipe risers with
@@ -141,13 +143,23 @@ labels, transformer plate, switchgear tag, UPS tag; material `PlantLabels`).
 
 | Prop | Model | Used |
 |---|---|---|
-| `Rack` [Hall] | 42 U rack 0.6 x 2.0 x 1.2, only the front modelled; Runtime `Rack.Configure(openable, seed)`. Closed: fixed door, flush handle, no interaction. Openable: pulled-out lever handle, door ajar, `RackDoor` on the door hinge (F opens fully / shuts; only looking at the door offers it, the body's collider stops behind the door), `RackGlow` (subtle breathing white-beige outline quad `DoorGlow`, `T_RackGlow`, lit only while the door is shut perfectly). Door: hex grille `T_RackGrille` (alpha, mipmapped, anisotropic) | every hall rack slot and the 2 security-office slots (placed by `RackPlacement`, not in prefabs) |
+| `Rack` [Hall] | 42 U rack 0.6 x 2.0 x 1.2, only the front modelled; Runtime `Rack.Configure(openable, seed)`. Closed: fixed door, flush handle, no interaction. Openable: pulled-out lever handle, door ajar, `RackDoor` on the door hinge (F opens fully / shuts; only looking at the door offers it, the body's collider stops behind the door), `RackGlow` (subtle breathing white-beige outline quad `DoorGlow`, `T_RackGlow`, lit only while the door is shut perfectly). Door: hex grille `T_RackGrille` (alpha, mipmapped, anisotropic) | every hall rack slot and the 2 security-office slots (placed by `RackPlacement`, not in prefabs; its openable rack is never the first or last of its run of racks, except in the 2-rack security office) |
 | `HallSign` [Hall] | white cube on two rods (bottom at 4.2 m), the tile code on all four faces (`HallSign.Code`) | one per hall tile |
 
 **Rack fillings:** 12 deterministic random 42 U fillings (`ContentVariants`) as shared meshes in `Art/Meshes/Racks/`,
-listed in `Data/RackContents.asset` (`RackContentLibrary`); a rack picks one by its seed. Contents: Dell R740xd 2 U,
-HP DL380p Gen8 2 U, Inter-Tech 3 U chassis, rack UPS (bottom only), 1 U PDU (lower half only), 1 U blanking panels;
-never switches, routers or cables; the top unit is always a server; status LEDs show through the grille.
+listed in `Data/RackContents.asset` (`RackContentLibrary`); a rack picks one by its seed. The servers are the six items below (one
+file each in `World/Props/Hall/RackItems/`, shared hole / port / symbol helpers in `RackItemParts.cs`: ports are real holes cut into plates by `PlateWithHoles` with an inside from `RackParts.Cavity`, chosen by `RackItem`; all 19" wide, fronts at `ServerFront`, built as geometry plus generated
+textures, never prefabs). A filling is: maybe a UPS at the bottom (70 %), then a random mix of the servers with the odd blanking panel and at
+most one switch (never at the top); the top unit is always a server (disk or closed); no PDUs, routers or cables; status LEDs show through the grille.
+
+| Rack item | Model |
+|---|---|
+| `DiskServer2U` | disk server 2U after an HPE ProLiant DL380 Gen10 (24 SFF): three silver-outlined groups of 8 separate vertical trays (lighter face, slotted lever, label tab, release button, dark red window; 2.5 mm black void between trays), a real VGA port on the left ear (stepped D opening, blue insulator with 15 pin holes, jack screws), control panel with power button, health / network / UID LEDs each beside its symbol, USB-A and iLO RJ45 as real holes, logo and model plate and drive-box tag on the ears |
+| `DiskServer1U` | disk server 1U (SFF, ProLiant DL360 type): two rows of five separate horizontal drive trays (lighter face, slotted handle, release button, red window; black void between trays and rows), real VGA port on the left ear, control panel with power button, LEDs beside their symbols, USB-A and iLO RJ45 holes |
+| `ClosedServer3U` | closed server 3U after an Inter-Tech 3U chassis: two drive-bay covers with punched slot-and-hole rows (`T_ChassisVent`), lock panel with key lock, power and disk LEDs beside their symbols and two USB 3.0 ports as real holes (blue tongues), rack handles with ribbed grips |
+| `Switch1U` | 48-port PoE switch 1U (TP-Link Omada type): dark grey faceplate (`SwitchFace`) with real holes for every port: USB-A, RJ45 console, micro-USB, 2 x 24 RJ45 (latch notch, gold contacts, groups of eight separated by a gap) and four SFP+ cages; each port's link LED at the port (top row above, bottom row below), system LEDs with symbols at the left |
+| `Ups2U` | rack UPS 2U after an Eaton 9E: honeycomb panels, black gaps round the control module with blue LCD (`T_UpsDisplay`: "ONLINE MODE / OUT:230V 49.9HZ") and five buttons, make plate |
+| `BlankPanel1U` | blanking panel 1U: matt black steel, folded lips, cage-nut slots with rack screws |
 
 ## Placement rules
 
@@ -165,13 +177,13 @@ never switches, routers or cables; the top unit is always a server; status LEDs 
 ## Textures (`Art/Textures`)
 
 Generated by `Surfaces` (`World/Building/Surfaces.cs`) (rewritten by every Create Preview Scene): `T_PcVent`, `T_ExtinguisherLabel`,
-`T_SpeakerGrille`, `T_RackGrille`, `T_TraySlots`, `T_RackGlow`, `T_CeilingTile600`, `T_FloorTilePerforated`,
-`T_ServerSlots`, `T_ServerHoneycomb`. Drawn files (edit the PNG): `T_MonitorScreen`, `T_ChairQuilt`, `T_PaperPage`,
+`T_SpeakerGrille`, `T_RackGrille`, `T_TraySlots`, `T_RackGlow`, `T_CeilingTile600`, `T_LiftCeiling`, `T_FloorTilePerforated`,
+`T_ServerHoneycomb`, `T_ChassisVent`, `T_UpsDisplay`. Drawn files (edit the PNG): `T_MonitorScreen`, `T_ChairQuilt`, `T_PaperPage`,
 `T_ExitSign`, `T_PhotoPicture`, `T_ThermometerDial`, `T_PowerDial`, `T_PlantLabels`. `T_RackPerforation` is unused.
 
 ## Surface materials (`SurfaceMaterial`, append only; agree on new slots with the other developer)
 
-Floor FloorVent Wall Ceiling Trim Metal Furniture Upholstery Screen LightPanel Whiteboard SafetyRed CeilingGrid Trunking
+Floor FloorVent Wall Ceiling Trim Metal Furniture Upholstery Screen LightPanel MugCeramic SafetyRed CeilingGrid Trunking
 PowerCable DataCable DataTray PipeWater PipeGas HallFloor HallWall Steel RoofDeck SafetyYellow SafetyGreen Glass SignFace
 WireMesh LedRed Chrome Brass BulbRed BulbClear BlackHousing DomeClear LensGlass SpeakerWhite SpeakerGrille DetectorWhite
 DetectorMesh CeilingTile ReaderBlack ExtinguisherLabel HoseRed HoseWhite KeyboardGraphite KeyboardKey MouseBlack PcVent
@@ -179,6 +191,6 @@ MonitorImage ChairLeather ChairQuilt PaperPage ExitSignFace FloorBoxMetal Stainl
 DeskWhite StoneTop CopperTrim CoffeeGraphite CoffeePanel CabinetWhite SmokedTank CabinetPull LockerBody LockerDoor
 LockerPlate BenchWood BenchFrame PhotoPicture ValveNickel ValveSteel ValveGrip PipeClamp AluminiumClad MotorGreen
 SupportBlue DialFace PlantLabels CastIron CabinetGrey GalvanisedSteel ShelfBoard Cardboard CardboardDark CardboardEdge
-ElectricGrey UpsGraphite ResinCoil PowerDialFace RackBlack RackMesh ServerBlack ServerSilver DriveBay LatchOrange LatchRed
-LedAmber ServerSlots ServerHoneycomb TrayPerforated FloorTilePerforated Concrete DuctStainless ConduitViolet
-ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen
+ElectricGrey UpsGraphite ResinCoil PowerDialFace RackBlack RackMesh ServerBlack ServerSilver DriveBay LatchRed
+LedAmber ServerHoneycomb ChassisVent ServerVoid UpsDisplay SwitchFace TrayPerforated FloorTilePerforated Concrete DuctStainless ConduitViolet
+ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen LiftCeiling

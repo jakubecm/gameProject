@@ -29,7 +29,7 @@ namespace ColdShutdown.Editor
                 new Vector3(0.0395f, 0.0670f, 0f), new Vector3(0.0500f, 0.0700f, 0f), new Vector3(0.0615f, 0.0660f, 0f), new Vector3(0.0680f, 0.0560f, 0f),
                 new Vector3(0.0690f, 0.0480f, 0f), new Vector3(0.0640f, 0.0390f, 0f), new Vector3(0.0545f, 0.0335f, 0f), new Vector3(0.0330f, 0.0245f, 0f),
             }, 6), 0.0043f, 14, position, Quaternion.identity);
-            ceramic.Attach("Mug", root, SurfaceMaterial.Whiteboard);
+            ceramic.Attach("Mug", root, SurfaceMaterial.MugCeramic);
         }
     }
 }

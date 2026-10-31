@@ -38,6 +38,34 @@ namespace ColdShutdown.Editor
             public void Box(SurfaceMaterial material, float x0, float y0, float z0, float x1, float y1, float z1) =>
                 this[material].AddBox(new Vector3(x0, y0, z0), new Vector3(x1, y1, z1));
 
+            /// <summary>A rectangular ring (four bars of width <paramref name="t"/>) round the box x0..x1, y0..y1, from z0 to z1.</summary>
+            public void Frame(SurfaceMaterial material, float x0, float y0, float x1, float y1, float z0, float z1, float t)
+            {
+                Box(material, x0, y0, z0, x0 + t, y1, z1);
+                Box(material, x1 - t, y0, z0, x1, y1, z1);
+                Box(material, x0 + t, y0, z0, x1 - t, y0 + t, z1);
+                Box(material, x0 + t, y1 - t, z0, x1 - t, y1, z1);
+            }
+
+            /// <summary>
+            /// The inside of a hole in a front plate: four walls and a back wall facing into the opening (seen through it), from <paramref name="zFront"/>
+            /// back to <paramref name="zBack"/>.
+            /// </summary>
+            public void Cavity(SurfaceMaterial material, float xa, float ya, float xb, float yb, float zFront, float zBack)
+            {
+                var m = this[material];
+                m.AddPanel(new Vector3(xa, ya, zBack), new Vector3(xb, ya, zBack), new Vector3(xb, yb, zBack), new Vector3(xa, yb, zBack), Vector3.forward,
+                    Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+                m.AddPanel(new Vector3(xa, ya, zFront), new Vector3(xa, ya, zBack), new Vector3(xa, yb, zBack), new Vector3(xa, yb, zFront), Vector3.right,
+                    Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+                m.AddPanel(new Vector3(xb, ya, zFront), new Vector3(xb, ya, zBack), new Vector3(xb, yb, zBack), new Vector3(xb, yb, zFront), Vector3.left,
+                    Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+                m.AddPanel(new Vector3(xa, ya, zFront), new Vector3(xb, ya, zFront), new Vector3(xb, ya, zBack), new Vector3(xa, ya, zBack), Vector3.up,
+                    Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+                m.AddPanel(new Vector3(xa, yb, zFront), new Vector3(xb, yb, zFront), new Vector3(xb, yb, zBack), new Vector3(xa, yb, zBack), Vector3.down,
+                    Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
+            }
+
             /// <summary>A flat disc on the front face (facing +Z).</summary>
             public void Disc(SurfaceMaterial material, float x, float y, float z, float radius, int sides = 12) =>
                 this[material].AddDisc(new Vector3(x, y, z), Vector3.forward, radius, sides);

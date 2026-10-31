@@ -1,30 +1,46 @@
 using System.Collections.Generic;
 using UnityEngine;
-using static ColdShutdown.Editor.MeshBuilder;
 
 namespace ColdShutdown.Editor
 {
     public static partial class Props
     {
         /// <summary>
-        /// Double RJ45 data outlet on an 80 x 80 mm plate, flush-mounted, 8 mm proud of the wall: a rounded plate, the
-        /// inner cover and two port surrounds with dark openings; the pivot is the middle of its back, +Z away from the wall.
+        /// Double RJ45 data outlet on an 80 x 80 mm plate, flush-mounted, 12.5 mm proud of the wall, detailed like the ports of the rack items: a white plate
+        /// 9.5 mm thick with two real RJ45 openings (jack rectangle with the latch notch) each inside a raised surround, and in every jack the black walls, the
+        /// contact carrier and its eight gold contacts, two screw heads (top and bottom, with a cross recess) and a small blue label strip under each port.
+        /// The pivot is the middle of its back, +Z away from the wall.
         /// </summary>
         [Model(Prop.DataSocket)]
         private static void BuildDataSocket(Transform root)
         {
-            var plate = new MeshBuilder();
-            var openings = new MeshBuilder();
+            const float plateThickness = 0.0095f;
+            const float surroundTop = 0.0125f;
+            const float portCentreY = 0.004f;
             WallJoint(root);
-            plate.AddRoundedSlab(Vector3.zero, 0.080f, 0.080f, 0.008f, 0.0035f, 0.0014f);
-            plate.AddBox(new Vector3(-0.030f, -0.036f, 0.0032f), new Vector3(0.030f, 0.036f, 0.0037f), true, false);
-            foreach (float x in new[] { -0.0175f, 0.0175f })
+            var p = new RackParts();
+            var holes = new List<(float xa, float ya, float xb, float yb)>();
+            var centres = new[] { -0.0185f, 0.0185f };
+            foreach (float x in centres)
             {
-                plate.AddRoundedSlab(new Vector3(x, 0f, 0.0037f), 0.022f, 0.022f, 0.005f, 0.0013f, 0.0004f, 3);
-                openings.AddBox(new Vector3(x - 0.0065f, -0.0050f, 0.0048f), new Vector3(x + 0.0065f, 0.0050f, 0.0052f), true, false);
+                Rj45Holes(holes, x, portCentreY - Rj45Height / 2f);
             }
-            plate.Attach("Plate", root, SurfaceMaterial.DetectorWhite);
-            openings.Attach("Ports", root, SurfaceMaterial.BlackHousing);
+            PlateWithHoles(p, SurfaceMaterial.DetectorWhite, -0.040f, -0.040f, 0.040f, 0.040f, 0f, plateThickness, holes);
+            foreach (float x in centres)
+            {
+                float yLow = portCentreY - Rj45Height / 2f;
+                // The raised surround: a square ring round the opening, its inner edge 2 mm from the jack.
+                p.Frame(SurfaceMaterial.DetectorWhite, x - 0.0108f, yLow - 0.0040f, x + 0.0108f, yLow + Rj45TotalHeight + 0.0030f, plateThickness, surroundTop, 0.0030f);
+                Rj45Inside(p, x, yLow, plateThickness, 0.0008f);
+                p.Box(SurfaceMaterial.SupportBlue, x - 0.0085f, yLow - 0.0125f, plateThickness, x + 0.0085f, yLow - 0.0105f, plateThickness + 0.0004f);
+            }
+            foreach (float y in new[] { 0.0300f, -0.0300f })
+            {
+                p.Disc(SurfaceMaterial.ServerSilver, 0f, y, plateThickness + 0.0002f, 0.0035f, 14);
+                p.Box(SurfaceMaterial.DriveBay, -0.0024f, y - 0.0004f, plateThickness + 0.0004f, 0.0024f, y + 0.0004f, plateThickness + 0.0006f);
+                p.Box(SurfaceMaterial.DriveBay, -0.0004f, y - 0.0024f, plateThickness + 0.0004f, 0.0004f, y + 0.0024f, plateThickness + 0.0006f);
+            }
+            p.Attach("Socket", root);
         }
     }
 }

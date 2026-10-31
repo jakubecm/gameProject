@@ -74,7 +74,7 @@ namespace ColdShutdown.Editor
                     new Vector3(strip.Item2.x, strip.Item2.y, mountZ), new Vector3(strip.Item1.x, strip.Item2.y, mountZ), Vector3.forward,
                     Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
             }
-            mountFrame.Attach("Mount", frame, SurfaceMaterial.Whiteboard);
+            mountFrame.Attach("Mount", frame, SurfaceMaterial.MugCeramic);
             var glass = new MeshBuilder();
             float glassZ = depth - 0.003f;
             glass.AddPanel(new Vector3(-width / 2f + border - 0.003f, border - 0.003f, glassZ), new Vector3(width / 2f - border + 0.003f, border - 0.003f, glassZ),

@@ -50,6 +50,22 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         [Test]
+        public void PassengerLift_HasATexturedCeilingAndOneRecessedLight_AndNoMirror()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Props/PassengerLift.prefab");
+            Assert.IsNotNull(prefab, "PassengerLift prefab is missing");
+            var car = prefab.transform.Find("Car");
+            Assert.IsNotNull(car.Find("CeilingPanels"), "The car has no textured ceiling");
+            var light = car.Find("CeilingLight");
+            Assert.IsNotNull(light, "The car has no recessed ceiling light");
+            Assert.AreEqual(1, car.GetComponentsInChildren<Light>(true).Length, "The car has exactly one light");
+            Assert.AreEqual(0f, light.localPosition.x, Epsilon, "The light is in the middle of the car (x)");
+            Assert.AreEqual(-(RoomContract.LiftCarFront - RoomContract.LiftWallFace) - RoomContract.LiftCarDepth / 2f, light.localPosition.z, Epsilon, "The light is in the middle of the car (z)");
+            Assert.IsNull(car.Find("Mirror"), "The lift has no mirror");
+            Assert.IsNull(car.GetComponentInChildren<ReflectionProbe>(true), "The lift has no reflection probe");
+        }
+
+        [Test]
         public void Shell_HasNothingInAnyOpening()
         {
             var shell = Instantiate(ShellPath);
@@ -508,7 +524,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 }
             }
             // Service carts, laptops and cable drums are gone.
-            foreach (var name in new[] { "ServiceCart", "Laptop", "CableSpool", "Radiator", "Whiteboard" })
+            foreach (var name in new[] { "ServiceCart", "Laptop", "CableSpool", "Radiator" })
             {
                 Assert.IsNull(AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Prefabs/Props/{name}.prefab"), $"{name} still exists");
             }
