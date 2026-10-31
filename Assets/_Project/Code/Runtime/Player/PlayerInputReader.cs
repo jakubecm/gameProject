@@ -27,6 +27,7 @@ namespace ColdShutdown.Runtime
         [SerializeField] private InputAction lookStick = new InputAction("LookStick", InputActionType.Value, expectedControlType: "Vector2");
         [SerializeField] private InputAction crouch = new InputAction("Crouch", InputActionType.Button);
         [SerializeField] private InputAction sprint = new InputAction("Sprint", InputActionType.Button);
+        [SerializeField] private InputAction jump = new InputAction("Jump", InputActionType.Button);
 
         [Header("Settings")]
         [Tooltip("Degrees per pixel of mouse movement.")]
@@ -94,6 +95,7 @@ namespace ColdShutdown.Runtime
             if (lookStick.bindings.Count == 0) BindLookStick();
             if (crouch.bindings.Count == 0) BindCrouch();
             if (sprint.bindings.Count == 0) BindSprint();
+            if (jump.bindings.Count == 0) BindJump();
         }
 
         private void OnEnable()
@@ -103,6 +105,7 @@ namespace ColdShutdown.Runtime
             lookStick.Enable();
             crouch.Enable();
             sprint.Enable();
+            jump.Enable();
             if (lockCursor) SetCursorLocked(true);
         }
 
@@ -113,6 +116,7 @@ namespace ColdShutdown.Runtime
             lookStick.Disable();
             crouch.Disable();
             sprint.Disable();
+            jump.Disable();
             if (lockCursor) SetCursorLocked(false);
         }
 
@@ -123,6 +127,7 @@ namespace ColdShutdown.Runtime
             lookStick.Dispose();
             crouch.Dispose();
             sprint.Dispose();
+            jump.Dispose();
         }
 
         private void Update()
@@ -164,12 +169,13 @@ namespace ColdShutdown.Runtime
                 Look = look,
                 Crouch = crouchMode == ButtonMode.Toggle ? crouchToggled : wantsCrouch,
                 Sprint = wantsSprint,
+                Jump = jump.WasPressedThisFrame(),
             };
         }
 
         /// <summary>
         /// WASD / arrows and the left stick to walk, mouse and the right stick to look, C or Left Ctrl and the
-        /// gamepad's right face button to crouch, Left Shift and a left stick click to sprint.
+        /// gamepad's right face button to crouch, Left Shift and a left stick click to sprint, Space and the gamepad's bottom face button to jump.
         /// </summary>
         public void ResetToDefaultBindings()
         {
@@ -178,6 +184,7 @@ namespace ColdShutdown.Runtime
             BindLookStick();
             BindCrouch();
             BindSprint();
+            BindJump();
         }
 
         private void BindMove()
@@ -217,6 +224,13 @@ namespace ColdShutdown.Runtime
             ClearBindings(sprint);
             sprint.AddBinding("<Keyboard>/leftShift");
             sprint.AddBinding("<Gamepad>/leftStickPress");
+        }
+
+        private void BindJump()
+        {
+            ClearBindings(jump);
+            jump.AddBinding("<Keyboard>/space");
+            jump.AddBinding("<Gamepad>/buttonSouth");
         }
 
         private static void ClearBindings(InputAction action)
