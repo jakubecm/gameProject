@@ -392,8 +392,8 @@ MonoBehaviour:
   ajarAngle: 22
   openAngle: 112
   swingSpeed: 130
-  openPrompt: "Otev\u0159\xEDt dve\u0159e racku"
-  closePrompt: "Zav\u0159\xEDt dve\u0159e racku"
+  openPrompt: Open rack door
+  closePrompt: Close rack door
 --- !u!1 &4160144794083482601
 GameObject:
   m_ObjectHideFlags: 0

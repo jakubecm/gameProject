@@ -24,7 +24,7 @@ Sizes W x H x D in metres. Where each one stands: `ROOMS.md`.
 - Smooth parts are `MeshBuilder` meshes (lathe, tube, extrusion, strip), one mesh per material, saved as
   `Art/Meshes/Details/<prefab root>_<part>.asset` (part names must be unique in a prefab). Others are ProBuilder boxes.
 - Materials are shared `Art/Materials/M_<SurfaceMaterial>.mat` (URP Lit; `RackGlow` URP Unlit additive). All in-world
-  text and stickers are Czech; the exit sign says "EXIT".
+  text and stickers are English (player-facing text is always English); the exit sign says "EXIT".
 
 ## Room structure
 
@@ -136,7 +136,7 @@ painted floor lines and hatching; conduits (painted tube, chrome rosette).
 | `ExpansionVessel` [Cooling] | Ø0.44 x 1.1 white vessel on three legs, blue cap, yellow sticker, side nozzle | cooling plant |
 | `CoolingMeterPanel` [Cooling] | 6 narrow pipes from the floor with 3x life-size dial thermometers (`T_ThermometerDial`), into the exchangers' end faces; clue display | cooling plant back wall |
 
-Stickers and plates are quads 3 mm off the surface showing cells of `T_PlantLabels.png` (4 x 4 Czech atlas: plant
+Stickers and plates are quads 3 mm off the surface showing cells of `T_PlantLabels.png` (4 x 4 English atlas: plant
 labels, transformer plate, switchgear tag, UPS tag; material `PlantLabels`).
 
 ## Server hall
