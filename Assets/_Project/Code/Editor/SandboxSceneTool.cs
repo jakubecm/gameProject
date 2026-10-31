@@ -15,7 +15,7 @@ namespace ColdShutdown.Editor
         [MenuItem("Tools/Cold Shutdown/Create Sandbox Scene")]
         public static void CreateSandboxScene()
         {
-            if (File.Exists(ScenePath) &&
+            if (File.Exists(ScenePath) && !Application.isBatchMode &&
                 !EditorUtility.DisplayDialog("Create Sandbox Scene", $"{ScenePath} already exists. Replace it?", "Replace", "Cancel"))
             {
                 return;
@@ -39,8 +39,8 @@ namespace ColdShutdown.Editor
             floor.transform.localScale = new Vector3(2f, 1f, 2f);
 
             CreatePlayer();
-            CreateTestCube("Press Cube", new Vector3(-1.5f, 0.5f, 3f), "Použít", 0f);
-            CreateTestCube("Hold Cube", new Vector3(1.5f, 0.5f, 3f), "Podržet", 1.5f);
+            CreateTestCube("Press Cube", new Vector3(-1.5f, 0.5f, 3f), "Use", 0f);
+            CreateTestCube("Hold Cube", new Vector3(1.5f, 0.5f, 3f), "Hold", 1.5f);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"Sandbox scene saved to {ScenePath}. Press Play: look with the mouse, walk with WASD, Shift to sprint, C to crouch, press E on the left cube, hold E on the right one.");

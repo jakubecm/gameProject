@@ -12,6 +12,7 @@ namespace ColdShutdown.Runtime
     public class InteractionPrompt : MonoBehaviour
     {
         private Interactor interactor;
+        private GameObject canvasObject;
         private Text label;
         private GameObject barRoot;
         private RectTransform barFill;
@@ -35,6 +36,15 @@ namespace ColdShutdown.Runtime
             interactor.HoldProgressChanged -= ShowProgress;
         }
 
+        // The crosshair is only there while the player can interact: not at a computer screen.
+        private void Update()
+        {
+            if (canvasObject != null && canvasObject.activeSelf != interactor.enabled)
+            {
+                canvasObject.SetActive(interactor.enabled);
+            }
+        }
+
         private void ShowFocus(IInteractable target)
         {
             bool hasTarget = target != null;
@@ -55,7 +65,7 @@ namespace ColdShutdown.Runtime
 
         private void BuildUi()
         {
-            var canvasObject = new GameObject("InteractionPromptCanvas", typeof(Canvas), typeof(CanvasScaler));
+            canvasObject = new GameObject("InteractionPromptCanvas", typeof(Canvas), typeof(CanvasScaler));
             canvasObject.transform.SetParent(transform, false);
 
             var canvas = canvasObject.GetComponent<Canvas>();

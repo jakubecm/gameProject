@@ -1,0 +1,39 @@
+{
+    "articles": [
+        {
+            "id": "incident_thermal",
+            "category": "Incident",
+            "title": "Incident report: thermal spike in Sector C",
+            "date": "Mar 14",
+            "text": "DRAFT - the team writes the final text.\n\nAt 02:40 a single rack in Sector C began running 11 degrees hotter than its neighbours. Fans were healthy, airflow was normal and the power draw matched the rack next to it. The monitoring system raised no alarm because nothing was out of limits.\n\nThe night technician disconnected the rack beside it first. That cost 40 minutes, during which the affected rack kept talking to the rest of the network.\n\nLesson: check the label twice and compare the temperature with the whole row, not just the rack next door."
+        },
+        {
+            "id": "incident_ghost",
+            "category": "Incident",
+            "title": "Incident report: a node that answered before it was asked",
+            "date": "May 02",
+            "text": "DRAFT - the team writes the final text.\n\nOne node in Sector A returned a response to a service request 90 milliseconds before the request was logged as sent. We first assumed a clock fault. The clocks were fine.\n\nAfterwards the node showed a small but steady rise in temperature and began opening connections to racks that are not on its routing table. We now call this a mutation. Nobody has been able to reproduce it on the test bench.\n\nThe node was isolated by pulling the network cable and then cutting the power. The connections stopped at once."
+        },
+        {
+            "id": "procedure_mutation",
+            "category": "Procedure",
+            "title": "Procedure: suspected node mutation",
+            "date": "Jun 09",
+            "text": "DRAFT - the team writes the final text.\n\n1. Read the rack label: sector, row, number.\n2. Compare the temperature with the other racks in the row. A mutated node runs warmer than its surroundings.\n3. Use the service terminal to narrow down the sector and the row. Do not guess.\n4. Disconnect the network first (hold the button for 3 seconds), then the power (5 seconds).\n5. Never disconnect a rack you are not sure about. A wrong disconnection costs time, and time is what the infection is made of.\n\nIf you are in doubt, stop and read the logs again."
+        },
+        {
+            "id": "notice_gateway",
+            "category": "Notice",
+            "title": "Notice: protecting the gateway",
+            "date": "Jul 21",
+            "text": "DRAFT - the team writes the final text.\n\nThe gateway is the only link between this site and the outside network. If an infected node reaches the gateway, the whole site has to be taken offline and the data on it is considered lost.\n\nThe gateway room is staffed around the clock. If you cannot see anyone there, do not assume that someone is watching."
+        },
+        {
+            "id": "notice_passwords",
+            "category": "Notice",
+            "title": "Notice: service terminal passwords",
+            "date": "Aug 05",
+            "text": "DRAFT - the team writes the final text.\n\nThe passwords of the service terminals are still ordinary words from the daily operations vocabulary. I know this is not ideal. If a terminal locks after four wrong attempts, wait and try again.\n\nOne more thing: if a terminal seems to answer before you have typed anything, tell nobody. Tell me."
+        }
+    ]
+}
