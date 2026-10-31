@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c378849b05d408a43b3703548276ed96, type: 3}
   m_Name: RoomDefinition_Office
   m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.RoomDefinition
-  type: 2
-  prefab: {fileID: 6941692456578832140, guid: 6439f3e9223124a0597b5d451fe01081, type: 3}
+  type: 5
+  prefab: {fileID: 8827988861619836592, guid: 797c6f50eba9343de8dd62529738f00d, type: 3}
+  otherLayouts: []

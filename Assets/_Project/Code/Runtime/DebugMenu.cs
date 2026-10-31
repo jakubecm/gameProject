@@ -5,16 +5,12 @@ using UnityEngine.InputSystem;
 namespace ColdShutdown.Runtime
 {
     /// <summary>
-    /// Developer menu on F1: change the seed and the map size, regenerate the level while playing, and see
-    /// the map as text with the player's cell marked. Only active in the Editor and in development builds.
-    /// While it is open the player stands still and the cursor is free.
+    /// Developer menu on F1: FPS, rebuild the level, and the map as text with the player's cell marked. Only active in the Editor
+    /// and in development builds. While it is open the player stands still and the cursor is free.
     /// </summary>
     public class DebugMenu : MonoBehaviour
     {
         private const int WindowId = 7311;
-        // Every room is a heavy prefab (hundreds of renderers, many realtime lights). Until distance culling
-        // (task 3.5) exists, a map much bigger than this exhausts memory: 30 x 30 used up 32 GB.
-        private const int MaxMapSize = 12;
 
         // The window is laid out for a 720 px high screen and scaled up from there.
         private const float ReferenceHeight = 720f;
@@ -22,9 +18,6 @@ namespace ColdShutdown.Runtime
         [SerializeField] private LevelBuilder levelBuilder;
 
         private bool open;
-        private string seedText = "";
-        private string widthText = "";
-        private string heightText = "";
         private string status = "";
         private float frameTime = 1f / 60f;
 
@@ -69,7 +62,7 @@ namespace ColdShutdown.Runtime
         private void SetOpen(bool value)
         {
             open = value;
-            if (open) ReadFromBuilder();
+            if (open) mapDirty = true;
 
             // The player stands still while this window needs the mouse.
             var reader = FindAnyObjectByType<PlayerInputReader>();
@@ -83,17 +76,6 @@ namespace ColdShutdown.Runtime
 
         private void OnLevelBuilt(LevelBuilder builder)
         {
-            mapDirty = true;
-            if (open) ReadFromBuilder();
-        }
-
-        private void ReadFromBuilder()
-        {
-            if (levelBuilder == null) return;
-
-            seedText = levelBuilder.Seed.ToString();
-            widthText = levelBuilder.Width.ToString();
-            heightText = levelBuilder.Height.ToString();
             mapDirty = true;
         }
 
@@ -120,32 +102,10 @@ namespace ColdShutdown.Runtime
                 return;
             }
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Seed", GUILayout.Width(50f));
-            seedText = GUILayout.TextField(seedText, 11);
-            if (GUILayout.Button("Random", GUILayout.Width(70f)))
+            if (GUILayout.Button("Rebuild the level"))
             {
-                seedText = LevelBuilder.NewRandomSeed().ToString();
+                status = levelBuilder.Build() ? "Rebuilt." : "Build failed, see the Console.";
             }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Size", GUILayout.Width(50f));
-            widthText = GUILayout.TextField(widthText, 2, GUILayout.Width(40f));
-            GUILayout.Label("x", GUILayout.Width(12f));
-            heightText = GUILayout.TextField(heightText, 2, GUILayout.Width(40f));
-            GUILayout.Label($"(1 to {MaxMapSize})");
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Regenerate")) Regenerate();
-            if (GUILayout.Button("Random seed + regenerate"))
-            {
-                seedText = LevelBuilder.NewRandomSeed().ToString();
-                Regenerate();
-            }
-            GUILayout.EndHorizontal();
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -161,35 +121,15 @@ namespace ColdShutdown.Runtime
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 20f));
         }
 
-        private void Regenerate()
-        {
-            if (!int.TryParse(seedText, out int seed))
-            {
-                status = "The seed has to be a whole number.";
-                return;
-            }
-            if (!int.TryParse(widthText, out int newWidth) || !int.TryParse(heightText, out int newHeight) ||
-                newWidth < 1 || newHeight < 1 || newWidth > MaxMapSize || newHeight > MaxMapSize)
-            {
-                status = $"The size has to be between 1 and {MaxMapSize}.";
-                return;
-            }
-
-            status = levelBuilder.Build(seed, newWidth, newHeight)
-                ? $"Built seed {seed}, {newWidth} x {newHeight}."
-                : "Build failed, see the Console.";
-        }
-
         private void DrawMap()
         {
             var map = levelBuilder.Map;
-            int loops = map.ConnectionCount - (map.Width * map.Height - 1);
-            GUILayout.Label($"Seed {levelBuilder.Seed}   {map.Width} x {map.Height}   {map.ConnectionCount} passages ({loops} loops)");
+            GUILayout.Label($"{map.Width} x {map.Height} cells   {levelBuilder.Layout.Rooms.Count} rooms");
 
             RefreshMapText();
             mapStyle ??= CreateMapStyle();
             GUILayout.Label(mapText, mapStyle);
-            GUILayout.Label("@ you   C corridor   S server aisle   O office");
+            GUILayout.Label("@ you   C corridor   E lift   O office   G security   P power   V cooling   S storage   H hall");
         }
 
         // The map is redrawn only when the level changes or the player enters another cell.
@@ -210,7 +150,7 @@ namespace ColdShutdown.Runtime
             mapPlayerColumn = column;
             mapPlayerRow = row;
             var layout = levelBuilder.Layout;
-            mapText = layout.Map.ToText((c, r) => c == column && r == row ? '@' : layout.GetRoom(c, r).Type.ToString()[0]);
+            mapText = layout.Map.ToText((c, r) => c == column && r == row ? '@' : layout.HasRoom(c, r) ? layout.GetRoom(c, r).Type.Symbol() : ' ');
         }
 
         // Walls are drawn with characters, so the font must have equal widths to line up.

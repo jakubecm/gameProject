@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace ColdShutdown.Core
 {
     /// <summary>
-    /// Plain data for a generated map: a Width x Height grid where every cell is a room, and each
-    /// side of each room is either connected to the neighbouring room or closed.
+    /// Plain data for the map: a Width x Height grid of cells, and each side of each cell is either connected to the
+    /// neighbouring cell or closed (an empty cell has no connections).
     /// Cells are addressed by (column, row); column 0 / row 0 is the south-west corner.
     /// Connections are always symmetric: if A is connected to B, then B is connected to A.
     /// </summary>
