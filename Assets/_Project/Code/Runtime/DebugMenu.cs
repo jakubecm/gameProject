@@ -64,6 +64,10 @@ namespace ColdShutdown.Runtime
             open = value;
             if (open) mapDirty = true;
 
+            // In the intro, the menus and the pause screen the cursor is free and the player already stands still: leave both alone.
+            var flow = FindAnyObjectByType<GameFlow>();
+            if (flow != null && flow.State != GameState.Playing) return;
+
             // The player stands still while this window needs the mouse.
             var reader = FindAnyObjectByType<PlayerInputReader>();
             if (reader != null)
@@ -114,11 +118,27 @@ namespace ColdShutdown.Runtime
 
             GUILayout.Label($"{1f / Mathf.Max(frameTime, 0.0001f):0} FPS  ({frameTime * 1000f:0.0} ms)");
 
+            // What the crosshair was on when this window was opened (the view stands still while it is open).
+            var interactor = FindAnyObjectByType<Interactor>();
+            if (interactor != null)
+            {
+                string looked = interactor.LookedAt != null ? $"{HierarchyPath(interactor.LookedAt.transform)}  ({interactor.LookedDistance:0.00} m)" : "nothing";
+                string used = interactor.Focused is Component component ? component.GetType().Name : "nothing to use";
+                GUILayout.Label($"Looking at: {looked}\nFocus: {used}");
+            }
+
             if (levelBuilder.HasLevel)
             {
                 DrawMap();
             }
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 20f));
+        }
+
+        private static string HierarchyPath(Transform target)
+        {
+            string path = target.name;
+            for (var parent = target.parent; parent != null && path.Length < 160; parent = parent.parent) path = parent.name + "/" + path;
+            return path;
         }
 
         private void DrawMap()

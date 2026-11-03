@@ -12,6 +12,7 @@ namespace ColdShutdown.Runtime
     public class InteractionPrompt : MonoBehaviour
     {
         private Interactor interactor;
+        private GameObject canvasRoot;
         private Text label;
         private GameObject barRoot;
         private RectTransform barFill;
@@ -21,6 +22,12 @@ namespace ColdShutdown.Runtime
             interactor = GetComponent<Interactor>();
             BuildUi();
             ShowFocus(null);
+        }
+
+        /// <summary>Shows or hides the crosshair and the prompt (hidden in the menus).</summary>
+        public void SetVisible(bool visible)
+        {
+            if (canvasRoot != null) canvasRoot.SetActive(visible);
         }
 
         private void OnEnable()
@@ -62,6 +69,7 @@ namespace ColdShutdown.Runtime
         {
             var canvasObject = new GameObject("InteractionPromptCanvas", typeof(Canvas), typeof(CanvasScaler));
             canvasObject.transform.SetParent(transform, false);
+            canvasRoot = canvasObject;
 
             var canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;

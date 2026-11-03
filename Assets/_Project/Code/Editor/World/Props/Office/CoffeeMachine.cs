@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using ColdShutdown.Core;
+using ColdShutdown.Runtime;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using static ColdShutdown.Editor.MeshBuilder;
 
 namespace ColdShutdown.Editor
@@ -13,6 +16,9 @@ namespace ColdShutdown.Editor
         /// buttons, on the top front, a squared dispenser column on the front in the body's colour with a copper band at its foot and
         /// two spouts, and a drip tray with a black grille reaching forward from the foot. The espresso cup stands on the grille
         /// under the spouts, clear of the machine. A desk-top prop, its front faces +Z.
+        /// Usable: <see cref="CoffeeMachine"/> (E brews, E again drinks) with the cup on its own pivot (the centre of its base), a "Liquid" mesh
+        /// in it that the component rebuilds, two thin "Stream" tubes under the spouts (pivot at their bottom, 1 m long, scaled by the component)
+        /// one box collider over the whole machine. The cup rests with its handle on -X (the right-hand side seen from the front).
         /// </summary>
         [Model(Prop.CoffeeMachine)]
         private static void BuildCoffeeMachine(Transform root)
@@ -70,7 +76,50 @@ namespace ColdShutdown.Editor
             grille.Attach("Grille", root, SurfaceMaterial.BlackHousing);
             buttons.Attach("Buttons", root, SurfaceMaterial.Chrome);
             // The cup stands on the grille under the spouts (their z is bodyFront + 0.05), 4 cm in front of the body and well under the column.
-            BuildMug(ModelUtility.CreateGroup("Cup", root), new Vector3(0f, trayTop + 0.003f, bodyFront + 0.05f));
+            // Its pivot is the centre of its base, so the component can lift and tilt it.
+            var cup = ModelUtility.CreateGroup("Cup", root);
+            cup.localPosition = new Vector3(0f, trayTop + 0.003f, bodyFront + 0.05f);
+            // The mug model has its handle on +X; here it points to -X, which is the right-hand side for someone standing in front of the machine.
+            cup.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            BuildMug(cup, Vector3.zero);
+
+            // The coffee in the cup: a placeholder mesh, the component builds the real one at runtime.
+            var liquid = ModelUtility.CreateGroup("Liquid", cup);
+            var placeholder = new MeshBuilder();
+            placeholder.AddBox(new Vector3(-0.001f, 0.007f, -0.001f), new Vector3(0.001f, 0.008f, 0.001f));
+            var liquidPart = placeholder.Attach("CoffeeLiquid", liquid, SurfaceMaterial.Coffee);
+            var liquidRenderer = liquidPart.GetComponent<MeshRenderer>();
+            liquidRenderer.shadowCastingMode = ShadowCastingMode.Off;
+
+            // The two streams out of the spouts, authored at the spouts' height; the component sets their height and length.
+            var streams = new List<Transform>();
+            foreach (var (name, x) in new[] { ("StreamLeft", -0.013f), ("StreamRight", 0.013f) })
+            {
+                var stream = ModelUtility.CreateGroup(name, root);
+                stream.localPosition = new Vector3(x, 0.1325f, bodyFront + 0.05f);
+                var tube = new MeshBuilder();
+                tube.AddLathe(new[] { P(0f, 0f, true), P(0.0018f, 0f, true), P(0.0018f, 1f, true), P(0f, 1f, true) }, 8, true, Vector3.zero, Quaternion.identity);
+                tube.Attach(name + "Tube", stream, SurfaceMaterial.Coffee).GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                stream.gameObject.SetActive(false);
+                streams.Add(stream);
+            }
+
+            // One box over the whole machine (body, tank, buttons, dispenser, tray and cup), 1 cm roomy, so looking at any part of it offers the use.
+            AddBoxCollider(root, new Vector3(0f, top / 2f, (bodyBack + trayFront) / 2f), new Vector3(2f * half + 0.02f, top + 0.01f, trayFront - bodyBack + 0.02f));
+
+            var use = root.gameObject.AddComponent<CoffeeMachineUse>();
+            var machine = root.gameObject.AddComponent<CoffeeMachine>();
+            var machineSerialized = new SerializedObject(machine);
+            machineSerialized.FindProperty("cup").objectReferenceValue = cup;
+            machineSerialized.FindProperty("liquidFilter").objectReferenceValue = liquidPart.GetComponent<MeshFilter>();
+            machineSerialized.FindProperty("liquidRenderer").objectReferenceValue = liquidRenderer;
+            var streamsProperty = machineSerialized.FindProperty("streams");
+            streamsProperty.arraySize = streams.Count;
+            for (int i = 0; i < streams.Count; i++) streamsProperty.GetArrayElementAtIndex(i).objectReferenceValue = streams[i];
+            machineSerialized.ApplyModifiedPropertiesWithoutUndo();
+            var useSerialized = new SerializedObject(use);
+            useSerialized.FindProperty("machine").objectReferenceValue = machine;
+            useSerialized.ApplyModifiedPropertiesWithoutUndo();
         }
     }
 }

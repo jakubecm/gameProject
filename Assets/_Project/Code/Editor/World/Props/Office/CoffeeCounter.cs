@@ -91,7 +91,11 @@ namespace ColdShutdown.Editor
             basin.AddBox(new Vector3(sinkX1 - wall, CounterHeight - 0.1f, sinkZ0), new Vector3(sinkX1, CounterHeight, sinkZ1), true, false);
             basin.AddBox(new Vector3(splitX - wall / 2f, CounterHeight - 0.2f, sinkZ0), new Vector3(splitX + wall / 2f, CounterHeight - 0.03f, sinkZ1), true, false);
             basin.Attach("Basin", root, SurfaceMaterial.StainlessSteel);
-            BuildMug(ModelUtility.CreateGroup("Mug_Sink", root), new Vector3(sinkX0 + 0.075f, CounterHeight - 0.2f + wall, 0.04f));
+            // Handle to the right of someone standing at the counter (-X here), like the cup of the coffee machine.
+            var sinkMug = ModelUtility.CreateGroup("Mug_Sink", root);
+            sinkMug.localPosition = new Vector3(sinkX0 + 0.075f, CounterHeight - 0.2f + wall, 0.04f);
+            sinkMug.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            BuildMug(sinkMug, Vector3.zero);
             drains.Attach("Drains", root, SurfaceMaterial.BlackHousing);
 
             // Gooseneck tap in the same matt dark steel, on the back strip: a round foot, a tall column bent over in a half circle and down

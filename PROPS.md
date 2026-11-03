@@ -97,7 +97,7 @@ painted floor lines and hatching; conduits (painted tube, chrome rosette).
 | `WallTv` [Office] | 65" 1.46 x 0.84 x 0.028, centre at 1.6 m | office back wall |
 | `VideoScreen` [Office] | 55" display on a wall bracket; screen quad for a camera feed (`SecurityMonitor`) | security office video wall (8) |
 | `CoffeeCounter` [Office] | kitchenette 1.8 m: white gloss base units (3 x 0.6), stone top at 0.9, dark double sink, gooseneck tap, wall cabinets | office |
-| `CoffeeMachine` [Office] | bean-to-cup 0.19 x 0.34 x 0.48, graphite, copper band, espresso cup | on the counter |
+| `CoffeeMachine` [Office] | bean-to-cup 0.19 x 0.34 x 0.48, graphite, copper band; usable (`CoffeeMachine` + `CoffeeMachineUse`): E brews into the cup (`Cup`, pivot at its base, `Liquid`, two `Stream*` tubes), E drinks it; one box collider, used within 0.8 m; the cup's handle is on -X | on the counter |
 | `Fridge` [Office] | fridge-freezer 0.6 x 1.8 x 0.65, white, silver D-handles | office |
 | `Mug` [Office] | white ceramic mug 83 mm, triangular handle | counter, desks, meeting table |
 | `PaperStack` [Office] | 16 loose A4 sheets, top sheet `T_PaperPage` | desks, cabinets, meeting table, security "ShiftLog" |
@@ -193,4 +193,4 @@ LockerPlate BenchWood BenchFrame PhotoPicture ValveNickel ValveSteel ValveGrip P
 SupportBlue DialFace PlantLabels CastIron CabinetGrey GalvanisedSteel ShelfBoard Cardboard CardboardDark CardboardEdge
 ElectricGrey UpsGraphite ResinCoil PowerDialFace RackBlack RackMesh ServerBlack ServerSilver DriveBay LatchRed
 LedAmber ServerHoneycomb ChassisVent ServerVoid UpsDisplay SwitchFace TrayPerforated FloorTilePerforated Concrete DuctStainless ConduitViolet
-ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen LiftCeiling
+ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen LiftCeiling Coffee

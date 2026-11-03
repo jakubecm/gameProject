@@ -64,6 +64,9 @@ namespace ColdShutdown.Runtime
 
         public float Travel => travel;
 
+        /// <summary>Opens the door as if someone stood in front of it (the menu camera flies through doors); a locked door stays shut.</summary>
+        public bool ForceOpen { get; set; }
+
         public bool IsLocked
         {
             get => locked;
@@ -90,7 +93,7 @@ namespace ColdShutdown.Runtime
                 sensorTimer = sensorInterval;
                 someoneNear = SenseSomeone();
             }
-            Step(someoneNear, Time.deltaTime);
+            Step(someoneNear || ForceOpen, Time.deltaTime);
         }
 
         /// <summary>

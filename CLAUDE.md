@@ -59,13 +59,15 @@ All code and tests live under `Assets/` (Unity compiles nothing outside it).
 | CCTV | Runtime: `SecurityCamera`, `SecurityMonitor`, `SecurityMonitorWall` (pages feeds, only near the player, Play mode) |
 | Clue displays | Runtime: `AnalogGauge` (needle follows `Value` 0-1) |
 | Interaction | Runtime: `IInteractable`, `Interactable`, `Interactor` (on camera), `InteractionPrompt`, `InteractableColorToggle` (test) |
+| Game flow and menus | Runtime/UI: `GameFlow` (main menu → playing ⇄ paused; swaps the menu camera and the player; Escape = pause), `UiScreen` pages built from code (`MainMenuScreen`, `PauseScreen`, `SettingsScreen` (volume and mute, not connected yet)), `MenuCameraRig` (constant-speed shots through the map: one hall move, one slider through an opening door into the power room (else the security office; only added when its run is free of walls), drone arcs, corridor dollies; motion carries over the cuts), `UiKit` (widgets, one look). `GameFlow` sits in `Main` (made by Create Main Scene / Create Preview Scene) |
+| Coffee machine | Runtime: `CoffeeMachine` (E brews, cup fills; E again drinks, the coffee runs over the rim as the cup tips; no sound yet), `CoffeeMachineUse` (the interactable, off while busy), `CoffeeLiquidMesh` (the surface is the exact cut of a world-level plane through the mug interior; volume by slices; `Capacity` = what a tilted mug holds before it runs over the rim) |
 | Debug | Runtime: `DebugMenu` (F1: FPS, rebuild, map as text; Editor and development builds only) |
 | Player | Runtime/Player: see Player |
 | World (editor) | `World/`: see Project layout; `WorldTool` = Create Preview Scene, `MainSceneTool`, `WorldBatch` (batch entry) |
 | Other editor tools | `PlayerPrefabTool`, `SandboxSceneTool` (Sandbox_A) |
 
 Not built yet (planned): run state, clues/deduction, terminals and the four minigames, infection steps, AI
-messages, UI, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references.
+messages, settings wiring, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references.
 
 ## Architecture rules
 

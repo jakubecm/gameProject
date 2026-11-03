@@ -47,6 +47,9 @@ namespace ColdShutdown.Runtime
         /// <summary>False while something else (a terminal, a menu) owns the input; the player then stands still.</summary>
         public bool InputEnabled { get; set; } = true;
 
+        /// <summary>Whether Escape frees the cursor. The pause screen turns this off: it frees the cursor itself and gives it back on resume.</summary>
+        public bool EscapeFreesCursor { get; set; } = true;
+
         public float MouseSensitivity
         {
             get => mouseSensitivity;
@@ -136,7 +139,7 @@ namespace ColdShutdown.Runtime
 
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) SetCursorLocked(false);
+            if (EscapeFreesCursor && keyboard != null && keyboard.escapeKey.wasPressedThisFrame) SetCursorLocked(false);
             else if (mouse != null && mouse.leftButton.wasPressedThisFrame && InputEnabled) SetCursorLocked(true);
         }
 

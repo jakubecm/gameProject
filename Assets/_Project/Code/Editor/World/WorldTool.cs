@@ -85,6 +85,7 @@ namespace ColdShutdown.Editor
             if (File.Exists(MainSceneTool.ScenePath)) MainSceneTool.UpdateMainScene();
             // Last, so Sandbox_B is the scene left open.
             BuildSandbox();
+            MainSceneTool.RegisterBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return true;
@@ -112,6 +113,8 @@ namespace ColdShutdown.Editor
             var player = SandboxSceneTool.CreatePlayer();
             var builder = CreateLevelBuilder(player.transform, false);
             CreateDebugMenu(builder);
+            // The intro and the menus run here too, so a build made from this scene starts like the game.
+            MainSceneTool.WireGameFlow(builder, null);
             builder.Build((prefab, parent) => (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent));
 
             Directory.CreateDirectory(Path.GetDirectoryName(SandboxPath));

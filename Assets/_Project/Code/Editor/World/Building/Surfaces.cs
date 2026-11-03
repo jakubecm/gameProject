@@ -144,6 +144,8 @@ namespace ColdShutdown.Editor
         ConduitGreen,
         // Passenger lift: brushed stainless ceiling panels (texture T_LiftCeiling).
         LiftCeiling,
+        // Brewed coffee in the cup and the two thin streams out of the coffee machine's spouts.
+        Coffee,
     }
 
     /// <summary>
@@ -310,6 +312,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.ConduitBrown, new Look(new Color(0.45f, 0.27f, 0.12f), 0.1f, 0.5f) },
             { SurfaceMaterial.ConduitGreen, new Look(new Color(0.2f, 0.62f, 0.3f), 0.1f, 0.5f) },
             { SurfaceMaterial.LiftCeiling, new Look(Color.white, 0.85f, 0.35f) },
+            { SurfaceMaterial.Coffee, new Look(new Color(0.13f, 0.065f, 0.03f), 0f, 0.92f) },
         };
 
         public static string PathOf(SurfaceMaterial surface) => $"{Folder}/M_{surface}.mat";
