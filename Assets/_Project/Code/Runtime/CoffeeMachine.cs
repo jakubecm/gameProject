@@ -28,7 +28,7 @@ namespace ColdShutdown.Runtime
         private const float FullLevelY = 0.058f;
 
         // Below this share of a full cup the coffee is gone.
-        private const float MinVisibleFill = 0.0001f;
+        private const float MinVisibleFill = CoffeeLiquidMesh.VanishFill;
         
         // Brewing, seconds: the streams fall into the cup, the level rises, the streams break off.
         private const float StreamFallTime = 0.5f;
@@ -223,8 +223,8 @@ namespace ColdShutdown.Runtime
             var flat = Vector3.ProjectOnPlane(viewer.forward, Vector3.up);
             if (flat.sqrMagnitude < 1e-4f) flat = viewer.up;
             var yaw = Quaternion.LookRotation(flat.normalized, Vector3.up);
-            var hand = viewer.position + viewer.forward * 0.34f - viewer.up * 0.17f;
-            var mouthPosition = viewer.position + viewer.forward * 0.25f - viewer.up * 0.11f;
+            var hand = viewer.position + viewer.forward * 0.34f - viewer.up * 0.12f;
+            var mouthPosition = viewer.position + viewer.forward * 0.25f - viewer.up * 0.07f;
             var held = Vector3.Lerp(hand, mouthPosition, mouth);
 
             var centre = Vector3.Lerp(homeCentre, held, lift) + Vector3.up * (0.06f * Mathf.Sin(Mathf.PI * lift));
@@ -263,7 +263,7 @@ namespace ColdShutdown.Runtime
             ShowLiquid(fill);
             if (fill <= MinVisibleFill) return;
 
-            liquidBuilder.Rebuild(liquidMesh, up, fill, FullLevelY);
+            liquidBuilder.Rebuild(liquidMesh, up, fill, FullLevelY, State == CoffeeMachineState.Drinking);
         }
 
         private void ShowLiquid(float level) => liquidRenderer.enabled = level > MinVisibleFill;

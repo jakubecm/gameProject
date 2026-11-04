@@ -31,6 +31,12 @@ namespace ColdShutdown.Runtime
             nextBurst = Time.unscaledTime + 3f;
         }
 
+        /// <summary>Takes the lines' present positions as home (the screen has moved them).</summary>
+        public void Rehome()
+        {
+            for (int i = 0; i < lines.Length; i++) home[i] = lines[i].rectTransform.anchoredPosition;
+        }
+
         // A copy of the line right behind it.
         private static RectTransform Ghost(Text line, Color color)
         {

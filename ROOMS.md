@@ -177,8 +177,7 @@ switch sit in the middle of the west wall of the crossing.
 
 ### Security office (`SecurityOffice`)
 
-- Back wall: `VideoWall` (game logic, `SecurityMonitorWall`) of 8 `VideoScreen` (2 rows at 1.3 / 2.05 m x 4 columns
-  at x ±0.625 / ±1.875), trunking behind each column up to the ceiling.
+- Back wall: `VideoWall` (game logic, `SecurityMonitorWall`: all cameras in turn, no shot twice at once, live (round robin) only while the player is inside, frozen when they leave) of 8 `VideoScreen` (2 rows at 1.32 / 2.05 m x 4 columns at x ±0.625 / ±1.875, 2 cm between screens both ways), trunking behind each column, seen between the rows and up to the ceiling.
 - Two consoles facing the video wall: `Desk` + `Workstation` + `PcTower` + `OfficeChair` + `FloorBox` at
   (±0.801, -1.9) (2 mm apart); `PaperStack` "ShiftLog" between.
 - West wall: 2 `RackSlot` (compute rack, JBOD) at z -3.95 / -4.55, fronts east (racks placed on them; one openable);

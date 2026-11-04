@@ -125,7 +125,7 @@ namespace ColdShutdown.Editor
             }
             details.AddStrip(split, Vector3.right, 0.0014f, 0.0008f, position, Quaternion.identity);
 
-            body.Attach("Mouse_Body", root, SurfaceMaterial.MouseBlack);
+            body.Attach("Mouse_Body", root, SurfaceMaterial.KeyboardGraphite);
             slot.Attach("Mouse_Slot", root, SurfaceMaterial.BlackHousing);
             wheel.Attach("Mouse_Wheel", root, SurfaceMaterial.KeyboardKey);
             details.Attach("Mouse_Details", root, SurfaceMaterial.KeyboardKey);

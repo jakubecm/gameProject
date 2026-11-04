@@ -16,6 +16,7 @@ namespace ColdShutdown.Runtime
         private CanvasGroup group;
         private float target;
         private Selectable first;
+        private bool arranged;
 
         public bool IsOpen { get; private set; }
 
@@ -36,6 +37,13 @@ namespace ColdShutdown.Runtime
         public void Show()
         {
             gameObject.SetActive(true);
+            if (!arranged)
+            {
+                // The text is measured as it is drawn, so the canvas has to be built first.
+                arranged = true;
+                Canvas.ForceUpdateCanvases();
+                Arrange();
+            }
             IsOpen = true;
             target = 1f;
             group.interactable = true;
@@ -63,6 +71,9 @@ namespace ColdShutdown.Runtime
 
         /// <summary>The widgets are created here, under <paramref name="root"/> (stretched over the canvas).</summary>
         protected abstract void Build(RectTransform root);
+
+        /// <summary>Places the widgets by their measured text (<see cref="UiKit.Ink"/>); called once, when the screen is first shown.</summary>
+        protected virtual void Arrange() { }
 
         protected virtual void OnShown() { }
 

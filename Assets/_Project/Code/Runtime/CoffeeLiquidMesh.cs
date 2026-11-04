@@ -32,6 +32,13 @@ namespace ColdShutdown.Runtime
         private const float SolverLow = -0.12f;
         private const float Big = 0.12f;
 
+        // Below this share of a full mug, while drinking, the last of the coffee is a film that draws back to the lowest point of the rim
+        // (its size follows the logarithm of the amount, so the draw-back is slow and even although the amount drops ever faster) and is gone there, instead of staying a long thin strip along the wall until it vanishes.
+        private const float FilmFill = 0.04f;
+
+        /// <summary>Below this share of a full mug there is no coffee to draw: the film has drawn back to a point.</summary>
+        public const float VanishFill = 0.00001f;
+
         // Faces of the interior: face points p with normal . p <= offset.
         private static readonly Vector3[] FaceNormals;
         private static readonly float[] FaceOffsets;
@@ -73,9 +80,10 @@ namespace ColdShutdown.Runtime
         /// <summary>
         /// Fills <paramref name="mesh"/> with the surface. <paramref name="up"/> is the world's up direction in the mug's local space (the
         /// surface normal), <paramref name="fill"/> the share of a full mug (0 to 1) and <paramref name="fullLevelY"/> the height of the
-        /// surface of a full, upright mug. The mesh is empty when there is no coffee.
+        /// surface of a full, upright mug. The mesh is empty when there is no coffee. With <paramref name="draining"/> (the mug is being
+        /// emptied over its rim) the last film shrinks towards the lowest point of the rim.
         /// </summary>
-        public void Rebuild(Mesh mesh, Vector3 up, float fill, float fullLevelY)
+        public void Rebuild(Mesh mesh, Vector3 up, float fill, float fullLevelY, bool draining = false)
         {
             mesh.Clear();
             up.Normalize();
@@ -97,6 +105,7 @@ namespace ColdShutdown.Runtime
             }
             BuildSurface(up, high);
             if (polygon.Count < 3) return;
+            if (draining && fill < FilmFill) DrawBackToRim(up, high, Mathf.Clamp01(Mathf.Log(fill / VanishFill) / Mathf.Log(FilmFill / VanishFill)));
 
             vertices.Clear();
             normals.Clear();
@@ -113,6 +122,17 @@ namespace ColdShutdown.Runtime
             mesh.SetNormals(normals);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
+        }
+
+        // Scales the surface towards the lowest point of the rim (projected on the surface plane) to <paramref name="share"/> of its size.
+        private void DrawBackToRim(Vector3 up, float offset, float share)
+        {
+            float lean = Mathf.Sqrt(up.x * up.x + up.z * up.z);
+            if (lean < 1e-5f) return;
+
+            var rim = new Vector3(-RimRadius * up.x / lean, RimY, -RimRadius * up.z / lean);
+            var anchor = rim + up * (offset - Vector3.Dot(up, rim));
+            for (int i = 0; i < polygon.Count; i++) polygon[i] = anchor + (polygon[i] - anchor) * share;
         }
 
         /// <summary>

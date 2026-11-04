@@ -113,6 +113,8 @@ namespace ColdShutdown.Runtime
             if (player == null) return;
 
             playerCamera = player.GetComponentInChildren<Camera>(true);
+            // Set up while it is still off, so its first picture already has the full look.
+            LightingDirector.Configure(playerCamera);
             interactor = player.GetComponentInChildren<Interactor>(true);
             prompt = player.GetComponentInChildren<InteractionPrompt>(true);
             input = player.GetComponentInChildren<PlayerInputReader>(true);
@@ -164,6 +166,7 @@ namespace ColdShutdown.Runtime
             {
                 SetPlayerActive(true);
                 SetState(GameState.Playing);
+                for (int i = 0; i < 5; i++) yield return null;
                 yield return FadeTo(0f, 0.6f);
             }
             else
@@ -189,6 +192,9 @@ namespace ColdShutdown.Runtime
             settings.HideNow();
             SetPlayerActive(true);
             SetState(GameState.Playing);
+            // A few frames in black with the player's camera on: its post-processing, ambient occlusion and the lights of the lift and the
+            // corridor are all set up before the picture fades in.
+            for (int i = 0; i < 5; i++) yield return null;
             yield return FadeTo(0f, 0.9f);
             busy = false;
         }

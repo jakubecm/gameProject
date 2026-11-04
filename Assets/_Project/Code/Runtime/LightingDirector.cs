@@ -46,10 +46,19 @@ namespace ColdShutdown.Runtime
             Instance = this;
 
             CreateVolume();
+            // A camera is set up before its first frame is drawn, not at the next periodic check: a camera that was switched off (the player's,
+            // while the menu is shown) is not listed by Camera.GetAllCameras, and would show a flat picture without the post-processing.
+            RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+        }
+
+        private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            if (IsGameCamera(camera) && configuredCameras.Add(camera)) Configure(camera);
         }
 
         private void OnDestroy()
         {
+            RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             if (Instance == this) Instance = null;
             if (profile != null) Destroy(profile);
         }
@@ -109,12 +118,20 @@ namespace ColdShutdown.Runtime
                 var camera = cameraBuffer[i];
                 if (!IsGameCamera(camera) || !configuredCameras.Add(camera)) continue;
 
-                if (!camera.TryGetComponent(out UniversalAdditionalCameraData data)) data = camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
-                data.renderPostProcessing = true;
-                data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                data.antialiasingQuality = AntialiasingQuality.High;
-                data.dithering = true;
+                Configure(camera);
             }
+        }
+
+        /// <summary>Post-processing, SMAA and dithering on a game camera. Safe to call on a switched-off camera, before it is first shown.</summary>
+        public static void Configure(Camera camera)
+        {
+            if (camera == null || GraphicsSettings.currentRenderPipeline == null) return;
+
+            if (!camera.TryGetComponent(out UniversalAdditionalCameraData data)) data = camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+            data.renderPostProcessing = true;
+            data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            data.antialiasingQuality = AntialiasingQuality.High;
+            data.dithering = true;
         }
 
         private static bool IsGameCamera(Camera camera) => camera != null && camera.cameraType == CameraType.Game && camera.targetTexture == null;

@@ -52,12 +52,15 @@ namespace ColdShutdown.Editor
             {
                 PlaceDesk(furniture, details, power, new Vector3(x, 0f, -1.9f), 180f, $"Console{suffix}", true);
             }
-            Put(Prop.PaperStack, details, -0.2f, Props.DeskHeight, -2.1f, 350f, "ShiftLog");
+            Put(Prop.PaperStack, details, -0.2f, Props.DeskHeight, -2.06f, 190f, "ShiftLog");
 
-            // Power for the screens: trunking behind each column of screens, up into the ceiling.
+            // Power for the screens: trunking behind each column of screens, seen in the gap between the two rows and from the top row up into the ceiling.
+            float lowTop = VideoWallRows[0] + VideoScreenHalfHeight;
+            float highBottom = VideoWallRows[1] - VideoScreenHalfHeight;
             foreach (float x in VideoWallColumns)
             {
-                Trunking(power, $"ScreenTrunking_{x:0.00}", new Vector3(x, 2.42f, back), new Vector3(x, Ceiling, back), Vector3.back);
+                Trunking(power, $"ScreenTrunking_{x:0.00}_Between", new Vector3(x, lowTop, back), new Vector3(x, highBottom, back), Vector3.back);
+                Trunking(power, $"ScreenTrunking_{x:0.00}", new Vector3(x, VideoWallRows[1] + VideoScreenHalfHeight, back), new Vector3(x, Ceiling, back), Vector3.back);
             }
 
             // Outlets for the two racks, beside them on their wall.
@@ -106,7 +109,10 @@ namespace ColdShutdown.Editor
         internal static readonly float[] VideoWallColumns = { -1.875f, -0.625f, 0.625f, 1.875f };
 
         /// <summary>Heights of the screen centers.</summary>
-        internal static readonly float[] VideoWallRows = { 1.3f, 2.05f };
+        internal static readonly float[] VideoWallRows = { 1.32f, 2.05f };
+
+        // Half the height of a VideoScreen bezel (0.71 m).
+        private const float VideoScreenHalfHeight = 0.355f;
 
         /// <summary>Z of the two rack slots of the security office (compute rack, then JBOD), side by side.</summary>
         internal static readonly float[] SecurityRackZ = { -3.95f, -4.55f };

@@ -252,7 +252,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.HoseRed, new Look(new Color(0.78f, 0.16f, 0.07f), 0f, 0.35f) },
             { SurfaceMaterial.HoseWhite, new Look(new Color(0.9f, 0.9f, 0.85f), 0f, 0.12f) },
             { SurfaceMaterial.KeyboardGraphite, new Look(new Color(0.1f, 0.1f, 0.11f), 0.05f, 0.3f) },
-            { SurfaceMaterial.KeyboardKey, new Look(new Color(0.16f, 0.16f, 0.17f), 0f, 0.35f) },
+            { SurfaceMaterial.KeyboardKey, new Look(new Color(0.21f, 0.21f, 0.22f), 0f, 0.3f) },
             { SurfaceMaterial.MouseBlack, new Look(new Color(0.045f, 0.045f, 0.05f), 0f, 0.3f) },
             { SurfaceMaterial.CeilingTile, new Look(new Color(0.95f, 0.95f, 0.94f), 0f, 0.04f) },
             // PC case: the diamond-perforated front (texture), and the lit desktop picture of the monitors (texture + emission).
