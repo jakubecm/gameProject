@@ -80,6 +80,7 @@ namespace ColdShutdown.Editor
             }));
             Props.DeleteObsoleteProps();
             HallBuilder.BakeHall(parsed.Layout);
+            WorldLighting.ApplyPipeline();
             AssetDatabase.SaveAssets();
 
             if (File.Exists(MainSceneTool.ScenePath)) MainSceneTool.UpdateMainScene();
@@ -163,16 +164,7 @@ namespace ColdShutdown.Editor
             return menu;
         }
 
-        /// <summary>
-        /// The rooms are lit only by their own light fittings. Without baked bounce light, a trilight
-        /// ambient stands in for it: surfaces facing down (the ceiling) get the light the floor reflects.
-        /// </summary>
-        internal static void ApplyRoomAmbientLight()
-        {
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.06f, 0.06f, 0.065f);
-            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.13f, 0.135f);
-            RenderSettings.ambientGroundColor = new Color(0.3f, 0.29f, 0.28f);
-        }
+        /// <summary>Ambient and fog of the open scene: the room look (<see cref="WorldLighting.ApplyRoomLook"/>).</summary>
+        internal static void ApplyRoomAmbientLight() => WorldLighting.ApplyRoomLook();
     }
 }

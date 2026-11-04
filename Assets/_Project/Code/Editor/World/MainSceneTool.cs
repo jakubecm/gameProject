@@ -50,6 +50,7 @@ namespace ColdShutdown.Editor
         internal static void UpdateMainScene()
         {
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            WorldTool.ApplyRoomAmbientLight();
             foreach (var root in scene.GetRootGameObjects())
             {
                 foreach (var builder in root.GetComponentsInChildren<LevelBuilder>(true))

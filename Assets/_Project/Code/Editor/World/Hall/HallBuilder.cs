@@ -356,8 +356,8 @@ namespace ColdShutdown.Editor
                 HallBox(frame, new Vector3(x - 0.012f, y0, center - aisle), new Vector3(x + 0.012f, y1 + 0.002f, center + aisle));
             }
 
-            black.Attach($"ContainmentRoof_{name}_Panels", roof, SurfaceMaterial.RackBlack);
-            frame.Attach($"ContainmentRoof_{name}_Frame", roof, SurfaceMaterial.ServerBlack);
+            black.Attach($"ContainmentRoof_{name}_Panels", roof, SurfaceMaterial.AisleFrame);
+            frame.Attach($"ContainmentRoof_{name}_Frame", roof, SurfaceMaterial.AisleFrame);
             labels.Attach($"ContainmentRoof_{name}_Labels", roof, SurfaceMaterial.DetectorWhite);
         }
 

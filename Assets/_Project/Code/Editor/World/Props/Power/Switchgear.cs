@@ -112,7 +112,7 @@ namespace ColdShutdown.Editor
             lever.Attach("BreakerKnobs", root, SurfaceMaterial.BlackHousing);
             pointer.Attach("KnobPointers", root, SurfaceMaterial.SignFace);
             on.Attach("IndicatorOn", root, SurfaceMaterial.SafetyGreen);
-            off.Attach("IndicatorOff", root, SurfaceMaterial.SafetyRed);
+            off.Attach("IndicatorOff", root, SurfaceMaterial.LedRed);
             screws.Attach("Screws", root, SurfaceMaterial.Chrome);
             chrome.Attach("Hardware", root, SurfaceMaterial.Chrome);
             handle.Attach("Handles", root, SurfaceMaterial.BlackHousing);

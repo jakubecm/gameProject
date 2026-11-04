@@ -36,6 +36,7 @@ namespace ColdShutdown.Editor
             var tank = new MeshBuilder();
             var grille = new MeshBuilder();
             var buttons = new MeshBuilder();
+            var icons = new MeshBuilder();
             var panel = new MeshBuilder();
 
             // Body: the full-depth lower block, and over it the upper block in front of the tank (the tank itself fills the upper rear).
@@ -58,15 +59,19 @@ namespace ColdShutdown.Editor
             {
                 grille.AddLathe(new[] { P(0f, 0f, true), P(0.0032f, 0f, true), P(0.0032f, 0.006f, true), P(0f, 0.006f, true) }, 10, true, new Vector3(x, 0.1325f, bodyFront + 0.05f), Quaternion.identity);
             }
-            // Control strip on the top front: a flat lighter grey plate with two rows of round buttons (the middle one is the power button).
-            panel.AddRoundedBlock(new Vector3(0f, top, bodyFront - 0.0363f), 0.178f, 0.0535f, 0.009f, 0.002f, 0.0007f, 5);
-            for (int i = 0; i < 9; i++)
+            // Control strip on the top front: a flat lighter grey plate with five round buttons in a darker colour on two rows, each with a glowing solid icon (circle, square, triangle, pentagon, hexagon) in its middle.
+            panel.AddRoundedBlock(new Vector3(0f, top, bodyFront - 0.0363f), 0.104f, 0.0535f, 0.009f, 0.002f, 0.0007f, 5);
+            // Five buttons on the two middle rows: three in front (the middle one larger), two between them behind.
+            var shapes = new[] { ButtonIcon.Circle, ButtonIcon.Square, ButtonIcon.Triangle, ButtonIcon.Pentagon, ButtonIcon.Hexagon };
+            for (int i = 2; i <= 6; i++)
             {
                 bool row = i % 2 == 0;
                 float x = -0.072f + i * 0.018f;
                 float z = bodyFront - (row ? 0.045f : 0.025f);
                 float r = i == 4 ? 0.0095f : 0.0068f;
-                buttons.AddLathe(new[] { P(0f, 0f, true), P(r, 0f, true), P(r, 0.0018f, true), P(0f, 0.0018f, true) }, 18, true, new Vector3(x, top + 0.002f, z), Quaternion.identity);
+                var at = new Vector3(x, top + 0.002f, z);
+                buttons.AddLathe(new[] { P(r, 0f, true), P(r, 0.0016f), P(r * 0.86f, 0.0025f), P(0f, 0.0029f, true) }, 20, true, at, Quaternion.identity);
+                AddButtonIcon(icons, shapes[i - 2], at + Vector3.up * 0.0028f, r * 0.5f);
             }
 
             graphite.Attach("Body", root, SurfaceMaterial.CoffeeGraphite);
@@ -74,7 +79,8 @@ namespace ColdShutdown.Editor
             copper.Attach("Copper", root, SurfaceMaterial.CopperTrim);
             tank.Attach("Tank", root, SurfaceMaterial.SmokedTank);
             grille.Attach("Grille", root, SurfaceMaterial.BlackHousing);
-            buttons.Attach("Buttons", root, SurfaceMaterial.Chrome);
+            buttons.Attach("Buttons", root, SurfaceMaterial.CoffeeButton);
+            icons.Attach("ButtonIcons", root, SurfaceMaterial.LedWhite);
             // The cup stands on the grille under the spouts (their z is bodyFront + 0.05), 4 cm in front of the body and well under the column.
             // Its pivot is the centre of its base, so the component can lift and tilt it.
             var cup = ModelUtility.CreateGroup("Cup", root);
@@ -120,6 +126,49 @@ namespace ColdShutdown.Editor
             var useSerialized = new SerializedObject(use);
             useSerialized.FindProperty("machine").objectReferenceValue = machine;
             useSerialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private enum ButtonIcon { Circle, Square, Triangle, Pentagon, Hexagon }
+
+        /// <summary>
+        /// The glowing icon in the middle of a coffee machine button, lying flat on its cap: a solid circle, square, triangle, pentagon or
+        /// hexagon with rounded corners (no sharp edges). <paramref name="radius"/> is the circumradius, half the button's radius. <paramref name="pointing"/>
+        /// is the angle (radians, in the XZ plane from +X towards +Z) of the first corner; a triangle points that way.
+        /// </summary>
+        private static void AddButtonIcon(MeshBuilder icons, ButtonIcon icon, Vector3 at, float radius, float? pointing = null)
+        {
+            const float height = 0.0004f;
+            if (icon == ButtonIcon.Circle)
+            {
+                icons.AddLathe(new[] { P(radius * 0.9f, 0f, true), P(radius * 0.9f, height, true), P(0f, height, true) }, 24, true, at, Quaternion.identity);
+                return;
+            }
+            int sides = icon == ButtonIcon.Triangle ? 3 : icon == ButtonIcon.Square ? 4 : icon == ButtonIcon.Pentagon ? 5 : 6;
+            // A triangle points to the front (+Z), a square sits on its side, the others point to the front too.
+            float start = pointing ?? (icon == ButtonIcon.Square ? Mathf.PI / 4f : Mathf.PI / 2f);
+            icons.AddPrism(RoundedPolygon(sides, radius, radius * 0.3f, start), 0f, height, at);
+        }
+
+        /// <summary>
+        /// A regular polygon (<paramref name="sides"/>, circumradius <paramref name="radius"/>) whose corners are rounded with radius
+        /// <paramref name="corner"/>, counter-clockwise from above: the polygon shrunk until its rounded corners just touch the circumcircle.
+        /// </summary>
+        private static List<Vector2> RoundedPolygon(int sides, float radius, float corner, float start)
+        {
+            var outline = new List<Vector2>();
+            float inner = radius - corner;
+            float turn = 2f * Mathf.PI / sides;
+            for (int k = 0; k < sides; k++)
+            {
+                float angle = start + k * turn;
+                var centre = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * inner;
+                for (int step = 0; step <= 5; step++)
+                {
+                    float a = angle - turn / 2f + turn * step / 5f;
+                    outline.Add(centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * corner);
+                }
+            }
+            return outline;
         }
     }
 }

@@ -100,7 +100,7 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 - Every corridor gets the turn + layout whose **fire arm** leads into a room or the hall (`RoomLayout.FireArmOptions`), so
   the fire kit always stands by an entrance, off the through-corridor (a corridor without one keeps layout 1).
 - Exactly one lift end (`LiftEnd`) per map; the player starts in its car facing the door
-  (`RoomContract.LiftStartPose`: x 0, z = 1.84 + 0.75, yaw 180).
+  (`RoomContract.LiftStartPose`: x 0, z = 1.84 + 1.5 - 0.4 = 2.94, as far from the door as the body allows, yaw 180).
 - Fire arm per layout (`FireArmSide`): corner L1 East, L2 South (mirror); T L1 South (stem), L2 West, L3 South
   (mirror of L1), L4 East (mirror of L2); dead end and lift end South. Mirrored layouts (`IsMirroredCorridor`: corner
   L2, T L2-4) mirror every arm and walk the arms anticlockwise.
@@ -110,7 +110,7 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 - **Suspended ceiling** (offices, security office, corridors): 600 mm exposed T-bar grid 12 mm under the 3 m plane,
   a tile centered on the room center (grid lines at odd multiples of 0.3 m); 600 fittings on tile centers. Off in
   technical rooms, which get the epoxy floor (`HallFloor`).
-- **Lights:** realtime spot per fitting, no shadows, at most 10 per room. Offices: 2 x `LedPanel`; corridors one
+- **Lights:** realtime spot per fitting, no shadows, at most 10 per room (a long fitting has several lights, see Lighting below). Offices: 2 x `LedPanel`; corridors one
   per arm; technical rooms 2 x `LedBatten`; hall `PendantLight` / `PendantLightGirder` (one per walkway segment).
 - **Services:** every pipe/trunking/conduit/tray starts and ends in a wall, floor, ceiling or device. Colours: fire
   water red, water green, gas yellow. Trunking one profile 120 x 60 mm. Outlets flush (`PowerSocket`, `DataSocket`
@@ -183,7 +183,7 @@ switch sit in the middle of the west wall of the crossing.
   (±0.801, -1.9) (2 mm apart); `PaperStack` "ShiftLog" between.
 - West wall: 2 `RackSlot` (compute rack, JBOD) at z -3.95 / -4.55, fronts east (racks placed on them; one openable);
   `PowerSocket` + `DataSocket` for the racks; terminal slot (-2.5, -5.4) facing east with its outlets.
-- East wall: 2 `Locker` (z -3.95 / -4.55, centred on the racks) and `LockerBench` (1.9, -4.25).
+- East wall: 2 `Locker` (z -3.95 / -4.55, centred on the racks) and `LockerBench` (z -4.25, x so that it stands 0.45 m from the locker fronts).
 - Only these things: no coffee corner, no other furniture.
 
 ### Power room (`PowerRoom`)
@@ -228,9 +228,9 @@ south-west cell. The level builder places it once; it never turns and gets no wa
   secondary beams along X at z -3 / 0 / 3 (bottom 5.6 m).
 - **Two pods** per tile (centers z ±2.5), each a contained cold aisle along X: 2 rows of 14 `RackSlot` (8.4 m), fronts
   facing across a 1.2 m aisle; every slot holds a rack, so an aisle is entered only by its doors. Hot aisle 1.4 m
-  between the pods' backs. Aisle floor: `PerforatedFloorTile`s only. Containment roof: solid black 4 cm panels lying on the
-  rack tops (white labels on two). `AisleDoor` at both ends (single black leaf, slides left seen from outside, reader on
-  the right rack end). 2 low-profile `AisleLight` luminaires under the roof (at a quarter and three quarters of the aisle, two spots each). Yellow outline 0.3 m round each pod. 56 rack slots/tile.
+  between the pods' backs. Aisle floor: `PerforatedFloorTile`s only. Containment roof: solid 4 cm panels (`AisleFrame` colour) lying on the
+  rack tops (white labels on two). `AisleDoor` at both ends (single stainless steel leaf like the lift, slides left seen from outside, reader on
+  the right rack end). 2 low-profile `AisleLight` luminaires under the roof (at a quarter and three quarters of the aisle, intensity 4 each, two spots along its length); the roof panels, their frame and the luminaire trays are in `AisleFrame`, between the colour of the hall columns and the floor (racks keep their own black). Yellow outline 0.3 m round each pod. 56 rack slots/tile.
 - **Walkways:** 1.6 m pod end → east/west wall (3.6 m between tiles), 1.5 m pod side → north/south wall (3.4 m between
   tiles). Nothing below 2.6 m in them.
 - **Overhead (all above the signs, which reach down to 4.2 m):** return duct over the hot aisle (4.4-4.9 m, 4 grilles in
@@ -265,8 +265,22 @@ south-west cell. The level builder places it once; it never turns and gets no wa
 
 - `Sandbox_B` (Create Preview Scene): the world map built by the `LevelBuilder` in the editor (kept at Play), the player
   prefab in the lift, F1 menu; racks on every slot (`RackPlacement`, seed `LevelBuilder.RackSeed`: one openable rack in
-  the security office, one per row of every aisle, never the first or last rack of its run); trilight ambient instead of bounce light; no scene lights.
+  the security office, one per row of every aisle, never the first or last rack of its run); trilight ambient instead of bounce light and no fog (`WorldLighting.ApplyRoomLook`); no scene lights.
 - `Main` (Create Main Scene; rewired by every Create Preview Scene): the same builder, building the map at Play.
+
+## Lighting
+
+One fixed setting (no quality levels, no adapting to the graphics card, nothing in the settings screen). Code in `Runtime/LightingDirector.cs` (installs itself when Play starts, in every scene), editor settings in `World/WorldLighting.cs`.
+
+- **Colour:** every fitting is a cold white LED, 8000 K (`Props.FixtureColor`), and its emissive diffuser uses the same colour; every light has exactly this colour (no per-light shifts); nothing is changed at runtime.
+- **Brightness** (total per fitting, `Props.*LightIntensity`, in order): corridors 4, server aisle luminaires 4, lift 6, rooms 6, every
+  hall pendant 8 (three spots). A long fitting spreads its total over a light per 0.6 m along its length (`Props.AddStripLight`): panel 1 light, batten 3,
+  aisle luminaire 2; flat fittings use a wide 170 degree cone fading smoothly from 40 degrees. There is no fog and no reflection probe: nothing in the
+  lighting depends on where the player stands, so the brightness of a view does not change as the player walks.
+- **Glow** (`EmissionLevels`): every status light (reader and photo-cell LEDs, coffee machine, printer, PCs, rack LEDs, lift digits) glows at 2 (the exit sign at 1, half), every monitor / display at 0.5, every light diffuser at 2 in its light's colour, the same everywhere.
+- **No shadows:** none anywhere, not in code, not in the pipeline asset (shadow maps are not allocated), not in the quality level. **No flicker:** no room light changes while the game runs (the rack door glow breathes slowly, as designed).
+- **Camera and volume:** ACES tonemapping, bloom (threshold 1: only the emissive panels glow), contrast, vignette, film grain; SMAA and dithering.
+- **Pipeline** (Create Preview Scene sets it in `PC_RPAsset`, `PC_Renderer`, the PC quality level): shadows off, ambient occlusion (full resolution, intensity 0.5, radius 0.3), realtime reflection probes off.
 
 ## Tests (run after every room change)
 

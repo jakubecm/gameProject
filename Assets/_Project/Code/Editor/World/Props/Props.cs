@@ -22,6 +22,7 @@ namespace ColdShutdown.Editor
         PassengerLift,
         FreightLift,
         LiftCeiling,
+        LiftFloor,
 
         // Lighting
         LedPanel,

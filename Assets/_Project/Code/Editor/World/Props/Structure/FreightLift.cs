@@ -57,21 +57,23 @@ namespace ColdShutdown.Editor
             ModelUtility.CreateStandingBox("Frame_Head", root, new Vector3(0f, doorHeight, frameDepth / 2f), new Vector3(2f * (doorHalf + jamb), jamb, frameDepth), SurfaceMaterial.GalvanisedSteel, false);
             ModelUtility.CreateStandingBox("Sill", root, new Vector3(0f, 0f, 0.1f), new Vector3(2f * doorHalf + 0.1f, 0.008f, 0.2f), SurfaceMaterial.FloorVent, false);
 
-            // Call buttons on a small light plate, as at the passenger lift: two round backlit buttons, each with a dark arrow (up, down).
+            // Call buttons on a small dark plate, as at the passenger lift: two round metal buttons, each with a glowing arrow (up, down).
             float buttonsX = -(doorHalf + jamb + 0.2f);
-            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
+            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.GalvanisedSteel, false);
+            var bezels = new MeshBuilder();
+            var caps = new MeshBuilder();
             var arrows = new MeshBuilder();
-            foreach (var (y, name, up) in new[] { (LiftCallPanelHeight + 0.04f, "Up", true), (LiftCallPanelHeight - 0.04f, "Down", false) })
+            const float plateFace = 0.016f;
+            const float zArrow = plateFace + LiftButtonHeight + 0.0001f;
+            foreach (var (y, up) in new[] { (LiftCallPanelHeight + 0.04f, true), (LiftCallPanelHeight - 0.04f, false) })
             {
-                var button = ModelUtility.CreateCylinder($"Button_{name}", root, new Vector3(buttonsX, y, 0.0185f), 0.02f, 0.006f, SurfaceMaterial.LightPanel);
-                button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                var ring = ModelUtility.CreateCylinder($"ButtonRing_{name}", root, new Vector3(buttonsX, y, 0.0165f), 0.025f, 0.002f, SurfaceMaterial.GalvanisedSteel);
-                ring.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                const float zArrow = 0.0221f;
+                AddLiftButton(bezels, caps, null, new Vector3(buttonsX, y, plateFace), Quaternion.FromToRotation(Vector3.up, Vector3.forward), 0.0165f);
                 if (up) arrows.AddFlatTriangle(new Vector3(buttonsX, y + 0.007f, zArrow), new Vector3(buttonsX - 0.007f, y - 0.005f, zArrow), new Vector3(buttonsX + 0.007f, y - 0.005f, zArrow), Vector3.forward);
                 else arrows.AddFlatTriangle(new Vector3(buttonsX, y - 0.007f, zArrow), new Vector3(buttonsX + 0.007f, y + 0.005f, zArrow), new Vector3(buttonsX - 0.007f, y + 0.005f, zArrow), Vector3.forward);
             }
-            arrows.Attach("Button_Arrows", root, SurfaceMaterial.BlackHousing);
+            bezels.Attach("Button_Bezels", root, SurfaceMaterial.Chrome);
+            caps.Attach("Button_Caps", root, SurfaceMaterial.FreightButtonMetal);
+            arrows.Attach("Button_Arrows", root, SurfaceMaterial.LedWhite);
 
             float indicatorY = doorHeight + jamb + 0.1f;
             ModelUtility.CreateBox("Indicator", root, new Vector3(0f, indicatorY, 0.015f), new Vector3(0.3f, 0.1f, 0.03f), SurfaceMaterial.GalvanisedSteel, false);

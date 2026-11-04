@@ -72,7 +72,11 @@ namespace ColdShutdown.Editor
             {
                 Put(Prop.Locker, furniture, Side - 0.25f, 0f, z, 270f, $"Locker_{z:0.0}");
             }
-            Put(Prop.LockerBench, furniture, 1.9f, 0f, -4.25f, 90f);
+            // The bench stands 45 cm from the locker fronts (an open locker door sticks out 26 cm).
+            const float benchHalfDepth = 0.19f;
+            const float benchToLockers = 0.45f;
+            float benchX = Side - 0.25f - Props.LockerDepth / 2f - benchToLockers - benchHalfDepth;
+            Put(Prop.LockerBench, furniture, benchX, 0f, -4.25f, 90f);
 
             SmallRoomCeiling(ceiling);
             SmallRoomBasics(dressing, cameras, SmallRoomDetector, false, true);

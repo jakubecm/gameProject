@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace ColdShutdown.Runtime
 {
-    /// <summary>The welcome screen over the flying camera: the glitching title in the middle of the screen and PLAY / SETTINGS / EXIT below it.</summary>
+    /// <summary>The welcome screen over the flying camera: the glitching title and PLAY / SETTINGS / EXIT below it, as one block centred vertically on the screen.</summary>
     public class MainMenuScreen : UiScreen
     {
         public event Action PlayClicked;
@@ -17,16 +17,22 @@ namespace ColdShutdown.Runtime
             UiKit.Stretch(dim.rectTransform);
 
             var centre = new Vector2(0.5f, 0.5f);
+            // The title (two lines of 170 px) and the three buttons (3 x 68 px and 2 x 4 px between them, 10 px under the title) are one
+            // block that spans 335 px above to 222 px below the middle of the screen; the shift puts the middle of the block on the
+            // middle of the screen.
+            const float blockTop = 335f;
+            const float blockBottom = -222f;
+            const float shift = -(blockTop + blockBottom) / 2f;
             var title = UiKit.NewRect("Title", root);
             UiKit.Stretch(title);
             var cold = UiKit.Label(title, "Title Cold", "COLD", 150, UiKit.Bright, TextAnchor.MiddleCenter, FontStyle.Bold);
-            UiKit.Place(cold.rectTransform, centre, centre, new Vector2(0f, 250f), new Vector2(1400f, 170f));
+            UiKit.Place(cold.rectTransform, centre, centre, new Vector2(0f, 250f + shift), new Vector2(1400f, 170f));
             var shutdown = UiKit.Label(title, "Title Shutdown", "SHUTDOWN", 150, UiKit.Bright, TextAnchor.MiddleCenter, FontStyle.Bold);
-            UiKit.Place(shutdown.rectTransform, centre, centre, new Vector2(0f, 110f), new Vector2(1400f, 170f));
+            UiKit.Place(shutdown.rectTransform, centre, centre, new Vector2(0f, 110f + shift), new Vector2(1400f, 170f));
             title.gameObject.AddComponent<TitleGlitch>().Init(cold, shutdown);
 
             var buttons = UiKit.NewRect("Buttons", root);
-            UiKit.Place(buttons, centre, new Vector2(0.5f, 1f), new Vector2(0f, -10f), new Vector2(520f, 300f));
+            UiKit.Place(buttons, centre, new Vector2(0.5f, 1f), new Vector2(0f, -10f + shift), new Vector2(520f, 300f));
             UiKit.Column(buttons, 4f, TextAnchor.UpperCenter, true);
             var play = UiKit.MenuButton(buttons, "PLAY", () => PlayClicked?.Invoke(), 44, 68f, 520f, TextAnchor.MiddleCenter);
             UiKit.MenuButton(buttons, "SETTINGS", () => SettingsClicked?.Invoke(), 44, 68f, 520f, TextAnchor.MiddleCenter);

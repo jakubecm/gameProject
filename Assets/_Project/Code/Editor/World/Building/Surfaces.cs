@@ -1,3 +1,4 @@
+using ColdShutdown.Core;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -146,6 +147,23 @@ namespace ColdShutdown.Editor
         LiftCeiling,
         // Brewed coffee in the cup and the two thin streams out of the coffee machine's spouts.
         Coffee,
+
+        // Lift control panels: brushed plate (clearly lighter than the lift: steel for the passenger lift, bright for the freight lift), gunmetal buttons, glowing digits and arrows; LedWhite is the cold white status glow (also the coffee machine's buttons); the active floor is a soft green.
+        LiftPanelSteel,
+        LiftButtonMetal,
+        LedWhite,
+        LiftDigitActive,
+        CoffeeButton,
+        FreightButtonMetal,
+
+        // Edges of the hall's server aisles (containment roof, its frame, the aisle luminaires): between the steel of the hall columns and the hall floor.
+        AisleFrame,
+
+        // Blue status LED (the UID light of the disk servers), a glow like the green and amber ones.
+        LedBlue,
+
+        // Passenger lift floor: 400 mm dark grey rubber tiles with joints (texture T_LiftFloor), darker than the corridor floor.
+        LiftFloor,
     }
 
     /// <summary>
@@ -191,7 +209,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.Upholstery, new Look(0.18f, 0f, 0.1f) },
             { SurfaceMaterial.Screen, new Look(0.04f, 0f, 0.85f) },
             // Fluorescent tubes: emissive so the fitting reads as lit; the light itself is a Light component.
-            { SurfaceMaterial.LightPanel, new Look(Color.white, 0f, 0.5f, new Color(1f, 0.96f, 0.9f) * 1.5f) },
+            { SurfaceMaterial.LightPanel, new Look(Color.white, 0f, 0.5f, Props.FixtureColor * 2f) },
             { SurfaceMaterial.MugCeramic, new Look(0.9f, 0f, 0.7f) },
             { SurfaceMaterial.SafetyRed, new Look(new Color(0.7f, 0.08f, 0.06f), 0.1f, 0.6f) },
             { SurfaceMaterial.CeilingGrid, new Look(new Color(0.94f, 0.94f, 0.93f), 0.05f, 0.5f) },
@@ -207,14 +225,14 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.Steel, new Look(new Color(0.3f, 0.33f, 0.37f), 0.6f, 0.45f) },
             { SurfaceMaterial.RoofDeck, new Look(0.5f, 0.5f, 0.3f) },
             { SurfaceMaterial.SafetyYellow, new Look(new Color(0.95f, 0.75f, 0.05f), 0f, 0.4f) },
-            { SurfaceMaterial.SafetyGreen, new Look(new Color(0.1f, 0.6f, 0.25f), 0f, 0.5f, new Color(0.1f, 0.8f, 0.3f) * 1.2f) },
+            { SurfaceMaterial.SafetyGreen, new Look(new Color(0.1f, 0.6f, 0.25f), 0f, 0.5f, Glow(new Color(0.1f, 0.8f, 0.3f), EmissionLevels.Indicator)) },
             { SurfaceMaterial.Glass, new Look(new Color(0.6f, 0.7f, 0.75f, 0.25f), 0f, 0.9f) },
             // Sign faces glow a little so the codes stay readable from far away.
             { SurfaceMaterial.SignFace, new Look(new Color(0.95f, 0.95f, 0.95f), 0f, 0.3f, new Color(0.35f, 0.35f, 0.35f)) },
             // Steel wire mesh of the cage partitions in the hall: see-through, so the hall stays readable.
             { SurfaceMaterial.WireMesh, new Look(new Color(0.35f, 0.37f, 0.4f, 0.45f), 0.6f, 0.4f) },
             // Red status LED (locked access reader); the green one is SafetyGreen.
-            { SurfaceMaterial.LedRed, new Look(new Color(0.8f, 0.05f, 0.04f), 0f, 0.5f, new Color(1f, 0.08f, 0.05f) * 1.5f) },
+            { SurfaceMaterial.LedRed, new Look(new Color(0.8f, 0.05f, 0.04f), 0f, 0.5f, Glow(new Color(1f, 0.08f, 0.05f), EmissionLevels.Indicator)) },
             // Photo-realistic detail props: polished chrome, brass, the red glycerine bulb and its clear seal, satin black
             // camera housing, the clear dome, the lens, the white trim of the ceiling speaker and its grille.
             { SurfaceMaterial.Chrome, new Look(new Color(0.86f, 0.88f, 0.9f), 0.9f, 0.9f) },
@@ -239,13 +257,13 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.CeilingTile, new Look(new Color(0.95f, 0.95f, 0.94f), 0f, 0.04f) },
             // PC case: the diamond-perforated front (texture), and the lit desktop picture of the monitors (texture + emission).
             { SurfaceMaterial.PcVent, new Look(Color.white, 0.2f, 0.3f) },
-            { SurfaceMaterial.MonitorImage, new Look(Color.white, 0f, 0.55f, new Color(0.7f, 0.7f, 0.7f)) },
+            { SurfaceMaterial.MonitorImage, new Look(Color.white, 0f, 0.55f, Color.white * EmissionLevels.Display) },
             // Office chair: black leatherette pads and the quilted black fabric (texture) of the lower backrest and seat.
             { SurfaceMaterial.ChairLeather, new Look(new Color(0.035f, 0.035f, 0.038f), 0f, 0.5f) },
             { SurfaceMaterial.ChairQuilt, new Look(Color.white, 0f, 0.2f) },
             // Top sheet of a paper stack (A4 page texture), lit exit sign face (texture + emission), hammered pewter floor box lid (texture).
             { SurfaceMaterial.PaperPage, new Look(Color.white, 0f, 0.15f) },
-            { SurfaceMaterial.ExitSignFace, new Look(Color.white, 0f, 0.4f, new Color(0.8f, 0.8f, 0.8f)) },
+            { SurfaceMaterial.ExitSignFace, new Look(Color.white, 0f, 0.4f, Color.white * (EmissionLevels.Indicator / 2f)) },
             // Matt stainless steel of the floor box lid (no texture), polished-brushed stainless of the lift, light office desk surfaces.
             { SurfaceMaterial.FloorBoxMetal, new Look(new Color(0.30f, 0.31f, 0.32f), 0.85f, 0.35f) },
             { SurfaceMaterial.StainlessSteel, new Look(new Color(0.30f, 0.31f, 0.32f), 0.85f, 0.35f) },
@@ -294,11 +312,11 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.ServerSilver, new Look(new Color(0.62f, 0.63f, 0.64f), 0.85f, 0.45f) },
             { SurfaceMaterial.DriveBay, new Look(new Color(0.07f, 0.07f, 0.075f), 0.3f, 0.4f) },
             { SurfaceMaterial.LatchRed, new Look(new Color(0.62f, 0.04f, 0.09f), 0.1f, 0.5f) },
-            { SurfaceMaterial.LedAmber, new Look(new Color(1f, 0.55f, 0.05f), 0f, 0.5f, new Color(1f, 0.5f, 0.05f) * 2f) },
+            { SurfaceMaterial.LedAmber, new Look(new Color(1f, 0.55f, 0.05f), 0f, 0.5f, Glow(new Color(1f, 0.5f, 0.05f), EmissionLevels.Indicator)) },
             { SurfaceMaterial.ServerHoneycomb, new Look(Color.white, 0.2f, 0.35f) },
             { SurfaceMaterial.ChassisVent, new Look(Color.white, 0.3f, 0.4f) },
             { SurfaceMaterial.ServerVoid, new Look(new Color(0.003f, 0.003f, 0.004f), 0f, 0.15f) },
-            { SurfaceMaterial.UpsDisplay, new Look(Color.white, 0f, 0.35f, new Color(0.15f, 0.25f, 0.7f) * 0.8f) },
+            { SurfaceMaterial.UpsDisplay, new Look(Color.white, 0f, 0.35f, Glow(new Color(0.15f, 0.25f, 0.7f), EmissionLevels.Display)) },
             { SurfaceMaterial.SwitchFace, new Look(new Color(0.17f, 0.175f, 0.18f), 0.6f, 0.4f) },
             { SurfaceMaterial.TrayPerforated, new Look(new Color(0.66f, 0.68f, 0.7f), 0.85f, 0.5f) },
             { SurfaceMaterial.FloorTilePerforated, new Look(Color.white, 0.05f, 0.5f) },
@@ -306,9 +324,19 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.DuctStainless, new Look(new Color(0.62f, 0.64f, 0.66f), 0.7f, 0.55f) },
             { SurfaceMaterial.ConduitViolet, new Look(new Color(0.55f, 0.28f, 0.8f), 0.1f, 0.5f) },
             { SurfaceMaterial.ConduitMagenta, new Look(new Color(0.88f, 0.22f, 0.58f), 0.1f, 0.5f) },
-            { SurfaceMaterial.RackHandleLight, new Look(new Color(0.95f, 0.94f, 0.82f), 0f, 0.4f, new Color(0.45f, 0.44f, 0.3f)) },
+            { SurfaceMaterial.RackHandleLight, new Look(Props.FixtureColor, 0f, 0.4f, Props.FixtureColor * 0.45f) },
             { SurfaceMaterial.CeilingTile600, new Look(Color.white, 0f, 0.1f) },
-            { SurfaceMaterial.RackGlow, new Look(new Color(1f, 0.95f, 0.8f, 0.85f), 0f, 0f) },
+            { SurfaceMaterial.LiftPanelSteel, new Look(new Color(0.55f, 0.56f, 0.58f), 0.85f, 0.45f) },
+            { SurfaceMaterial.LiftButtonMetal, new Look(new Color(0.20f, 0.21f, 0.23f), 0.9f, 0.45f) },
+            // The freight lift is galvanised steel: its panel is that steel, its buttons a darker shade of it.
+            { SurfaceMaterial.FreightButtonMetal, new Look(new Color(0.36f, 0.38f, 0.40f), 0.85f, 0.45f) },
+            { SurfaceMaterial.LiftFloor, new Look(Color.white, 0f, 0.3f) },
+            { SurfaceMaterial.LedBlue, new Look(new Color(0.1f, 0.3f, 0.9f), 0f, 0.5f, Glow(new Color(0.1f, 0.35f, 1f), EmissionLevels.Indicator)) },
+            { SurfaceMaterial.AisleFrame, new Look(new Color(0.33f, 0.355f, 0.385f), 0.5f, 0.45f) },
+            { SurfaceMaterial.CoffeeButton, new Look(new Color(0.09f, 0.10f, 0.12f), 0f, 0.55f) },
+            { SurfaceMaterial.LedWhite, new Look(new Color(0.55f, 0.6f, 0.65f), 0f, 0.4f, Glow(Props.FixtureColor, EmissionLevels.Indicator)) },
+            { SurfaceMaterial.LiftDigitActive, new Look(new Color(0.3f, 0.55f, 0.45f), 0f, 0.4f, Glow(new Color(0.35f, 0.9f, 0.6f), EmissionLevels.Indicator)) },
+            { SurfaceMaterial.RackGlow, new Look(new Color(1.3f, 1.24f, 1.04f, 0.85f), 0f, 0f) },
             { SurfaceMaterial.ConduitBrown, new Look(new Color(0.45f, 0.27f, 0.12f), 0.1f, 0.5f) },
             { SurfaceMaterial.ConduitGreen, new Look(new Color(0.2f, 0.62f, 0.3f), 0.1f, 0.5f) },
             { SurfaceMaterial.LiftCeiling, new Look(Color.white, 0.85f, 0.35f) },
@@ -336,7 +364,7 @@ namespace ColdShutdown.Editor
                 || surface == SurfaceMaterial.ExitSignFace || surface == SurfaceMaterial.PhotoPicture || surface == SurfaceMaterial.DialFace || surface == SurfaceMaterial.PlantLabels || surface == SurfaceMaterial.PowerDialFace
                 || surface == SurfaceMaterial.CeilingTile600 || surface == SurfaceMaterial.RackGlow || surface == SurfaceMaterial.TrayPerforated || surface == SurfaceMaterial.FloorTilePerforated
                 || surface == SurfaceMaterial.LiftCeiling || surface == SurfaceMaterial.RackMesh || surface == SurfaceMaterial.ServerHoneycomb
-                || surface == SurfaceMaterial.ChassisVent || surface == SurfaceMaterial.UpsDisplay) ApplyTextures();
+                || surface == SurfaceMaterial.ChassisVent || surface == SurfaceMaterial.UpsDisplay || surface == SurfaceMaterial.LiftFloor) ApplyTextures();
             return material;
         }
 
@@ -429,6 +457,10 @@ namespace ColdShutdown.Editor
             var ceilingTile = Get(SurfaceMaterial.CeilingTile600);
             ceilingTile.SetTexture("_BaseMap", CeilingTileTexture());
             EditorUtility.SetDirty(ceilingTile);
+
+            var liftFloor = Get(SurfaceMaterial.LiftFloor);
+            liftFloor.SetTexture("_BaseMap", LiftFloorTexture());
+            EditorUtility.SetDirty(liftFloor);
 
             var liftCeiling = Get(SurfaceMaterial.LiftCeiling);
             liftCeiling.SetTexture("_BaseMap", LiftCeilingTexture());
@@ -721,6 +753,24 @@ namespace ColdShutdown.Editor
         });
 
         /// <summary>
+        /// One 400 mm tile of the lift floor: dark grey rubber with a fine grain and a few lighter flecks, a dark joint round it and a thin lighter
+        /// bevel inside the joint, so the tiles read as tiles, like the panels of the ceiling. Much darker than the corridor floor. Seamless, since
+        /// the joint hides the edge. The floor quad maps one tile to 400 mm.
+        /// </summary>
+        private static Texture2D LiftFloorTexture() => GeneratedTexture("T_LiftFloor", 512, 512, (x, y) =>
+        {
+            const int size = 512;
+            int edgePixels = Mathf.Min(Mathf.Min(x, size - 1 - x), Mathf.Min(y, size - 1 - y));
+            if (edgePixels < 5) return new Color(0.03f, 0.03f, 0.035f);
+            float speckle = (((x * 73856093) ^ (y * 19349663)) & 255) / 255f;
+            float broad = (Mathf.PerlinNoise(x * 0.03f, y * 0.03f) - 0.5f) * 0.02f;
+            float grey = 0.15f + broad + (speckle - 0.5f) * 0.018f;
+            if (speckle > 0.99f) grey += 0.035f;
+            if (edgePixels < 9) grey += 0.035f * (1f - (edgePixels - 5) / 4f);
+            return new Color(grey, grey, grey * 1.04f);
+        });
+
+        /// <summary>
         /// One 400 mm panel of the lift ceiling: matt brushed stainless in exactly the grey of the car's walls (a faint grain along the panel) with a dark joint
         /// round it and a thin bright bevel inside the joint. Seamless, since the joint hides the edge.
         /// </summary>
@@ -870,6 +920,9 @@ namespace ColdShutdown.Editor
             }
             ApplyTextures();
         }
+
+        /// <summary>An emission colour of the given hue whose brightest channel is <paramref name="level"/> (see <see cref="EmissionLevels"/>).</summary>
+        private static Color Glow(Color hue, float level) => hue * (level / hue.maxColorComponent);
 
         private static void ApplyLook(Material material, Look look)
         {

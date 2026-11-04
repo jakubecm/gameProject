@@ -28,6 +28,7 @@ namespace ColdShutdown.Editor
         /// <summary>Half width of the corridor arms (the keep-clear cross is 1.2 m either side).</summary>
         public const float CorridorHalfWidth = 1.5f;
 
+
         // ---------------------------------------------------------------- corridors
 
         /// <summary>
@@ -140,6 +141,7 @@ namespace ColdShutdown.Editor
             {
                 Props.Place(Prop.SmokeDetector, ceiling, new Vector3(-0.6f, Ceiling, 0.6f), 0f, "SmokeDetector");
             }
+            Props.SetFixtureIntensity(ceiling, Props.CorridorLightIntensity);
             PlaceCorridorCameras(cameras, type);
 
             // The arms in order from the fire arm, clockwise (anticlockwise when mirrored).
@@ -211,6 +213,7 @@ namespace ColdShutdown.Editor
             {
                 Props.Place(Prop.Sprinkler, ceiling, new Vector3(0f, Ceiling, z), 0f, $"Sprinkler_{z:0.0}");
             }
+            Props.SetFixtureIntensity(ceiling, Props.CorridorLightIntensity);
 
             var pipes = ModelUtility.CreateGroup("Pipes", arm);
             var power = ModelUtility.CreateGroup("PowerAndData", arm);
