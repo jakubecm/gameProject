@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using ColdShutdown.Core;
+using ColdShutdown.Editor;
 using ColdShutdown.Runtime;
 using NUnit.Framework;
 using UnityEditor;
@@ -324,37 +326,172 @@ namespace ColdShutdown.Tests.EditMode.Terminals
             Assert.AreEqual(password.Puzzle.State == PasswordState.Won, results[0].Success);
         }
 
-        // ---------------------------------------------------------------- the prefab
+        [Test]
+        public void SittingDown_HidesTheCrosshair_AndStandingUpBringsItBack()
+        {
+            var prompt = interactor.GetComponent<InteractionPrompt>();
+            Assert.IsNotNull(prompt, "the player's camera has the interaction prompt (the centre dot)");
+            Assert.IsTrue(prompt.enabled);
+
+            terminal.Enter(interactor);
+            Assert.IsFalse(prompt.enabled, "no dot over the screen");
+            terminal.Leave();
+            terminal.Advance(5f);
+            Assert.IsTrue(prompt.enabled, "back on the player's feet the dot is back");
+        }
 
         [Test]
-        public void TheTerminalPrefab_IsWiredUpForTheStandInModel()
+        public void TheDesktop_DrawsThePointerWhereItIsTold_AndHidesItOtherwise()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
-            Assert.IsNotNull(prefab, $"{TerminalPrefabPath} is missing. Run Tools/Cold Shutdown/Create Terminal Prefab.");
-            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
+            terminal.Build();
+            var desktop = terminal.Desktop;
+            Assert.IsFalse(desktop.PointerVisible, "no pointer until the mouse is over the screen");
 
+            desktop.SetPointer(new Vector2(120f, -40f));
+            Assert.IsTrue(desktop.PointerVisible);
+            Assert.AreEqual(new Vector2(120f, -40f), desktop.PointerPosition.Value);
+            var last = desktop.SystemRoot.parent.GetChild(desktop.SystemRoot.parent.childCount - 1);
+            Assert.AreEqual("Pointer", last.name, "drawn above everything, also above the black screen");
+            Assert.IsFalse(last.GetComponent<UnityEngine.UI.RawImage>().raycastTarget, "it never catches a click");
+
+            desktop.SetPointer(null);
+            Assert.IsFalse(desktop.PointerVisible);
+        }
+
+        // ---------------------------------------------------------------- the workstation prop is the computer
+
+        private const string WorkstationPath = "Assets/_Project/Prefabs/Props/Workstation.prefab";
+        private const string DeskPath = "Assets/_Project/Prefabs/Props/Desk.prefab";
+
+        private Terminal NewWorkstation()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WorkstationPath);
+            Assume.That(prefab, Is.Not.Null);
+            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
             var component = instance.GetComponent<Terminal>();
+            Assert.IsNotNull(component, $"{WorkstationPath} has no Terminal. Run Tools/Cold Shutdown/Create Preview Scene.");
+            return component;
+        }
+
+        private static Canvas Field(Terminal component, string name) => (Canvas)new SerializedObject(component).FindProperty(name).objectReferenceValue;
+
+        private static Transform Monitor(Terminal component, string name) => component.transform.Find(name);
+
+        [Test]
+        public void TheWorkstationPrefab_IsAComputer_WiredUp()
+        {
+            var component = NewWorkstation();
             var serialized = new SerializedObject(component);
             var view = (Transform)serialized.FindProperty("viewPoint").objectReferenceValue;
-            var canvas = (Canvas)serialized.FindProperty("screen").objectReferenceValue;
+            var screen = Field(component, "screen");
+            var second = Field(component, "secondScreen");
             Assert.IsNotNull(view, "view point");
-            Assert.IsNotNull(canvas, "screen canvas");
+            Assert.IsNotNull(screen, "the canvas of the desktop");
+            Assert.IsNotNull(second, "the canvas of the second monitor");
             Assert.IsNotNull(serialized.FindProperty("webFile").objectReferenceValue, "web file");
             Assert.IsNotNull(serialized.FindProperty("loreFile").objectReferenceValue, "knowledge base file");
             Assert.IsNotNull(serialized.FindProperty("passwordWordsFile").objectReferenceValue, "password word file");
+            Assert.IsNotNull(serialized.FindProperty("theme").objectReferenceValue, "theme");
             Assert.IsFalse(serialized.FindProperty("startsOn").boolValue, "the computer is off until someone switches it on");
 
-            Assert.AreEqual(RenderMode.WorldSpace, canvas.renderMode);
-            Assert.IsNotNull(canvas.GetComponent<GraphicRaycaster>(), "the mouse needs it to hit the screen");
-            var rect = (RectTransform)canvas.transform;
-            Assert.AreEqual(new Vector2(1280f, 720f), rect.sizeDelta);
-            Assert.AreEqual(0.64f, rect.sizeDelta.x * rect.lossyScale.x, 1e-3f, "the screen is 64 cm wide");
-
-            Assert.IsNull(instance.GetComponent<Interactable>(), "the Terminal is the interactable itself");
-            Assert.IsNotEmpty(instance.GetComponentsInChildren<Collider>(), "the interaction ray needs something to hit");
+            Assert.AreEqual(RenderMode.WorldSpace, screen.renderMode);
+            Assert.AreEqual(new Vector2(1280f, 720f), ((RectTransform)screen.transform).sizeDelta);
+            Assert.IsNotNull(screen.GetComponent<GraphicRaycaster>(), "the mouse needs it to hit the desktop");
+            Assert.IsNull(second.GetComponent<GraphicRaycaster>(), "the second monitor does not catch the mouse");
+            Assert.IsNull(component.GetComponent<Interactable>(), "the Terminal is the interactable itself");
+            Assert.AreEqual(1, component.GetComponentsInChildren<Collider>().Length, "one box for the interaction ray");
 
             component.Build();
             Assert.AreEqual("Turn on computer", component.Prompt);
+        }
+
+        [Test]
+        public void TheTwoCanvases_LieOverTheirMonitorPictures_JustInFrontOfThem()
+        {
+            var component = NewWorkstation();
+            foreach (var (field, monitor) in new[] { ("screen", "Monitor_Left"), ("secondScreen", "Monitor_Right") })
+            {
+                var canvas = Field(component, field);
+                var picture = Monitor(component, monitor).Find("Monitor_Picture");
+                var box = picture.GetComponent<MeshFilter>().sharedMesh.bounds;
+                var corners = new Vector3[4];
+                ((RectTransform)canvas.transform).GetWorldCorners(corners);
+                foreach (var corner in corners)
+                {
+                    var local = picture.InverseTransformPoint(corner);
+                    Assert.GreaterOrEqual(local.x, box.min.x - 1e-3f, $"{field}: inside the picture, left");
+                    Assert.LessOrEqual(local.x, box.max.x + 1e-3f, $"{field}: inside the picture, right");
+                    Assert.GreaterOrEqual(local.y, box.min.y - 1e-3f, $"{field}: inside the picture, bottom");
+                    Assert.LessOrEqual(local.y, box.max.y + 1e-3f, $"{field}: inside the picture, top");
+                    Assert.Greater(local.z - box.max.z, 0f, $"{field}: in front of the picture");
+                    Assert.Less(local.z - box.max.z, 0.005f, $"{field}: close to the picture");
+                }
+            }
+        }
+
+        [Test]
+        public void TheSecondMonitor_ShowsOnlyTheWallpaper_WhileTheComputerIsOn_AndIsBlackOtherwise()
+        {
+            var component = NewWorkstation();
+            component.Build();
+            var desktop = component.Desktop;
+            Assert.IsFalse(component.SecondScreenLit, "off: black");
+
+            desktop.PowerOn();
+            Assert.IsFalse(component.SecondScreenLit, "booting: still black");
+            desktop.Tick(Desktop.BootSeconds + 0.1f);
+            Assert.AreEqual(PowerState.On, desktop.Power);
+            Assert.IsTrue(component.SecondScreenLit, "on: the wallpaper");
+
+            var second = Field(component, "secondScreen");
+            Assert.IsNotNull(second.transform.Find("Wallpaper"));
+            Assert.IsNull(second.transform.Find("Wallpaper/Icons"), "nothing but the wallpaper");
+            Assert.AreEqual(0, second.GetComponentsInChildren<Button>(true).Length);
+            if (component.Wallpaper != null)
+            {
+                Assert.AreSame(component.Wallpaper, second.transform.Find("Wallpaper/Picture").GetComponent<RawImage>().texture, "the same picture as the desktop");
+            }
+
+            desktop.ShutDown();
+            Assert.IsFalse(component.SecondScreenLit, "shutting down: black again");
+            desktop.Tick(Desktop.ShutdownSeconds + 0.1f);
+            Assert.IsFalse(component.SecondScreenLit);
+
+            desktop.PowerOn();
+            desktop.Tick(Desktop.BootSeconds + 0.1f);
+            Assert.IsTrue(component.SecondScreenLit, "and the wallpaper comes back");
+        }
+
+        [Test]
+        public void EveryWorkstationInTheRooms_IsAComputer()
+        {
+            int found = 0;
+            foreach (string room in new[] { "Room_Office", "Room_SecurityOffice" })
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Prefabs/Rooms/{room}.prefab");
+                Assume.That(prefab, Is.Not.Null);
+                var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
+                foreach (var child in instance.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!child.name.StartsWith("Workstation")) continue;
+                    found++;
+                    Assert.IsNotNull(child.GetComponent<Terminal>(), $"{room}/{child.name} is not a computer");
+                }
+            }
+            Assert.GreaterOrEqual(found, 3, "the office has one desk and the security office two");
+        }
+
+        [Test]
+        public void TheSandboxTerminal_IsADeskWithAWorkstationOnIt()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
+            Assume.That(prefab, Is.Not.Null);
+            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
+            Assert.IsNotNull(instance.transform.Find("Desk"));
+            var workstation = instance.transform.Find("Workstation");
+            Assert.IsNotNull(workstation);
+            Assert.IsNotNull(workstation.GetComponent<Terminal>());
+            Assert.AreEqual(Props.DeskHeight, workstation.localPosition.y, 1e-3f, "on the desk");
         }
 
         [Test]
@@ -362,12 +499,9 @@ namespace ColdShutdown.Tests.EditMode.Terminals
         {
             // A world-space canvas is seen correctly from its back: its forward axis has to point the way the viewer looks.
             // Facing the other way mirrors everything on the screen, and Unity's UI ignores clicks on graphics that face away.
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
-            Assume.That(prefab, Is.Not.Null);
-            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
-            var serialized = new SerializedObject(instance.GetComponent<Terminal>());
-            var view = (Transform)serialized.FindProperty("viewPoint").objectReferenceValue;
-            var canvas = (Canvas)serialized.FindProperty("screen").objectReferenceValue;
+            var component = NewWorkstation();
+            var view = (Transform)new SerializedObject(component).FindProperty("viewPoint").objectReferenceValue;
+            var canvas = Field(component, "screen");
 
             Assert.Greater(Vector3.Dot(canvas.transform.forward, view.forward), 0.99f);
             Assert.AreEqual(canvas.GetComponent<GraphicRaycaster>().ignoreReversedGraphics, true, "the default that makes this matter");
@@ -376,12 +510,10 @@ namespace ColdShutdown.Tests.EditMode.Terminals
         [Test]
         public void TheViewPoint_LooksStraightAtTheWholeScreen_EvenOnANarrowDisplay()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
-            Assume.That(prefab, Is.Not.Null);
-            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
-            var serialized = new SerializedObject(instance.GetComponent<Terminal>());
+            var component = NewWorkstation();
+            var serialized = new SerializedObject(component);
             var view = (Transform)serialized.FindProperty("viewPoint").objectReferenceValue;
-            var canvas = (Canvas)serialized.FindProperty("screen").objectReferenceValue;
+            var canvas = Field(component, "screen");
             float fieldOfView = serialized.FindProperty("viewFieldOfView").floatValue;
 
             var corners = new Vector3[4];
@@ -404,16 +536,17 @@ namespace ColdShutdown.Tests.EditMode.Terminals
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
             Assume.That(prefab, Is.Not.Null);
-            var first = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab)).GetComponent<Terminal>();
-            var second = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab)).GetComponent<Terminal>();
-            var third = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab)).GetComponent<Terminal>();
-            first.Build();
-            second.Build();
-            third.Build();
+            var computers = new List<Terminal>();
+            for (int i = 0; i < 3; i++)
+            {
+                var terminal = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab)).GetComponentInChildren<Terminal>();
+                terminal.Build();
+                computers.Add(terminal);
+            }
 
-            Assume.That(first.Wallpaper, Is.Not.Null, "the theme has wallpapers (run Update Desktop Art)");
-            Assert.AreNotSame(first.Wallpaper, second.Wallpaper);
-            Assert.AreNotSame(second.Wallpaper, third.Wallpaper);
+            Assume.That(computers[0].Wallpaper, Is.Not.Null, "the theme has wallpapers (run Update Desktop Art)");
+            Assert.AreNotSame(computers[0].Wallpaper, computers[1].Wallpaper);
+            Assert.AreNotSame(computers[1].Wallpaper, computers[2].Wallpaper);
         }
 
         [Test]
@@ -430,13 +563,10 @@ namespace ColdShutdown.Tests.EditMode.Terminals
         [Test]
         public void TheSeatedCamera_IsCloserThanTheViewPoint_YetSeesTheWholeScreen()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TerminalPrefabPath);
-            Assume.That(prefab, Is.Not.Null);
-            var instance = Track((GameObject)PrefabUtility.InstantiatePrefab(prefab));
-            var real = instance.GetComponent<Terminal>();
+            var real = NewWorkstation();
             var serialized = new SerializedObject(real);
             var view = (Transform)serialized.FindProperty("viewPoint").objectReferenceValue;
-            var canvas = (Canvas)serialized.FindProperty("screen").objectReferenceValue;
+            var canvas = Field(real, "screen");
             real.Enter(interactor);
             playerCamera.aspect = 16f / 9f;
 
@@ -445,9 +575,8 @@ namespace ColdShutdown.Tests.EditMode.Terminals
 
             var corners = new Vector3[4];
             ((RectTransform)canvas.transform).GetWorldCorners(corners);
-            float tangent = Mathf.Tan(playerCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
             real.Advance(5f);
-            tangent = Mathf.Tan(playerCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            float tangent = Mathf.Tan(playerCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
             foreach (var corner in corners)
             {
                 var local = playerCamera.transform.InverseTransformPoint(corner);

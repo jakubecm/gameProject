@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using ColdShutdown.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -9,11 +10,13 @@ using UnityEngine.UI;
 namespace ColdShutdown.Editor
 {
     /// <summary>
-    /// Creates the terminal prefab (a desk with a monitor, a keyboard and a mouse; the screen is a world-space
-    /// canvas that the <see cref="Terminal"/> fills with the desktop at run time; it starts switched off) and
-    /// Sandbox_C, a test scene with two of them. The model is a plain stand-in: the final terminal model (task 2.10) replaces the meshes and keeps the
-    /// Terminal component, the view point and the screen canvas. Existing assets are never replaced; delete the
-    /// prefab to build it again.
+    /// Makes the game's computers. The computer is the <see cref="Prop.Workstation"/> (two monitors, keyboard, mouse; its model is the
+    /// colleague's, see PROPS.md): this tool gives that prop prefab the <see cref="Terminal"/> component, a view point and two canvases
+    /// laid exactly over the monitors' lit pictures (the mesh parts named <c>Monitor_Picture</c>): the desktop with the mouse on one
+    /// monitor (<see cref="ActiveMonitor"/>), and on the other only the wallpaper while the computer is on, black otherwise. Every
+    /// workstation in the rooms is therefore a computer. It also builds <c>Terminals/Terminal.prefab</c> (a desk with a workstation on it)
+    /// and Sandbox_C, a test scene with two of them. Everything is rebuilt in place (same GUIDs); Create Preview Scene runs this after it has
+    /// rebuilt the models (which start the workstation prefab from scratch).
     /// </summary>
     public static class TerminalTool
     {
@@ -22,23 +25,35 @@ namespace ColdShutdown.Editor
         public const string KnowledgePath = "Assets/_Project/Data/Lore/knowledge_base.json";
         public const string WebPath = "Assets/_Project/Data/Web/web_pages.json";
         public const string WordsPath = "Assets/_Project/Data/Minigames/password_words.json";
-        public const string PlasticPath = "Assets/_Project/Art/Materials/M_TerminalPlastic.mat";
-        public const string DeskPath = "Assets/_Project/Art/Materials/M_TerminalDesk.mat";
         private const string ScenePath = "Assets/_Project/Scenes/Sandbox_C.unity";
 
-        // The screen is 1280 x 720 canvas units of half a millimetre: 0.64 x 0.36 m.
-        private const float CanvasScale = 0.0005f;
-        private const float MonitorHeight = 1.105f;
+        /// <summary>The name of the mesh part that is a monitor's lit picture.</summary>
+        public const string PictureName = "Monitor_Picture";
+
+        /// <summary>
+        /// The monitor that carries the desktop: the group named like this in the workstation prop. Seen from the chair it is the right-hand
+        /// one, beside the mouse. The other monitor shows only the wallpaper.
+        /// </summary>
+        public const string ActiveMonitor = "Monitor_Left";
+
+        private const string OtherMonitor = "Monitor_Right";
+
+        // How far in front of a picture the canvas floats (metres), and how much of the picture it covers.
+        private const float ScreenOffset = 0.0005f;
+        private const float ScreenCover = 0.995f;
+
+        // How far from the screen the view point is (the camera comes closer, see Terminal.ViewPosition).
+        private const float ViewDistance = 0.62f;
 
         [MenuItem("Tools/Cold Shutdown/Create Terminal Prefab")]
-        public static void CreateTerminalPrefab()
-        {
-            if (File.Exists(PrefabPath))
-            {
-                Debug.Log($"{PrefabPath} already exists, skipped. Delete it to regenerate.");
-                return;
-            }
+        public static void CreateTerminalPrefab() => BuildTerminalPrefab();
 
+        /// <summary>
+        /// Turns the workstation prop prefab into a computer and builds the desk-and-workstation prefab for the sandbox. Needs the models
+        /// (made by Create Preview Scene) and the data files. Returns false, with the reason logged, if something is missing.
+        /// </summary>
+        public static bool BuildTerminalPrefab()
+        {
             AssetDatabase.Refresh();
             var knowledge = AssetDatabase.LoadAssetAtPath<TextAsset>(KnowledgePath);
             var web = AssetDatabase.LoadAssetAtPath<TextAsset>(WebPath);
@@ -46,58 +61,106 @@ namespace ColdShutdown.Editor
             if (knowledge == null || web == null || words == null)
             {
                 Debug.LogError($"The data files {KnowledgePath}, {WebPath} and {WordsPath} are needed first.");
-                return;
+                return false;
+            }
+            string workstationPath = Props.PathOf(Prop.Workstation);
+            if (!File.Exists(workstationPath) || !File.Exists(Props.PathOf(Prop.Desk)))
+            {
+                Debug.LogError($"{workstationPath} or the desk is missing. Run Tools/Cold Shutdown/Create Preview Scene first (it makes the models).");
+                return false;
             }
 
             var theme = LoadOrCreateTheme();
-            var plastic = LoadOrCreateMaterial(PlasticPath, new Color(0.07f, 0.075f, 0.085f), 0.45f);
-            var desk = LoadOrCreateMaterial(DeskPath, new Color(0.55f, 0.56f, 0.58f), 0.2f);
+            if (!WireWorkstation(workstationPath, theme, web, knowledge, words)) return false;
+            BuildSandboxPrefab();
+            return true;
+        }
 
-            var root = new GameObject("Terminal");
+        private static bool WireWorkstation(string path, DesktopTheme theme, TextAsset web, TextAsset knowledge, TextAsset words)
+        {
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                // Idempotent: take away what an earlier run added.
+                foreach (var old in root.GetComponents<Terminal>()) Object.DestroyImmediate(old);
+                foreach (string name in new[] { "Screen", "SecondScreen", "ViewPoint" })
+                {
+                    var old = root.transform.Find(name);
+                    if (old != null) Object.DestroyImmediate(old.gameObject);
+                }
 
-            // Desk: a top and two side panels. The pivot is on the floor, the front of the monitor looks along +Z.
-            Part("Desk_Top", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.73f, 0f), new Vector3(1.3f, 0.04f, 0.7f), desk, true);
-            Part("Desk_Left", PrimitiveType.Cube, root.transform, new Vector3(-0.62f, 0.355f, 0f), new Vector3(0.04f, 0.71f, 0.66f), desk, true);
-            Part("Desk_Right", PrimitiveType.Cube, root.transform, new Vector3(0.62f, 0.355f, 0f), new Vector3(0.04f, 0.71f, 0.66f), desk, true);
+                var active = root.transform.Find(ActiveMonitor);
+                var other = root.transform.Find(OtherMonitor);
+                if (active == null || other == null || active.Find(PictureName) == null || other.Find(PictureName) == null)
+                {
+                    Debug.LogError($"The workstation model needs two monitors named {ActiveMonitor} and {OtherMonitor}, each with a part named {PictureName}.");
+                    return false;
+                }
 
-            // Monitor on a stand, a keyboard, a mouse and a small computer on the desk.
-            Part("Monitor_Base", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.7575f, 0f), new Vector3(0.22f, 0.015f, 0.16f), plastic, false);
-            Part("Monitor_Neck", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.845f, -0.02f), new Vector3(0.05f, 0.16f, 0.04f), plastic, false);
-            Part("Monitor_Frame", PrimitiveType.Cube, root.transform, new Vector3(0f, MonitorHeight, 0f), new Vector3(0.70f, 0.42f, 0.04f), plastic, true);
-            Part("Keyboard", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.765f, 0.22f), new Vector3(0.42f, 0.02f, 0.15f), plastic, false);
-            Part("Mouse", PrimitiveType.Cube, root.transform, new Vector3(0.3f, 0.7625f, 0.24f), new Vector3(0.06f, 0.025f, 0.1f), plastic, false);
-            Part("Computer", PrimitiveType.Cube, root.transform, new Vector3(-0.5f, 0.93f, -0.1f), new Vector3(0.2f, 0.36f, 0.4f), plastic, false);
+                var screen = BuildScreen(root.transform, "Screen", active, true);
+                var secondScreen = BuildScreen(root.transform, "SecondScreen", other, false);
 
-            // The player's eyes go here: in front of the monitor, looking at it.
-            var viewPoint = new GameObject("ViewPoint").transform;
-            viewPoint.SetParent(root.transform, false);
-            viewPoint.localPosition = new Vector3(0f, MonitorHeight - 0.01f, 0.62f);
-            viewPoint.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                // The player's eyes go here at most: in front of the active monitor, looking along its normal. The terminal moves the camera
+                // closer if the display allows.
+                var picture = PictureCenter(active);
+                var normal = active.localRotation * Vector3.forward;
+                var viewPoint = new GameObject("ViewPoint").transform;
+                viewPoint.SetParent(root.transform, false);
+                viewPoint.localPosition = picture.center + normal * ViewDistance;
+                viewPoint.localRotation = Quaternion.LookRotation(-normal, Vector3.up);
 
-            var screen = BuildScreen(root.transform);
+                var terminal = root.AddComponent<Terminal>();
+                var serialized = new SerializedObject(terminal);
+                serialized.FindProperty("viewPoint").objectReferenceValue = viewPoint;
+                serialized.FindProperty("screen").objectReferenceValue = screen;
+                serialized.FindProperty("secondScreen").objectReferenceValue = secondScreen;
+                serialized.FindProperty("theme").objectReferenceValue = theme;
+                serialized.FindProperty("startsOn").boolValue = false;
+                serialized.FindProperty("webFile").objectReferenceValue = web;
+                serialized.FindProperty("loreFile").objectReferenceValue = knowledge;
+                serialized.FindProperty("passwordWordsFile").objectReferenceValue = words;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            var terminal = root.AddComponent<Terminal>();
-            var serialized = new SerializedObject(terminal);
-            serialized.FindProperty("viewPoint").objectReferenceValue = viewPoint;
-            serialized.FindProperty("screen").objectReferenceValue = screen;
-            serialized.FindProperty("theme").objectReferenceValue = theme;
-            serialized.FindProperty("startsOn").boolValue = false;
-            serialized.FindProperty("webFile").objectReferenceValue = web;
-            serialized.FindProperty("loreFile").objectReferenceValue = knowledge;
-            serialized.FindProperty("passwordWordsFile").objectReferenceValue = words;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                Debug.Log($"{path} is a computer now ({ActiveMonitor} carries the desktop).");
+                return true;
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // A desk with a workstation on it, in the workstation's own place on a desk (see Rooms.PlaceDesk), for Sandbox_C.
+        private static void BuildSandboxPrefab()
+        {
+            bool exists = File.Exists(PrefabPath);
+            var root = exists ? PrefabUtility.LoadPrefabContents(PrefabPath) : new GameObject("Terminal");
+            for (int i = root.transform.childCount - 1; i >= 0; i--)
+            {
+                Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
+            }
+            foreach (var old in root.GetComponents<Component>())
+            {
+                if (!(old is Transform)) Object.DestroyImmediate(old);
+            }
+
+            var desk = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Props.PathOf(Prop.Desk)), root.transform);
+            desk.name = "Desk";
+            var workstation = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Props.PathOf(Prop.Workstation)), root.transform);
+            workstation.name = "Workstation";
+            workstation.transform.localPosition = new Vector3(0f, Props.DeskHeight, -0.05f);
 
             Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
-            Object.DestroyImmediate(root);
-            Debug.Log($"Terminal prefab saved to {PrefabPath}.");
+            if (exists) PrefabUtility.UnloadPrefabContents(root);
+            else Object.DestroyImmediate(root);
         }
 
         [MenuItem("Tools/Cold Shutdown/Create Terminal Sandbox")]
         public static void CreateTerminalSandbox()
         {
-            CreateTerminalPrefab();
-            if (!File.Exists(PrefabPath)) return;
+            if (!BuildTerminalPrefab() || !File.Exists(PrefabPath)) return;
 
             if (File.Exists(ScenePath) && !Application.isBatchMode &&
                 !EditorUtility.DisplayDialog("Cold Shutdown", $"{ScenePath} already exists. Replace it?", "Replace", "Cancel"))
@@ -136,17 +199,36 @@ namespace ColdShutdown.Editor
             Debug.Log($"Terminal sandbox saved to {ScenePath}. Press Play, walk to a computer and press E. Click on the screen; Escape stands up.");
         }
 
-        private static Canvas BuildScreen(Transform parent)
+        // The centre and size of a monitor's picture in the prop's space (the monitor group is only moved and turned, never scaled).
+        private static (Vector3 center, Vector2 size) PictureCenter(Transform monitor)
         {
-            var screen = new GameObject("Screen", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var picture = monitor.Find(PictureName);
+            var bounds = picture.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var center = monitor.root.InverseTransformPoint(picture.TransformPoint(bounds.center));
+            return (center, new Vector2(bounds.size.x, bounds.size.y));
+        }
+
+        /// <summary>
+        /// A canvas laid over a monitor's picture: 1280 x 720 canvas units stretched to the picture, a hair in front of it, turned around so it
+        /// faces the viewer. The one that carries the desktop gets a raycaster for the mouse.
+        /// </summary>
+        private static Canvas BuildScreen(Transform parent, string name, Transform monitor, bool clickable)
+        {
+            var (center, size) = PictureCenter(monitor);
+            var screen = new GameObject(name, typeof(RectTransform), typeof(Canvas));
+            if (clickable)
+            {
+                screen.AddComponent<CanvasScaler>();
+                screen.AddComponent<GraphicRaycaster>();
+            }
             screen.transform.SetParent(parent, false);
-            screen.transform.localPosition = new Vector3(0f, MonitorHeight, 0.0205f);
-            screen.transform.localScale = Vector3.one * CanvasScale;
+            screen.transform.localPosition = center + monitor.localRotation * new Vector3(0f, 0f, ScreenOffset);
+            screen.transform.localScale = new Vector3(size.x * ScreenCover / Desktop.Width, size.y * ScreenCover / Desktop.Height, size.x / Desktop.Width);
 
             // A canvas is seen correctly from its back: the viewer stands on the side its forward axis points away from.
-            // The monitor looks along +Z, so the canvas turns around, or the screen would be mirrored and Unity's UI
+            // The monitor looks the other way, so the canvas turns around, or the screen would be mirrored and Unity's UI
             // would ignore clicks on it (it skips graphics that face away from the camera).
-            screen.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            screen.transform.localRotation = monitor.localRotation * Quaternion.Euler(0f, 180f, 0f);
 
             var rect = (RectTransform)screen.transform;
             rect.sizeDelta = new Vector2(Desktop.Width, Desktop.Height);
@@ -155,22 +237,13 @@ namespace ColdShutdown.Editor
             canvas.renderMode = RenderMode.WorldSpace;
 
             // Text is drawn at twice the size and scaled down, which keeps it sharp on a small screen.
-            var scaler = screen.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.dynamicPixelsPerUnit = 2f;
+            if (clickable)
+            {
+                var scaler = screen.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                scaler.dynamicPixelsPerUnit = 2f;
+            }
             return canvas;
-        }
-
-        private static GameObject Part(string name, PrimitiveType shape, Transform parent, Vector3 position, Vector3 scale, Material material, bool collider)
-        {
-            var part = GameObject.CreatePrimitive(shape);
-            part.name = name;
-            if (!collider) Object.DestroyImmediate(part.GetComponent<Collider>());
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = position;
-            part.transform.localScale = scale;
-            part.GetComponent<MeshRenderer>().sharedMaterial = material;
-            return part;
         }
 
         private static DesktopTheme LoadOrCreateTheme()
@@ -182,19 +255,6 @@ namespace ColdShutdown.Editor
             theme = ScriptableObject.CreateInstance<DesktopTheme>();
             AssetDatabase.CreateAsset(theme, ThemePath);
             return theme;
-        }
-
-        private static Material LoadOrCreateMaterial(string path, Color color, float smoothness)
-        {
-            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null) return material;
-
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.SetColor("_BaseColor", color);
-            material.SetFloat("_Smoothness", smoothness);
-            AssetDatabase.CreateAsset(material, path);
-            return material;
         }
     }
 }

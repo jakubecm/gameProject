@@ -27,6 +27,8 @@ namespace ColdShutdown.Runtime
     {
         [SerializeField] private Transform viewPoint;
         [SerializeField] private Canvas screen;
+        [Tooltip("A second monitor that only shows the wallpaper while the computer is on and is black otherwise. Optional.")]
+        [SerializeField] private Canvas secondScreen;
         [SerializeField] private DesktopTheme theme;
         [Tooltip("Whether the computer is on when the game starts.")]
         [SerializeField] private bool startsOn;
@@ -62,8 +64,10 @@ namespace ColdShutdown.Runtime
         }
 
         private Desktop desktop;
+        private GameObject secondWallpaper;
         private Camera playerCamera;
         private Interactor interactor;
+        private InteractionPrompt prompt;
         private HeadBob headBob;
         private PlayerInputReader reader;
         private GameObject hint;
@@ -130,6 +134,28 @@ namespace ColdShutdown.Runtime
             {
                 Leave();
             }
+            if (State == TerminalState.InUse) UpdatePointer();
+        }
+
+        /// <summary>
+        /// Over the screen the pointer is drawn on the desktop (it gets smaller and larger with the screen, like the rest) and the system's one is
+        /// hidden; beside it the system's pointer is shown, so it is never lost.
+        /// </summary>
+        private void UpdatePointer()
+        {
+            var mouse = Mouse.current;
+            bool over = false;
+            if (desktop != null && screen != null && playerCamera != null && mouse != null)
+            {
+                var rect = (RectTransform)screen.transform;
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, mouse.position.ReadValue(), playerCamera, out var local) && rect.rect.Contains(local))
+                {
+                    desktop.SetPointer(local);
+                    over = true;
+                }
+            }
+            if (!over) desktop?.SetPointer(null);
+            Cursor.visible = !over;
         }
 
         private void LateUpdate()
@@ -145,7 +171,12 @@ namespace ColdShutdown.Runtime
             var look = theme != null ? theme : DesktopTheme.CreateDefault();
             Wallpaper = look.WallpaperFor(wallpaperIndex >= 0 ? wallpaperIndex : NextWallpaperKey());
             desktop = new Desktop((RectTransform)screen.transform, look, startsOn, wallpaperPicture: Wallpaper);
-            desktop.PowerChanged += state => PowerChanged?.Invoke(state);
+            BuildSecondScreen(look);
+            desktop.PowerChanged += state =>
+            {
+                ShowSecondScreen(state);
+                PowerChanged?.Invoke(state);
+            };
 
             if (webFile != null)
             {
@@ -171,6 +202,28 @@ namespace ColdShutdown.Runtime
                 Debug.LogWarning("Terminal: no password word file assigned; the Security program is not on the desktop.", this);
             }
         }
+
+        // The second monitor: black, with the wallpaper over it while the computer is on (not while it boots or shuts down).
+        private void BuildSecondScreen(DesktopTheme look)
+        {
+            if (secondScreen == null) return;
+
+            var rect = (RectTransform)secondScreen.transform;
+            rect.sizeDelta = new Vector2(Desktop.Width, Desktop.Height);
+            for (int i = rect.childCount - 1; i >= 0; i--) UiFactory.Dispose(rect.GetChild(i).gameObject);
+            var black = UiFactory.Image("Black", rect, Color.black, false);
+            UiFactory.Fill(black.rectTransform);
+            secondWallpaper = Desktop.PaintWallpaper(rect, look, Wallpaper).gameObject;
+            ShowSecondScreen(desktop.Power);
+        }
+
+        private void ShowSecondScreen(PowerState state)
+        {
+            if (secondWallpaper != null) secondWallpaper.SetActive(state == PowerState.On);
+        }
+
+        /// <summary>True while the second monitor shows the wallpaper (the computer is on).</summary>
+        public bool SecondScreenLit => secondWallpaper != null && secondWallpaper.activeSelf;
 
         /// <summary>Pressing E on the computer: it is switched on if it was off, and the player sits down.</summary>
         public void Interact(Interactor user)
@@ -204,6 +257,8 @@ namespace ColdShutdown.Runtime
 
             // The bob and the interaction prompt would fight with the camera and with the screen.
             interactor.enabled = false;
+            prompt = user.GetComponent<InteractionPrompt>();
+            if (prompt != null) prompt.enabled = false;
             if (headBob != null) headBob.enabled = false;
             if (reader != null) reader.InputEnabled = false;
 
@@ -229,6 +284,8 @@ namespace ColdShutdown.Runtime
             if (State != TerminalState.Entering && State != TerminalState.InUse) return;
 
             desktop.Suspend();
+            desktop.SetPointer(null);
+            Cursor.visible = true;
             target = 0f;
             State = TerminalState.Leaving;
         }
@@ -309,6 +366,8 @@ namespace ColdShutdown.Runtime
                 playerCamera.fieldOfView = restFieldOfView;
             }
             if (interactor != null) interactor.enabled = true;
+            if (prompt != null) prompt.enabled = true;
+            desktop?.SetPointer(null);
             if (headBob != null) headBob.enabled = true;
             if (reader != null) reader.InputEnabled = true;
 

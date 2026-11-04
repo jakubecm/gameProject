@@ -353,7 +353,7 @@ namespace ColdShutdown.Tests.EditMode.Terminals
         [Test]
         public void ANewsStory_WithAPhoto_ShowsItCutToFit()
         {
-            var photo = Picture(32, 16);
+            var photo = Picture(48, 16);
             var theme = DesktopTheme.CreateDefault();
             created.Add(theme);
             theme.webImages = new[] { new WebImage { key = "ghost", image = photo } };
@@ -368,7 +368,7 @@ namespace ColdShutdown.Tests.EditMode.Terminals
             var page = desktop.WindowOf(browser).Content.Find("Scroll/Viewport/Page");
             var lead = page.Find("Front/Card_news_ghost/Photo").GetComponent<RawImage>();
             Assert.AreSame(photo, lead.texture);
-            Assert.Less(lead.uvRect.width, 1f, "a 2:1 photo is cut at the sides to fill the 16:9 slot");
+            Assert.Less(lead.uvRect.width, 1f, "a 3:1 photo is cut at the sides to fill the lead slot");
             Assert.AreEqual(1f, lead.uvRect.height, 0.001f);
             Assert.IsNotNull(page.Find("Front/Side/Card_news_law/PhotoPlaceholder"), "a story without a photo gets a block");
 

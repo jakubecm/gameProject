@@ -78,24 +78,7 @@ namespace ColdShutdown.Runtime
             // The running system: wallpaper, icons, windows, taskbar, Start menu.
             system = UiFactory.Rect("System", root);
             UiFactory.Fill(system);
-            var wallpaper = UiFactory.Image("Wallpaper", system, theme.wallpaper);
-            UiFactory.Fill(wallpaper.rectTransform);
-            if (wallpaperPicture != null)
-            {
-                var picture = UiFactory.Rect("Picture", wallpaper.transform).gameObject.AddComponent<RawImage>();
-                picture.texture = wallpaperPicture;
-                picture.uvRect = CoverRect(wallpaperPicture.width / (float)wallpaperPicture.height, Width / Height);
-                picture.raycastTarget = false;
-                UiFactory.Fill(picture.rectTransform);
-
-                var veil = UiFactory.Image("Tint", wallpaper.transform, theme.wallpaperTint, false);
-                UiFactory.Fill(veil.rectTransform);
-            }
-            else
-            {
-                var band = UiFactory.Image("WallpaperBand", wallpaper.transform, theme.wallpaperBand, false);
-                UiFactory.Place(band.rectTransform, UiFactory.BottomLeft, new Vector2(0f, TaskbarHeight), new Vector2(Width, 210f));
-            }
+            PaintWallpaper(system, theme, wallpaperPicture);
 
             iconLayer = UiFactory.Rect("Icons", system);
             UiFactory.Fill(iconLayer);
@@ -152,8 +135,87 @@ namespace ColdShutdown.Runtime
             UiFactory.Fill(blackoutHint.rectTransform);
             blackoutHint.gameObject.SetActive(false);
 
+            // The mouse pointer, above everything: the terminal draws it where the real pointer is over the screen.
+            var pointerImage = UiFactory.Rect("Pointer", root).gameObject.AddComponent<RawImage>();
+            pointerImage.texture = PointerTexture;
+            pointerImage.raycastTarget = false;
+            pointer = pointerImage.rectTransform;
+            pointer.anchorMin = pointer.anchorMax = new Vector2(0.5f, 0.5f);
+            pointer.pivot = new Vector2(0f, 1f);
+            pointer.sizeDelta = new Vector2(PointerWidth, PointerHeight);
+            pointer.gameObject.SetActive(false);
+
             SetPower(startOn ? PowerState.On : PowerState.Off);
             Tick(0f);
+        }
+
+        // ---------------------------------------------------------------- the mouse pointer
+
+        /// <summary>Size of the drawn pointer in canvas units (the screen is 1280 x 720).</summary>
+        public const float PointerWidth = 19f;
+        public const float PointerHeight = 28f;
+
+        private RectTransform pointer;
+        private static Texture2D pointerTexture;
+
+        /// <summary>True while the pointer is drawn on the screen.</summary>
+        public bool PointerVisible => pointer != null && pointer.gameObject.activeSelf;
+
+        /// <summary>The place of the pointer's tip, relative to the middle of the screen in canvas units, or null to hide it.</summary>
+        public Vector2? PointerPosition => PointerVisible ? pointer.anchoredPosition : (Vector2?)null;
+
+        /// <summary>Draws the mouse pointer with its tip at <paramref name="position"/> (canvas units from the middle of the screen), or hides it.</summary>
+        public void SetPointer(Vector2? position)
+        {
+            if (pointer == null) return;
+
+            pointer.gameObject.SetActive(position.HasValue);
+            if (position.HasValue) pointer.anchoredPosition = position.Value;
+        }
+
+        /// <summary>A white arrow with a black edge, drawn once: the usual mouse pointer, tip at the top left.</summary>
+        private static Texture2D PointerTexture
+        {
+            get
+            {
+                if (pointerTexture != null) return pointerTexture;
+
+                const int scale = 3;
+                int width = (int)PointerWidth * scale, height = (int)PointerHeight * scale;
+                var arrow = new[]
+                {
+                    new Vector2(1f, 1f), new Vector2(1f, 21f), new Vector2(5.2f, 17f), new Vector2(8.6f, 25.5f),
+                    new Vector2(12f, 24f), new Vector2(8.5f, 16f), new Vector2(14.5f, 16f),
+                };
+                var pixels = new Color32[width * height];
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        // Texture rows go up, the arrow is drawn from the top down.
+                        var point = new Vector2((x + 0.5f) / scale, (height - y - 0.5f) / scale);
+                        bool inside = false;
+                        float edge = float.MaxValue;
+                        for (int i = 0, j = arrow.Length - 1; i < arrow.Length; j = i++)
+                        {
+                            if ((arrow[i].y > point.y) != (arrow[j].y > point.y) &&
+                                point.x < (arrow[j].x - arrow[i].x) * (point.y - arrow[i].y) / (arrow[j].y - arrow[i].y) + arrow[i].x)
+                            {
+                                inside = !inside;
+                            }
+                            var along = arrow[j] - arrow[i];
+                            float t = Mathf.Clamp01(Vector2.Dot(point - arrow[i], along) / along.sqrMagnitude);
+                            edge = Mathf.Min(edge, (point - (arrow[i] + along * t)).magnitude);
+                        }
+                        pixels[y * width + x] = inside && edge > 0.9f ? new Color32(255, 255, 255, 255)
+                            : inside || edge < 0.9f ? new Color32(10, 10, 14, 255) : new Color32(0, 0, 0, 0);
+                    }
+                }
+                pointerTexture = new Texture2D(width, height, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, name = "Pointer" };
+                pointerTexture.SetPixels32(pixels);
+                pointerTexture.Apply();
+                return pointerTexture;
+            }
         }
 
         /// <summary>Puts a program on the desktop with an icon.</summary>
@@ -310,6 +372,30 @@ namespace ColdShutdown.Runtime
 
             float height = pictureAspect / targetAspect;
             return new Rect(0f, (1f - height) / 2f, 1f, height);
+        }
+
+        /// <summary>The desktop's background under <paramref name="parent"/>: the wallpaper picture cut to fit with its veil, or the plain colour with a band.</summary>
+        internal static Image PaintWallpaper(Transform parent, DesktopTheme theme, Texture wallpaperPicture)
+        {
+            var wallpaper = UiFactory.Image("Wallpaper", parent, theme.wallpaper);
+            UiFactory.Fill(wallpaper.rectTransform);
+            if (wallpaperPicture != null)
+            {
+                var picture = UiFactory.Rect("Picture", wallpaper.transform).gameObject.AddComponent<RawImage>();
+                picture.texture = wallpaperPicture;
+                picture.uvRect = CoverRect(wallpaperPicture.width / (float)wallpaperPicture.height, Width / Height);
+                picture.raycastTarget = false;
+                UiFactory.Fill(picture.rectTransform);
+
+                var veil = UiFactory.Image("Tint", wallpaper.transform, theme.wallpaperTint, false);
+                UiFactory.Fill(veil.rectTransform);
+            }
+            else
+            {
+                var band = UiFactory.Image("WallpaperBand", wallpaper.transform, theme.wallpaperBand, false);
+                UiFactory.Place(band.rectTransform, UiFactory.BottomLeft, new Vector2(0f, TaskbarHeight), new Vector2(Width, 210f));
+            }
+            return wallpaper;
         }
 
         internal static RawImage AddPicture(Transform parent, Texture picture, float margin)

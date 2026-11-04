@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using ColdShutdown.Core;
@@ -59,6 +60,23 @@ namespace ColdShutdown.Editor
         /// </summary>
         public static bool RebuildEverything()
         {
+            // Numbers in asset names ("Sprinkler_1.8", mesh files) must not depend on the computer's language settings, or the same code
+            // writes different files on different machines.
+            var thread = System.Threading.Thread.CurrentThread;
+            var culture = thread.CurrentCulture;
+            thread.CurrentCulture = CultureInfo.InvariantCulture;
+            try
+            {
+                return RebuildEverythingCore();
+            }
+            finally
+            {
+                thread.CurrentCulture = culture;
+            }
+        }
+
+        private static bool RebuildEverythingCore()
+        {
             var worldMap = LoadOrCreateWorldMap();
             var parsed = worldMap.Parse();
             foreach (var warning in parsed.Warnings) Debug.LogWarning($"World map: {warning}", worldMap);
@@ -79,6 +97,8 @@ namespace ColdShutdown.Editor
                 HallBuilder.BuildKit();
             }));
             Props.DeleteObsoleteProps();
+            // The workstation is the game's computer: wire its screens after the models are rebuilt.
+            TerminalTool.BuildTerminalPrefab();
             HallBuilder.BakeHall(parsed.Layout);
             AssetDatabase.SaveAssets();
 

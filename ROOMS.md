@@ -63,7 +63,8 @@ rooms, 1 security office, power room and cooling plant.
   `Shell/SuspendedCeiling`, surface materials.
 - Room children: `Structure` (small-room walls, lift wall), slots (`TerminalSlot`, `RackSlots/RackSlot_NN`),
   `VideoWall` (security office) = game logic; `Dressing` = looks only (code never reads it); `SecurityCameras`.
-- Racks and terminals are not in prefabs: the level builder puts a rack on every rack slot; terminals come later (task 2.10).
+- Racks are not in prefabs: the level builder puts a rack on every rack slot. The computers are the `Workstation` props at the desks (every one has a
+  `Terminal`, see CLAUDE.md "Terminals"); the `TerminalSlot` in the corner is not used for a computer for now.
 - `RoomDefinition_<Type>.asset` links a type to its layout prefabs (`Prefab` = layout 1, `GetLayout(i)`).
 - A room template (`[Template(RoomType.X)] RoomTemplate X(RoomType type)` in `Rooms/<Type>.cs`): `Terminal` slot pose,
   `Racks` slot poses, `Structure` (logic built into the prefab), `Dress` (looks). `Rooms.RebuildAll` builds every layout

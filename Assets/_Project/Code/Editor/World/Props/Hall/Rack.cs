@@ -231,6 +231,9 @@ namespace ColdShutdown.Editor
             serialized.FindProperty("leverHandle").objectReferenceValue = lever.gameObject;
             serialized.FindProperty("glow").objectReferenceValue = glowObject.gameObject;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            // The filling (70 000 triangles) is only drawn near the camera; in the prefab, so the Scene view saves the work too.
+            rack.AddLevelOfDetail();
         }
 
         /// <summary>

@@ -26,6 +26,8 @@ namespace ColdShutdown.Runtime
 
         private void OnEnable()
         {
+            // The dot and the hint go away while the component is switched off (at a computer, the mouse pointer takes over).
+            if (canvasObject != null) canvasObject.SetActive(true);
             interactor.FocusChanged += ShowFocus;
             interactor.Interacted += Refresh;
             interactor.HoldProgressChanged += ShowProgress;
@@ -33,6 +35,7 @@ namespace ColdShutdown.Runtime
 
         private void OnDisable()
         {
+            if (canvasObject != null) canvasObject.SetActive(false);
             interactor.FocusChanged -= ShowFocus;
             interactor.Interacted -= Refresh;
             interactor.HoldProgressChanged -= ShowProgress;
