@@ -71,7 +71,7 @@ namespace ColdShutdown.Editor
             housing.Attach("Housing", model, SurfaceMaterial.BlackHousing);
             inner.Attach("InnerDome", model, SurfaceMaterial.BlackHousing);
             port.Attach("Port", model, SurfaceMaterial.Screen);
-            dome.Attach("Dome", model, SurfaceMaterial.DomeClear);
+            dome.Attach("Dome", model, SurfaceMaterial.ClearGlass);
         }
 
         /// <summary>Adds the disabled feed camera (looking along +Z, pitched down) and the <see cref="SecurityCamera"/> on the root.</summary>

@@ -149,7 +149,7 @@ namespace ColdShutdown.Editor
             grooves.Attach("CoilRings", root, SurfaceMaterial.BlackHousing);
             copper.Attach("Taps", root, SurfaceMaterial.CopperTrim);
             laminations.Attach("CoreYokes", root, SurfaceMaterial.Steel);
-            glass.Attach("Window", root, SurfaceMaterial.DomeClear);
+            glass.Attach("Window", root, SurfaceMaterial.ClearGlass);
             chrome.Attach("Lock", root, SurfaceMaterial.Chrome);
             rings.Attach("LiftingEyes", root, SurfaceMaterial.Chrome);
             duct.Attach("CableDuct", root, SurfaceMaterial.Trunking);

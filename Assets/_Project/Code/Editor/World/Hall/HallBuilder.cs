@@ -533,8 +533,12 @@ namespace ColdShutdown.Editor
                 Props.Place(Prop.DoorFrame, architecture, new Vector3(pose.X, 0f, pose.Z), pose.YawDegrees);
                 // Its exit sign is on the door's operator, on the hall side: the way out is into the corridor.
                 Props.Place(Prop.RoomDoor, architecture, new Vector3(pose.X, 0f, pose.Z), pose.YawDegrees, "Door");
-                Props.Place(Prop.FireCallPoint, safety, new Vector3(-3.2f, Props.CallPointHeight, Wall), awayFromWall);
-                Props.Place(Prop.LightSwitch, safety, new Vector3(-2.85f, Props.LightSwitchHeight, Wall), awayFromWall, "LightSwitch");
+                // Beside the hall-side reader (the door is turned half a turn: its reader at +ReaderAlongWall is at -ReaderAlongWall here) go the
+                // light switch and the call point, at equal spacing: reader, switch, call point.
+                const float fittingSpacing = 0.30f;
+                float readerX = pose.X - Props.ReaderAlongWall;
+                Props.Place(Prop.LightSwitch, safety, new Vector3(readerX - fittingSpacing, Props.LightSwitchHeight, Wall), awayFromWall, "LightSwitch");
+                Props.Place(Prop.FireCallPoint, safety, new Vector3(readerX - 2f * fittingSpacing, Props.CallPointHeight, Wall), awayFromWall);
             }
             else
             {

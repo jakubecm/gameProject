@@ -60,7 +60,7 @@ namespace ColdShutdown.Editor
             {
                 chrome.Attach($"{prefix}_Chrome", parent, SurfaceMaterial.Chrome);
                 face.Attach($"{prefix}_Face", parent, faceMaterial);
-                glass.Attach($"{prefix}_Glass", parent, SurfaceMaterial.DomeClear);
+                glass.Attach($"{prefix}_Glass", parent, SurfaceMaterial.ClearGlass);
                 needle.Attach($"{prefix}_Needle", parent, SurfaceMaterial.BlackHousing);
                 brass.Attach($"{prefix}_Stem", parent, SurfaceMaterial.Brass);
             }

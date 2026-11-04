@@ -21,7 +21,7 @@ namespace ColdShutdown.Editor
             const float gap = 0.04f;
             float z = r + gap;
             const float dialRadius = 0.15f;
-            const float dialHeight = 1.15f;
+            const float dialHeight = 1.30f;
             const float exchangerEnd = -0.57f;
             float[] x = { -0.95f, -0.57f, -0.19f, 0.19f, 0.57f, 0.95f };
             float[] lane = { 1.50f, 1.65f, 1.80f, 1.80f, 1.65f, 1.50f };

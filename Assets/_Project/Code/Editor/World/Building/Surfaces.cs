@@ -48,8 +48,7 @@ namespace ColdShutdown.Editor
         BulbRed,
         BulbClear,
         BlackHousing,
-        DomeClear,
-        LensGlass,
+        ClearGlass,
         SpeakerWhite,
         SpeakerGrille,
         DetectorWhite,
@@ -240,8 +239,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.BulbRed, new Look(new Color(0.78f, 0.03f, 0.02f), 0f, 0.95f, new Color(0.25f, 0.0f, 0.0f)) },
             { SurfaceMaterial.BulbClear, new Look(new Color(0.92f, 0.92f, 0.9f), 0f, 0.95f) },
             { SurfaceMaterial.BlackHousing, new Look(new Color(0.03f, 0.03f, 0.034f), 0.1f, 0.5f) },
-            { SurfaceMaterial.DomeClear, new Look(new Color(0.8f, 0.85f, 0.88f, 0.1f), 0f, 0.97f) },
-            { SurfaceMaterial.LensGlass, new Look(new Color(0.01f, 0.012f, 0.02f), 0.3f, 1f) },
+            { SurfaceMaterial.ClearGlass, new Look(new Color(0.8f, 0.85f, 0.88f, 0.1f), 0f, 0.97f) },
             { SurfaceMaterial.SpeakerWhite, new Look(new Color(0.9f, 0.9f, 0.88f), 0f, 0.4f) },
             { SurfaceMaterial.SpeakerGrille, new Look(new Color(0.76f, 0.77f, 0.76f), 0.2f, 0.3f) },
             // Smoke detector: glossy white ABS and its dark insect mesh; drop ceiling: matt white mineral-fibre tiles.
@@ -301,7 +299,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.Cardboard, new Look(new Color(0.74f, 0.58f, 0.38f), 0f, 0.1f) },
             { SurfaceMaterial.CardboardDark, new Look(new Color(0.1f, 0.075f, 0.05f), 0f, 0.1f) },
             { SurfaceMaterial.ElectricGrey, new Look(new Color(0.72f, 0.74f, 0.74f), 0.3f, 0.45f) },
-            { SurfaceMaterial.UpsGraphite, new Look(new Color(0.12f, 0.13f, 0.14f), 0.3f, 0.4f) },
+            { SurfaceMaterial.UpsGraphite, new Look(new Color(0.26f, 0.275f, 0.295f), 0.3f, 0.3f) },
             { SurfaceMaterial.ResinCoil, new Look(new Color(0.55f, 0.28f, 0.08f), 0f, 0.55f) },
             { SurfaceMaterial.PowerDialFace, new Look(Color.white, 0f, 0.4f) },
             { SurfaceMaterial.CardboardEdge, new Look(new Color(0.55f, 0.4f, 0.24f), 0f, 0.1f) },
@@ -357,6 +355,7 @@ namespace ColdShutdown.Editor
 
             material = new Material(Shader.Find(surface == SurfaceMaterial.RackGlow ? "Universal Render Pipeline/Unlit" : "Universal Render Pipeline/Lit")) { name = $"M_{surface}" };
             ApplyLook(material, Looks[surface]);
+            ApplyHighlights(material, !NoHighlights.Contains(surface));
             Directory.CreateDirectory(Folder);
             AssetDatabase.CreateAsset(material, path);
             if (surface == SurfaceMaterial.SpeakerGrille || surface == SurfaceMaterial.ExtinguisherLabel || surface == SurfaceMaterial.PcVent
@@ -909,6 +908,12 @@ namespace ColdShutdown.Editor
             { ' ', new[] { ".....", ".....", ".....", ".....", ".....", ".....", "....." } },
         };
 
+        /// <summary>Glass panes, chrome and the black panel screens show no highlight of the room lights (they keep their smoothness).</summary>
+        private static readonly HashSet<SurfaceMaterial> NoHighlights = new HashSet<SurfaceMaterial>
+        {
+            SurfaceMaterial.Glass, SurfaceMaterial.ClearGlass, SurfaceMaterial.Chrome, SurfaceMaterial.Screen,
+        };
+
         /// <summary>Resets every material to the look defined here, keeping the asset (and its GUID). Rebuild only.</summary>
         public static void ResetAll()
         {
@@ -916,6 +921,7 @@ namespace ColdShutdown.Editor
             {
                 var material = Get(pair.Key);
                 ApplyLook(material, pair.Value);
+                ApplyHighlights(material, !NoHighlights.Contains(pair.Key));
                 EditorUtility.SetDirty(material);
             }
             ApplyTextures();
@@ -941,6 +947,13 @@ namespace ColdShutdown.Editor
                 material.DisableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor", Color.black);
             }
+        }
+
+        private static void ApplyHighlights(Material material, bool on)
+        {
+            material.SetFloat("_SpecularHighlights", on ? 1f : 0f);
+            if (on) material.DisableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            else material.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
         }
 
         /// <summary>Switches a URP Lit material between opaque and alpha-blended transparent.</summary>
