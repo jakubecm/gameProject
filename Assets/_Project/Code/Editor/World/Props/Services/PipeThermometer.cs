@@ -12,7 +12,7 @@ namespace ColdShutdown.Editor
         private static void BuildPipeThermometer(Transform root)
         {
             var dial = new DialMeshes();
-            dial.AddDial(new Vector3(0f, 0f, 0.07f), 0.045f, 0.07f, 0.3f);
+            dial.AddDial(new Vector3(0f, 0f, 0.03f), 0.045f, 0.03f, 0.3f);
             dial.Attach("Dial", root);
         }
     }

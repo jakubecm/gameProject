@@ -11,7 +11,7 @@ namespace ColdShutdown.Editor
         /// Large office multifunction printer 0.60 x 1.27 x 0.65 m, after a product photo (an A3 colour copier on its four-drawer
         /// paper cabinet): a white body with the logo, four paper drawers with handle recesses and numbers on feet, the engine
         /// above them, an open black output tray at the left under the scanner, the scanner with a document feeder and its
-        /// black paper tray on top, and a tilted black control panel with a screen and a green start button. The front faces +Z.
+        /// black paper tray on top, and a tilted black control panel with a screen and four soft square buttons (2 x 2). The front faces +Z.
         /// </summary>
         [Model(Prop.Printer)]
         private static void BuildPrinter(Transform root)
@@ -70,23 +70,46 @@ namespace ColdShutdown.Editor
             black.AddBox(new Vector3(-0.150f, scannerBottom + 0.112f, 0.060f), new Vector3(0.150f, scannerBottom + 0.119f, 0.215f));
 
             // Control panel: a black slab on the user's right (-X) at the front of the scanner level, carried out on an arm and tilted up
-            // towards the user (+Z): its front edge is the low one. Screen on the user's left of it, keys and the green start button right.
+            // towards the user (+Z): its front edge is the low one. Screen on the user's left of it, four buttons right.
             var panel = ModelUtility.CreateGroup("ControlPanel", root);
             panel.localPosition = new Vector3(-0.12f, scannerBottom + 0.020f, front + 0.040f);
             panel.localRotation = Quaternion.Euler(26f, 0f, 0f);
             var panelBody = new MeshBuilder();
             var panelScreen = new MeshBuilder();
-            var panelStart = new MeshBuilder();
-            var panelKeys = new MeshBuilder();
+            var panelCaps = new MeshBuilder();
+            var iconsWhite = new MeshBuilder();
+            var iconsRed = new MeshBuilder();
+            var iconsGreen = new MeshBuilder();
             panelBody.AddRoundedBlock(Vector3.zero, 0.320f, 0.150f, 0.012f, 0.026f, 0.008f, 4);
             panelScreen.AddPanel(new Vector3(-0.060f, 0.0268f, 0.050f), new Vector3(0.140f, 0.0268f, 0.050f), new Vector3(0.140f, 0.0268f, -0.050f), new Vector3(-0.060f, 0.0268f, -0.050f),
                 Vector3.up, new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f));
-            panelStart.AddBox(new Vector3(-0.130f, 0.0262f, 0.025f), new Vector3(-0.100f, 0.0285f, 0.055f));
-            panelKeys.AddBox(new Vector3(-0.145f, 0.0262f, -0.055f), new Vector3(-0.085f, 0.0268f, 0.012f), true, false);
+            // Four soft square buttons in a 2 x 2 grid on the user's right of the screen (as on the coffee machine: dark caps, glowing solid
+            // icons). Seen from the front (the user at +Z, their right is -X): top row a circle and a hexagon, bottom row a red stop square
+            // on the left and a green play triangle on the right.
+            const float cap = 0.026f;
+            const float pitch = cap + 0.010f;
+            const float panelTop = 0.026f;
+            const float capHeight = 0.003f;
+            const float gridX = -0.110f;
+            for (int column = 0; column < 2; column++)
+            {
+                for (int row = 0; row < 2; row++)
+                {
+                    // Column 0 is the user's left (+X), row 1 the bottom (near the user, +Z).
+                    var centre = new Vector3(gridX + (column == 0 ? 1f : -1f) * pitch / 2f, panelTop, (row == 0 ? -1f : 1f) * pitch / 2f);
+                    panelCaps.AddRoundedBlock(centre, cap, cap, 0.006f, capHeight, 0.0012f, 4);
+                    var iconAt = centre + Vector3.up * (capHeight + 0.0001f);
+                    if (row == 0) AddButtonIcon(iconsWhite, column == 0 ? ButtonIcon.Circle : ButtonIcon.Hexagon, iconAt, cap * 0.25f);
+                    else if (column == 0) AddButtonIcon(iconsRed, ButtonIcon.Square, iconAt, cap * 0.25f);
+                    else AddButtonIcon(iconsGreen, ButtonIcon.Triangle, iconAt, cap * 0.28f, Mathf.PI);
+                }
+            }
             panelBody.Attach("Panel_Body", panel, SurfaceMaterial.BlackHousing);
             panelScreen.Attach("Panel_Screen", panel, SurfaceMaterial.MonitorImage);
-            panelStart.Attach("Panel_Start", panel, SurfaceMaterial.SafetyGreen);
-            panelKeys.Attach("Panel_Keys", panel, SurfaceMaterial.KeyboardKey);
+            panelCaps.Attach("Panel_Caps", panel, SurfaceMaterial.CoffeeButton);
+            iconsWhite.Attach("Panel_IconsWhite", panel, SurfaceMaterial.LedWhite);
+            iconsRed.Attach("Panel_IconsRed", panel, SurfaceMaterial.LedRed);
+            iconsGreen.Attach("Panel_IconsGreen", panel, SurfaceMaterial.SafetyGreen);
             // The arm that carries the panel out from the scanner.
             black.AddBox(new Vector3(-0.240f, scannerBottom - 0.020f, front - 0.110f), new Vector3(0.000f, scannerBottom + 0.020f, front + 0.020f));
 

@@ -356,8 +356,8 @@ namespace ColdShutdown.Editor
                 HallBox(frame, new Vector3(x - 0.012f, y0, center - aisle), new Vector3(x + 0.012f, y1 + 0.002f, center + aisle));
             }
 
-            black.Attach($"ContainmentRoof_{name}_Panels", roof, SurfaceMaterial.RackBlack);
-            frame.Attach($"ContainmentRoof_{name}_Frame", roof, SurfaceMaterial.ServerBlack);
+            black.Attach($"ContainmentRoof_{name}_Panels", roof, SurfaceMaterial.AisleFrame);
+            frame.Attach($"ContainmentRoof_{name}_Frame", roof, SurfaceMaterial.AisleFrame);
             labels.Attach($"ContainmentRoof_{name}_Labels", roof, SurfaceMaterial.DetectorWhite);
         }
 
@@ -396,6 +396,8 @@ namespace ColdShutdown.Editor
             // Per pod: a power tray over the outer row and a data tray over the inner row, each with a single drop into the pod, and an inert-gas line
             // with two 360° nozzles over the aisle. All run through the tile edge to edge.
             var hangers = RoomInfrastructure.Every(-5.4f, 5.4f, 1.2f).ToList();
+            // The drops stand 0.3 m beside a hanger (hangers at x = +-3.0), never on its strut.
+            const float DropX = 2.7f;
             var power = ModelUtility.CreateGroup("Power", dressing);
             var data = ModelUtility.CreateGroup("Data", dressing);
             var gas = ModelUtility.CreateGroup("GasExtinguishing", dressing);
@@ -408,10 +410,10 @@ namespace ColdShutdown.Editor
                 float gasZ = HallContract.PodZ(pod);
                 RoomInfrastructure.Tray(power, $"PowerTray_{name}", new Vector3(-Half, 0f, powerZ), new Vector3(Half, 0f, powerZ),
                     TrayWidth, TrayBottom, SurfaceMaterial.Metal, SurfaceMaterial.HoseRed, hangers, Roof);
-                TrayDrop(power, $"PowerDrop_{name}", new Vector3(-3.0f, 0f, powerZ), SurfaceMaterial.ConduitBrown);
+                TrayDrop(power, $"PowerDrop_{name}", new Vector3(-DropX, 0f, powerZ), SurfaceMaterial.ConduitBrown);
                 RoomInfrastructure.Tray(data, $"DataTray_{name}", new Vector3(-Half, 0f, dataZ), new Vector3(Half, 0f, dataZ),
                     TrayWidth, TrayBottom, SurfaceMaterial.Metal, SurfaceMaterial.DataCable, hangers, Roof);
-                TrayDrop(data, $"DataDrop_{name}", new Vector3(3.0f, 0f, dataZ), SurfaceMaterial.ConduitGreen);
+                TrayDrop(data, $"DataDrop_{name}", new Vector3(DropX, 0f, dataZ), SurfaceMaterial.ConduitGreen);
 
                 RoomPipes.Pipe(gas, $"GasLine_{name}", new Vector3(-Half, GasY, gasZ), new Vector3(Half, GasY, gasZ), RoomPipes.NarrowRadius, SurfaceMaterial.PipeGas);
                 foreach (float x in new[] { -2.1f, 2.1f })
@@ -533,8 +535,12 @@ namespace ColdShutdown.Editor
                 Props.Place(Prop.DoorFrame, architecture, new Vector3(pose.X, 0f, pose.Z), pose.YawDegrees);
                 // Its exit sign is on the door's operator, on the hall side: the way out is into the corridor.
                 Props.Place(Prop.RoomDoor, architecture, new Vector3(pose.X, 0f, pose.Z), pose.YawDegrees, "Door");
-                Props.Place(Prop.FireCallPoint, safety, new Vector3(-3.2f, Props.CallPointHeight, Wall), awayFromWall);
-                Props.Place(Prop.LightSwitch, safety, new Vector3(-2.85f, Props.LightSwitchHeight, Wall), awayFromWall, "LightSwitch");
+                // Beside the hall-side reader (the door is turned half a turn: its reader at +ReaderAlongWall is at -ReaderAlongWall here) go the
+                // light switch and the call point, at equal spacing: reader, switch, call point.
+                const float fittingSpacing = 0.30f;
+                float readerX = pose.X - Props.ReaderAlongWall;
+                Props.Place(Prop.LightSwitch, safety, new Vector3(readerX - fittingSpacing, Props.LightSwitchHeight, Wall), awayFromWall, "LightSwitch");
+                Props.Place(Prop.FireCallPoint, safety, new Vector3(readerX - 2f * fittingSpacing, Props.CallPointHeight, Wall), awayFromWall);
             }
             else
             {

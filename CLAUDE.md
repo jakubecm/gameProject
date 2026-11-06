@@ -56,22 +56,25 @@ All code and tests live under `Assets/` (Unity compiles nothing outside it).
 | Slots | Runtime: `RackSlot`, `TerminalSlot` (pivot on floor, forward = into the room), `SlotGizmos`, `SlotPoseExtensions` |
 | Racks | Runtime: `Rack` (`Configure(openable, seed)`), `RackDoor` (on the door hinge; F opens/shuts only when looking at the door; `OpenChanged`), `RackGlow`, `RackPlacement` (which racks open: one per row, never the first or last rack of a run), `RackContentLibrary` |
 | Doors | Runtime: `AutoSlidingDoor` (photo cells, readers, `IsLocked`), `AisleDoor` (derived, single leaf) |
-| CCTV | Runtime: `SecurityCamera`, `SecurityMonitor`, `SecurityMonitorWall` (pages feeds, only near the player, Play mode) |
+| CCTV | Runtime: `SecurityCamera`, `SecurityMonitor`, `SecurityMonitorWall` (tours all cameras, new shots on all monitors every 8 s, never the same shot twice (`SecurityCamera.ShotKey`); one render of every feed at start; then live (2 feeds per frame) only while the player is in the room, frozen when they leave; Play mode) |
 | Clue displays | Runtime: `AnalogGauge` (needle follows `Value` 0-1) |
 | Interaction | Runtime: `IInteractable`, `Interactable`, `Interactor` (on camera), `InteractionPrompt`, `InteractableColorToggle` (test) |
+| Game flow and menus | Runtime/UI: `GameFlow` (main menu → playing ⇄ paused; swaps the menu camera and the player; Escape = pause), `UiScreen` pages built from code (`MainMenuScreen` (every row placed and centred by the real ink of its glyphs: `UiKit.Ink`/`Stack`, measured in `UiScreen.Arrange`; gaps `TitleGap`/`ItemGap`), `PauseScreen`, `SettingsScreen` (volume and mute, not connected yet)), `MenuCameraRig` (constant-speed shots through the map: one hall move, one slider through an opening door into the power room (else the security office; only added when its run is free of walls), drone arcs, corridor dollies; motion carries over the cuts), `UiKit` (widgets, one look). `GameFlow` sits in `Main` (made by Create Main Scene / Create Preview Scene) |
+| Coffee machine | Runtime: `CoffeeMachine` (E brews, cup fills; E again drinks, the coffee runs over the rim as the cup tips; no sound yet), `CoffeeMachineUse` (the interactable, off while busy), `CoffeeLiquidMesh` (the surface is the exact cut of a world-level plane through the mug interior; volume by slices; `Capacity` = what a tilted mug holds before it runs over the rim; the last film draws back to the rim) |
+| Lighting | Runtime: `LightingDirector` (post volume, SMAA, set on every camera before its first frame; installs itself), `EmissionLevels` (Core: the two glow levels); Editor: `World/WorldLighting` (ambient, pipeline settings). ROOMS.md, Lighting |
 | Debug | Runtime: `DebugMenu` (F1: FPS, rebuild, map as text; Editor and development builds only) |
 | Player | Runtime/Player: see Player |
 | World (editor) | `World/`: see Project layout; `WorldTool` = Create Preview Scene, `MainSceneTool`, `WorldBatch` (batch entry) |
 | Other editor tools | `PlayerPrefabTool`, `SandboxSceneTool` (Sandbox_A) |
 
 Not built yet (planned): run state, clues/deduction, terminals and the four minigames, infection steps, AI
-messages, UI, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references.
+messages, settings wiring, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfectionStep`), not direct references.
 
 ## Architecture rules
 
 - `Core` never references `UnityEngine`; it returns plain data that Runtime turns into a scene.
 - Texts (lore, AI messages, briefing) are data in `Assets/_Project/Data`, never hard-coded strings.
-- Lighting is realtime (Forward+), no baked lightmaps; lights have no shadows except one or two chosen later (task 1.10).
+- Lighting is realtime (Forward+), no baked lightmaps; **no shadows anywhere** (no code, no shadow maps), **the room lights never flicker** (the rack door glow keeps its slow breathing); one fixed lighting setting, nothing in the settings screen.
 - Contract numbers live only in `RoomContract` / `HallContract`; tools and docs read them from there.
 - Generated assets (props, rooms, hall, meshes, generated textures, materials, Sandbox_B) are outputs of the code: commit
   them with their `.meta` (scenes and prefabs reference them by GUID), never edit them by hand.
@@ -82,7 +85,7 @@ messages, UI, audio. Systems talk through C# events (e.g. `OnClueFound`, `OnInfe
 
 - **Create Preview Scene** (`WorldTool`) – the one tool for the world. Checks the map, then rebuilds from code: every
   generated texture, the materials, every model, every room layout, the hall kit; deletes props, rooms, definitions and
-  meshes no code makes any more; bakes the hall of the map (`Room_Hall`); rewires `Main`; builds `Sandbox_B` (left open).
+  meshes no code makes any more; bakes the hall of the map (`Room_Hall`); sets the lighting pipeline (`WorldLighting`: no shadows, ambient occlusion, quality level) and the room look of the scenes (ambient, no fog); rewires `Main`; builds `Sandbox_B` (left open).
   Run it after any change to the map or to world code. Batch: `-executeMethod ColdShutdown.Editor.WorldBatch.Build`.
   The room shell and wall plug are only created when missing (rooms are prefab variants of the shell).
 - **Create Main Scene** – `Main.unity`: player, `LevelBuilder` (builds the map at Play), debug menu.

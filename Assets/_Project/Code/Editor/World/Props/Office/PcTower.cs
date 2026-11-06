@@ -26,6 +26,7 @@ namespace ColdShutdown.Editor
             var drive = new MeshBuilder();
             var dark = new MeshBuilder();
             var grey = new MeshBuilder();
+            var statusLed = new MeshBuilder();
             var blue = new MeshBuilder();
             var chrome = new MeshBuilder();
             var band = new MeshBuilder();
@@ -85,7 +86,7 @@ namespace ColdShutdown.Editor
             Port(0.895f, 0.292f, 0.0072f, 0.0125f, false, false);
             Port(0.858f, 0.353f, 0.0072f, 0.0125f, false, true);
             Port(0.895f, 0.353f, 0.0095f, 0.0042f, true, false);
-            Box(grey, 0.890f, 0.900f, 0.096f, 0.100f, 0.0042f, 0.0006f);
+            Box(statusLed, 0.888f, 0.902f, 0.094f, 0.102f, 0.0042f, 0.0006f);
 
             // The logo on the band: a dark ring with a short bar for the lettering.
             var logo = new Vector3(X(0.42f), Y((bandTop + bandBottom) / 2f), front + 0.0042f);
@@ -108,6 +109,7 @@ namespace ColdShutdown.Editor
             drive.Attach("OpticalDrive", root, SurfaceMaterial.BlackHousing);
             dark.Attach("Ports", root, SurfaceMaterial.Screen);
             grey.Attach("PortShells", root, SurfaceMaterial.KeyboardKey);
+            statusLed.Attach("StatusLed", root, SurfaceMaterial.SafetyGreen);
             blue.Attach("Usb3", root, SurfaceMaterial.DataCable);
             chrome.Attach("Trim", root, SurfaceMaterial.Chrome);
             AddBoxCollider(root, new Vector3(0f, h / 2f, 0f), new Vector3(w, h, d));

@@ -152,7 +152,7 @@ namespace ColdShutdown.Editor
 
             cabinet.Attach("Cabinet", root, SurfaceMaterial.SafetyRed);
             door.Attach("Door", root, SurfaceMaterial.SafetyRed);
-            glass.Attach("Pane", root, SurfaceMaterial.Glass);
+            glass.Attach("Pane", root, SurfaceMaterial.ClearGlass);
             gasket.Attach("Gasket", root, SurfaceMaterial.BlackHousing);
             coil.Attach("HoseCoil", root, SurfaceMaterial.HoseWhite);
             tail.Attach("HoseEnd", root, SurfaceMaterial.HoseWhite);

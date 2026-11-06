@@ -50,6 +50,11 @@ namespace ColdShutdown.Editor
         /// hangers are geometry.
         /// </summary>
         public static void CableTray(Transform parent, string name, Vector3 from, Vector3 to, float width, float bottom, SurfaceMaterial cables,
+            IEnumerable<float> rodsAt, float ceiling) =>
+            CableTray(parent, name, from, to, width, bottom, cables, cables, rodsAt, ceiling);
+
+        /// <summary>The same tray with two kinds of cable in it: the five lanes alternate between <paramref name="cables"/> and <paramref name="cablesAlt"/>.</summary>
+        public static void CableTray(Transform parent, string name, Vector3 from, Vector3 to, float width, float bottom, SurfaceMaterial cables, SurfaceMaterial cablesAlt,
             IEnumerable<float> rodsAt, float ceiling)
         {
             bool alongZ = Mathf.Abs(to.z - from.z) > Mathf.Abs(to.x - from.x);
@@ -66,6 +71,7 @@ namespace ColdShutdown.Editor
             var perforated = new MeshBuilder();
             var steel = new MeshBuilder();
             var cable = new MeshBuilder();
+            var cableAlt = cablesAlt != cables ? new MeshBuilder() : cable; // one kind of cable: all lanes in the one mesh, as before the second kind existed
             var hangers = new MeshBuilder();
 
             // The floor and the two sides: slotted sheet, drawn on both faces.
@@ -104,7 +110,7 @@ namespace ColdShutdown.Editor
             for (int i = 0; i < 5; i++)
             {
                 float c = -h + 0.04f + i * (width - 0.08f) / 4f;
-                cable.AddTube(new[] { V(a0 + 0.02f, c, bottom + 0.002f + cableRadius), V(a1 - 0.02f, c, bottom + 0.002f + cableRadius) }, cableRadius, 8, Vector3.zero, Quaternion.identity);
+                (i % 2 == 0 ? cable : cableAlt).AddTube(new[] { V(a0 + 0.02f, c, bottom + 0.002f + cableRadius), V(a1 - 0.02f, c, bottom + 0.002f + cableRadius) }, cableRadius, 8, Vector3.zero, Quaternion.identity);
             }
             for (int i = 0; i < 2; i++)
             {
@@ -121,7 +127,130 @@ namespace ColdShutdown.Editor
             perforated.Attach($"{name}_Perforated", group, SurfaceMaterial.TrayPerforated);
             steel.Attach($"{name}_Steel", group, SurfaceMaterial.GalvanisedSteel);
             cable.Attach($"{name}_Cables", group, cables);
+            if (cablesAlt != cables) cableAlt.Attach($"{name}_CablesAlt", group, cablesAlt);
             hangers.Attach($"{name}_Hangers", group, SurfaceMaterial.GalvanisedSteel);
+        }
+
+        /// <summary>
+        /// A 90 degree bend of the same tray (same slotted floor and sides, beaded edges and five-and-two cable lanes), <paramref name="radius"/> being the radius of its
+        /// centre line. <paramref name="corner"/> is where the centre lines of the arriving (<paramref name="dirIn"/>) and the leaving (<paramref name="dirOut"/>) straight
+        /// runs would cross; both are horizontal unit axes at right angles. The straight runs end <paramref name="radius"/> before and begin <paramref name="radius"/> after it.
+        /// </summary>
+        public static void CableTrayBend(Transform parent, string name, Vector3 corner, Vector3 dirIn, Vector3 dirOut, float width, float bottom, float radius,
+            SurfaceMaterial cables, SurfaceMaterial cablesAlt)
+        {
+            const int steps = 14;
+            const float cableRadius = 0.011f;
+            float h = width / 2f;
+            float side = TraySideHeight;
+            var centre = corner + (dirOut - dirIn) * radius;
+            Vector3 Radial(float t) => -dirOut * Mathf.Cos(t * Mathf.PI / 2f) + dirIn * Mathf.Sin(t * Mathf.PI / 2f);
+            Vector3 P(float t, float rho, float y) => new Vector3(centre.x + Radial(t).x * rho, y, centre.z + Radial(t).z * rho);
+            float inner = radius - h;
+            float outer = radius + h;
+            float arc = radius * Mathf.PI / 2f / steps;
+
+            var perforated = new MeshBuilder();
+            var steel = new MeshBuilder();
+            var cable = new MeshBuilder();
+            var cableAlt = cablesAlt != cables ? new MeshBuilder() : cable; // one kind of cable: all lanes in the one mesh, as before the second kind existed
+            void Quad(MeshBuilder b, Vector3 a, Vector3 bb, Vector3 c, Vector3 d, Vector3 outward, Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
+            {
+                if (Vector3.Dot(Vector3.Cross(bb - a, c - a), outward) < 0f) b.AddPanel(a, d, c, bb, outward, ua, ud, uc, ub);
+                else b.AddPanel(a, bb, c, d, outward, ua, ub, uc, ud);
+            }
+            for (int k = 0; k < steps; k++)
+            {
+                float t0 = k / (float)steps;
+                float t1 = (k + 1) / (float)steps;
+                float u0 = k * arc / SlotTileAlong;
+                float u1 = (k + 1) * arc / SlotTileAlong;
+                Quad(perforated, P(t0, inner, bottom + 0.001f), P(t0, outer, bottom + 0.001f), P(t1, outer, bottom + 0.001f), P(t1, inner, bottom + 0.001f), Vector3.up,
+                    new Vector2(u0, 0f), new Vector2(u0, width / 0.07f), new Vector2(u1, width / 0.07f), new Vector2(u1, 0f));
+                var middle = Radial((t0 + t1) / 2f);
+                foreach (int s in new[] { -1, 1 })
+                {
+                    float rho = s < 0 ? inner : outer;
+                    Quad(perforated, P(t0, rho, bottom), P(t1, rho, bottom), P(t1, rho, bottom + side), P(t0, rho, bottom + side), middle * s,
+                        new Vector2(u0, 0f), new Vector2(u1, 0f), new Vector2(u1, side / SlotTileAcross), new Vector2(u0, side / SlotTileAcross));
+                }
+            }
+            List<Vector3> Arc(float rho, float y)
+            {
+                var points = new List<Vector3>();
+                for (int k = 0; k <= steps; k++) points.Add(P(k / (float)steps, rho, y));
+                return points;
+            }
+            foreach (int s in new[] { -1, 1 })
+            {
+                steel.AddTube(Arc(s < 0 ? inner + 0.002f : outer - 0.002f, bottom + side), 0.0045f, 8, Vector3.zero, Quaternion.identity);
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                float rho = radius - h + 0.04f + i * (width - 0.08f) / 4f;
+                (i % 2 == 0 ? cable : cableAlt).AddTube(Arc(rho, bottom + 0.002f + cableRadius), cableRadius, 8, Vector3.zero, Quaternion.identity);
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                float rho = radius - width * 0.18f + i * width * 0.36f;
+                cable.AddTube(Arc(rho, bottom + 0.002f + 2.7f * cableRadius), cableRadius, 8, Vector3.zero, Quaternion.identity);
+            }
+            var group = ModelUtility.CreateGroup(name, parent);
+            perforated.Attach($"{name}_Perforated", group, SurfaceMaterial.TrayPerforated);
+            steel.Attach($"{name}_Steel", group, SurfaceMaterial.GalvanisedSteel);
+            cable.Attach($"{name}_Cables", group, cables);
+            if (cablesAlt != cables) cableAlt.Attach($"{name}_CablesAlt", group, cablesAlt);
+        }
+
+        /// <summary>
+        /// A cable tray along the horizontal polyline <paramref name="corners"/> (X and Z used): straight trays joined by <see cref="CableTrayBend"/>s of
+        /// <paramref name="radius"/>, all the one tray model of the hall. No hangers (the caller hangs it where its racks leave room).
+        /// </summary>
+        public static void CableTrayRun(Transform parent, string name, IList<Vector3> corners, float width, float bottom, float radius, SurfaceMaterial cables, SurfaceMaterial cablesAlt,
+            float ceiling)
+        {
+            var group = ModelUtility.CreateGroup(name, parent);
+            int count = corners.Count;
+            for (int i = 0; i < count - 1; i++)
+            {
+                var direction = (corners[i + 1] - corners[i]).normalized;
+                var start = i == 0 ? corners[i] : corners[i] + direction * radius;
+                var end = i == count - 2 ? corners[i + 1] : corners[i + 1] - direction * radius;
+                CableTray(group, $"{name}_Straight{i}", start, end, width, bottom, cables, cablesAlt, new float[0], ceiling);
+                if (i < count - 2)
+                {
+                    var next = (corners[i + 2] - corners[i + 1]).normalized;
+                    CableTrayBend(group, $"{name}_Bend{i}", corners[i + 1], direction, next, width, bottom, radius, cables, cablesAlt);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The solid end cap that closes the open end of a cable tray: a galvanised plate as wide as the tray and a little higher than its sides, a folded lip over the top edge
+        /// and a bolt at each corner. <paramref name="at"/> is the end of the tray's centre line (X and Z used), <paramref name="outward"/> the horizontal axis (one of the four
+        /// world axes) pointing away from the tray, so the cap stands just beyond its end.
+        /// </summary>
+        public static void CableTrayEndCap(Transform parent, string name, Vector3 at, Vector3 outward, float width, float bottom)
+        {
+            var along = outward.normalized;
+            var across = Vector3.Cross(Vector3.up, along).normalized;
+            float h = width / 2f;
+            const float thick = 0.004f;
+            const float lip = 0.016f;
+            float top = bottom + TraySideHeight + 0.012f;
+            var origin = new Vector3(at.x, 0f, at.z);
+            var steel = new MeshBuilder();
+            Slab(steel, origin, along, across, 0f, thick, -h - 0.004f, h + 0.004f, bottom - 0.004f, top);
+            Slab(steel, origin, along, across, -lip, thick, -h - 0.004f, h + 0.004f, top - thick, top);
+            foreach (int s in new[] { -1, 1 })
+            {
+                foreach (float y in new[] { bottom + 0.016f, bottom + TraySideHeight - 0.012f })
+                {
+                    steel.AddLathe(new[] { P(0.0055f, 0f, true), P(0.0055f, 0.004f, true), P(0.0001f, 0.004f, true) }, 6, false, origin + along * thick + across * (s * (h - 0.02f)) + Vector3.up * y,
+                        Quaternion.FromToRotation(Vector3.up, along));
+                }
+            }
+            steel.Attach(name, parent, SurfaceMaterial.GalvanisedSteel);
         }
 
         /// <summary>
@@ -133,12 +262,14 @@ namespace ColdShutdown.Editor
         {
             float reach = halfSpan + 0.05f;
             float y = underside.y;
+            // Slab heights are absolute, so its origin stays on the floor plane (otherwise the strut would sit at twice the height, above the ceiling).
+            var origin = new Vector3(underside.x, 0f, underside.z);
             // The strut: a web under the load, two flanges and inward lips (a channel open at the bottom).
-            Slab(steel, underside, along, across, -0.0205f, 0.0205f, -reach, reach, y - 0.0025f, y);
+            Slab(steel, origin, along, across, -0.0205f, 0.0205f, -reach, reach, y - 0.0025f, y);
             foreach (int s in new[] { -1, 1 })
             {
-                Slab(steel, underside, along, across, s < 0 ? -0.0205f : 0.0180f, s < 0 ? -0.0180f : 0.0205f, -reach, reach, y - 0.041f, y - 0.0025f);
-                Slab(steel, underside, along, across, s < 0 ? -0.0205f : 0.0090f, s < 0 ? -0.0090f : 0.0205f, -reach, reach, y - 0.041f, y - 0.0385f);
+                Slab(steel, origin, along, across, s < 0 ? -0.0205f : 0.0180f, s < 0 ? -0.0180f : 0.0205f, -reach, reach, y - 0.041f, y - 0.0025f);
+                Slab(steel, origin, along, across, s < 0 ? -0.0205f : 0.0090f, s < 0 ? -0.0090f : 0.0205f, -reach, reach, y - 0.041f, y - 0.0385f);
             }
             foreach (int s in new[] { -1, 1 })
             {

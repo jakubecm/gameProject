@@ -45,7 +45,7 @@ namespace ColdShutdown.Editor
 
             white.Attach("Body", root, SurfaceMaterial.DetectorWhite);
             mesh.Attach("Mesh", root, SurfaceMaterial.DetectorMesh);
-            lens.Attach("Lens", root, SurfaceMaterial.BulbClear);
+            lens.Attach("Lens", root, SurfaceMaterial.ClearGlass);
         }
     }
 }

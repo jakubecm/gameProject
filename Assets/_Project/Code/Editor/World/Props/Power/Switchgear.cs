@@ -98,7 +98,7 @@ namespace ColdShutdown.Editor
 
             // Instrument door: one large control panel over the section tag, equally spaced and centered on the door.
             var panel = new ControlPanelMeshes();
-            panel.Add(new Vector3(0f, 1.9675f, front), 1.05f);
+            panel.Add(new Vector3(0f, 1.9675f, front), 1.05f, DeviceDisplay.Switchgear);
             AddLabel(labels, new Vector3(0f, 1.725f, front), Vector3.left, Vector3.up, 0.28f, 0.14f, PlantLabel.SwitchgearTag);
             AddDuct(duct, -0.15f, 0.15f, -0.2f, 0.05f, height, RoomContract.CeilingHeight);
 
@@ -112,7 +112,7 @@ namespace ColdShutdown.Editor
             lever.Attach("BreakerKnobs", root, SurfaceMaterial.BlackHousing);
             pointer.Attach("KnobPointers", root, SurfaceMaterial.SignFace);
             on.Attach("IndicatorOn", root, SurfaceMaterial.SafetyGreen);
-            off.Attach("IndicatorOff", root, SurfaceMaterial.SafetyRed);
+            off.Attach("IndicatorOff", root, SurfaceMaterial.LedRed);
             screws.Attach("Screws", root, SurfaceMaterial.Chrome);
             chrome.Attach("Hardware", root, SurfaceMaterial.Chrome);
             handle.Attach("Handles", root, SurfaceMaterial.BlackHousing);

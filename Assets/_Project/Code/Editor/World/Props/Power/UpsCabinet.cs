@@ -48,7 +48,7 @@ namespace ColdShutdown.Editor
             AddLeverLock(handleBase, handle, 0.2f, 1.02f, 0.85f, front);
 
             var panel = new ControlPanelMeshes();
-            panel.Add(new Vector3(0f, 1.30f, front), 0.75f);
+            panel.Add(new Vector3(0f, 1.30f, front), 0.75f, DeviceDisplay.Ups);
             var labels = new MeshBuilder();
             AddLabel(labels, new Vector3(0f, 1.02f, front), Vector3.left, Vector3.up, 0.30f, 0.15f, PlantLabel.UpsTag);
 

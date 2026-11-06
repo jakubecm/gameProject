@@ -56,7 +56,7 @@ namespace ColdShutdown.Editor
             var top = desk + Vector3.up * Props.DeskHeight;
             var turn = Quaternion.Euler(0f, 90f, 0f);
             Put(Prop.PhotoFrame, details, top + turn * new Vector3(0.66f, 0f, -0.2f), 78f, "PhotoFrame_W1");
-            Put(Prop.Mug, details, top + turn * new Vector3(-0.66f, 0f, 0.15f), 90f, "Mug_W1");
+            Put(Prop.Mug, details, top + turn * new Vector3(-0.66f, 0f, 0.15f), 90f + 196f, "Mug_W1"); // handle to the right of the desk user and a little towards the middle of the room
             DressTerminalOutlets(power, -Side, -4.97f, 90f);
 
             // East wall, from the same distance: two filing cabinets, a small gap, the printer and its socket.
@@ -74,15 +74,15 @@ namespace ColdShutdown.Editor
 
         /// <summary>
         /// The kitchenette of a coffee corner against a wall (<paramref name="yaw"/> turns its front away from the wall):
-        /// the closed counter with its sink and tap, the coffee machine and mugs on the worktop, and a socket above it.
+        /// the closed counter with its sink and tap, the coffee machine and mugs (handles to the right of someone at the counter) on the worktop, and a socket above it.
         /// </summary>
         private static void Kitchenette(Transform furniture, Transform details, Transform power, Vector3 position, float yaw)
         {
             var turn = Quaternion.Euler(0f, yaw, 0f);
             Put(Prop.CoffeeCounter, furniture, position, yaw);
             Put(Prop.CoffeeMachine, details, position + turn * Props.CounterMachinePosition, yaw);
-            Put(Prop.Mug, details, position + turn * new Vector3(-0.09f, Props.CounterHeight, -0.245f), yaw, "Mug_Counter1");
-            Put(Prop.Mug, details, position + turn * new Vector3(0.09f, Props.CounterHeight, -0.245f), yaw, "Mug_Counter2");
+            Put(Prop.Mug, details, position + turn * new Vector3(-0.09f, Props.CounterHeight, -0.245f), yaw + 180f, "Mug_Counter1");
+            Put(Prop.Mug, details, position + turn * new Vector3(0.09f, Props.CounterHeight, -0.245f), yaw + 180f, "Mug_Counter2");
             Put(Prop.PowerSocket, power, position + turn * new Vector3(-0.55f, 1.15f, -0.3f), yaw, "PowerSocket_Coffee");
         }
 

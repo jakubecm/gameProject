@@ -67,22 +67,24 @@ namespace ColdShutdown.Editor
             ModelUtility.CreateStandingBox("Frame_Head", root, new Vector3(0f, doorHeight, 0.015f), new Vector3(2f * (doorHalf + jamb), jamb, 0.03f), SurfaceMaterial.StainlessSteel, false);
             ModelUtility.CreateStandingBox("Sill", root, new Vector3(0f, 0f, (carFront + 0.08f) / 2f + 0.02f), new Vector3(2f * doorHalf + 0.1f, 0.006f, -carFront + 0.04f), SurfaceMaterial.FloorVent, false);
 
-            // Call buttons on a small light plate, to the right of the door as seen from the corridor: two round buttons, backlit,
-            // each with a dark arrow (up, down).
+            // Call buttons on a small dark plate, to the right of the door as seen from the corridor: two round metal buttons, each with a
+            // glowing arrow (up, down); only the arrows are lit.
             float buttonsX = -(doorHalf + jamb + 0.2f);
-            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.DetectorWhite, false);
+            ModelUtility.CreateBox("CallButtons", root, new Vector3(buttonsX, LiftCallPanelHeight, 0.008f), new Vector3(0.09f, 0.18f, 0.016f), SurfaceMaterial.LiftPanelSteel, false);
+            var bezels = new MeshBuilder();
+            var caps = new MeshBuilder();
             var arrows = new MeshBuilder();
-            foreach (var (y, name, up) in new[] { (LiftCallPanelHeight + 0.04f, "Up", true), (LiftCallPanelHeight - 0.04f, "Down", false) })
+            const float plateFace = 0.016f;
+            const float zArrow = plateFace + LiftButtonHeight + 0.0001f;
+            foreach (var (y, up) in new[] { (LiftCallPanelHeight + 0.04f, true), (LiftCallPanelHeight - 0.04f, false) })
             {
-                var button = ModelUtility.CreateCylinder($"Button_{name}", root, new Vector3(buttonsX, y, 0.0185f), 0.02f, 0.006f, SurfaceMaterial.LightPanel);
-                button.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                var ring = ModelUtility.CreateCylinder($"ButtonRing_{name}", root, new Vector3(buttonsX, y, 0.0165f), 0.025f, 0.002f, SurfaceMaterial.StainlessSteel);
-                ring.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                const float zArrow = 0.0221f;
+                AddLiftButton(bezels, caps, null, new Vector3(buttonsX, y, plateFace), Quaternion.FromToRotation(Vector3.up, Vector3.forward), 0.0165f);
                 if (up) arrows.AddFlatTriangle(new Vector3(buttonsX, y + 0.007f, zArrow), new Vector3(buttonsX - 0.007f, y - 0.005f, zArrow), new Vector3(buttonsX + 0.007f, y - 0.005f, zArrow), Vector3.forward);
                 else arrows.AddFlatTriangle(new Vector3(buttonsX, y - 0.007f, zArrow), new Vector3(buttonsX + 0.007f, y + 0.005f, zArrow), new Vector3(buttonsX - 0.007f, y + 0.005f, zArrow), Vector3.forward);
             }
-            arrows.Attach("Button_Arrows", root, SurfaceMaterial.BlackHousing);
+            bezels.Attach("Button_Bezels", root, SurfaceMaterial.Chrome);
+            caps.Attach("Button_Caps", root, SurfaceMaterial.LiftButtonMetal);
+            arrows.Attach("Button_Arrows", root, SurfaceMaterial.LedWhite);
 
             float indicatorY = doorHeight + jamb + 0.1f;
             ModelUtility.CreateBox("Indicator", root, new Vector3(0f, indicatorY, 0.015f), new Vector3(0.3f, 0.1f, 0.03f), SurfaceMaterial.StainlessSteel, false);
@@ -93,13 +95,15 @@ namespace ColdShutdown.Editor
             var exit = Place(Prop.ExitSign, root, new Vector3(0f, indicatorY + 0.2f, 0f), 0f);
             exit.name = "ExitSign";
 
-            // Car, after a product photo: dark grey matt steel panels with vertical joints, a light floor, a frame round the door, a
+            // Car, after a product photo: dark grey matt steel panels with vertical joints, a dark studded rubber floor, a frame round the door, a
             // brushed steel ceiling with one recessed light, and the operating panel on the
             // right-hand wall (no handrail, no mirror). The walls stop the player, so they have colliders; the fittings on them do not.
             var car = ModelUtility.CreateGroup("Car", root);
             float outer = carHalf + panel;
             float frontFace = carFront + panel;
-            ModelUtility.CreateBoxBetween("Floor", car, new Vector3(-carHalf, 0f, carBack), new Vector3(carHalf, 0.008f, carFront), SurfaceMaterial.Furniture);
+            ModelUtility.CreateBoxBetween("Floor", car, new Vector3(-carHalf, 0f, carBack), new Vector3(carHalf, 0.008f, carFront), SurfaceMaterial.StainlessSteel);
+            // The tiles are only a texture on a flat quad lying on the floor slab, made like the ceiling (the slab under it is the collider).
+            Place(Prop.LiftFloor, car, new Vector3(0f, 0.0081f, (carFront + carBack) / 2f), 0f, "FloorTiles");
             ModelUtility.CreateBoxBetween("Wall_Back", car, new Vector3(-outer, 0f, carBack - panel), new Vector3(outer, carHeight + roof, carBack), SurfaceMaterial.StainlessSteel, true);
             float middle = (carFront + carBack) / 2f;
             foreach (int side in new[] { -1, 1 })
@@ -108,7 +112,7 @@ namespace ColdShutdown.Editor
                 ModelUtility.CreateBoxBetween($"Wall_{name}", car, new Vector3(side * carHalf, 0f, carBack - panel), new Vector3(side * outer, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
                 // The car's front returns beside the door.
                 ModelUtility.CreateBoxBetween($"Return_{name}", car, new Vector3(side * doorHalf, 0f, carFront), new Vector3(side * carHalf, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
-                ModelUtility.CreateBoxBetween($"Kickplate_{name}", car, new Vector3(side * (carHalf - 0.003f), 0f, carBack), new Vector3(side * carHalf, 0.15f, carFront), SurfaceMaterial.Trim);
+                ModelUtility.CreateBoxBetween($"Kickplate_{name}", car, new Vector3(side * (carHalf - 0.003f), 0f, carBack), new Vector3(side * carHalf, 0.15f, carFront), SurfaceMaterial.StainlessSteel);
                 // The frame round the door, standing 15 mm proud of the front wall.
                 ModelUtility.CreateBox($"DoorFrame_{name}", car, new Vector3(side * (doorHalf + 0.03f), doorHeight / 2f + 0.03f, carFront - 0.0075f), new Vector3(0.06f, doorHeight + 0.06f, 0.015f), SurfaceMaterial.StainlessSteel, false);
                 // A vertical joint between two wall panels, halfway along the side wall.
@@ -116,10 +120,10 @@ namespace ColdShutdown.Editor
             }
             // A skirting board (150 mm) all round the inside of the car except the door opening: along both side walls (above), the back wall and
             // the returns beside the door.
-            ModelUtility.CreateBoxBetween("Kickplate_Back", car, new Vector3(-carHalf + 0.003f, 0f, carBack), new Vector3(carHalf - 0.003f, 0.15f, carBack + 0.003f), SurfaceMaterial.Trim);
+            ModelUtility.CreateBoxBetween("Kickplate_Back", car, new Vector3(-carHalf + 0.003f, 0f, carBack), new Vector3(carHalf - 0.003f, 0.15f, carBack + 0.003f), SurfaceMaterial.StainlessSteel);
             foreach (int side in new[] { -1, 1 })
             {
-                ModelUtility.CreateBoxBetween($"Kickplate_Return_{(side < 0 ? "Left" : "Right")}", car, new Vector3(side * doorHalf, 0f, carFront - 0.003f), new Vector3(side * (carHalf - 0.003f), 0.15f, carFront), SurfaceMaterial.Trim);
+                ModelUtility.CreateBoxBetween($"Kickplate_Return_{(side < 0 ? "Left" : "Right")}", car, new Vector3(side * doorHalf, 0f, carFront - 0.003f), new Vector3(side * (carHalf - 0.003f), 0.15f, carFront), SurfaceMaterial.StainlessSteel);
             }
             ModelUtility.CreateBoxBetween("Transom", car, new Vector3(-doorHalf, doorHeight, carFront), new Vector3(doorHalf, carHeight + roof, frontFace), SurfaceMaterial.StainlessSteel, true);
             ModelUtility.CreateBox("DoorFrame_Head", car, new Vector3(0f, doorHeight + 0.03f, carFront - 0.0075f), new Vector3(2f * doorHalf + 0.12f, 0.06f, 0.015f), SurfaceMaterial.StainlessSteel, false);
@@ -131,27 +135,52 @@ namespace ColdShutdown.Editor
             Place(Prop.LiftCeilingLight, car, new Vector3(0f, carHeight - 0.002f, middle), 0f, "CeilingLight");
 
             // Car operating panel on the right-hand wall (+X, as you face the door), in the middle of the wall panel next to the door (the
-            // joint halfway along the wall splits the wall in two): the same light plate and backlit round buttons as the call buttons
-            // outside, a display with the green floor number on top, two columns of five buttons.
+            // joint halfway along the wall splits the wall in two): a brushed steel plate clearly lighter than the walls, a display with the
+            // green floor number on top and the six floors in a grid of 2 columns x 3 rows, read left to right and top to bottom:
+            // 1 0 / -1 -2 / -3 -4. Round gunmetal buttons in chrome bezels; only the numbers glow, and the selected floor (-4) glows green
+            // with a green ring round its button. The spacing has the proportions of the landing call panels (0.09 x 0.18 m, buttons 43 mm over the
+            // bezels, 37 mm between them, 24-28 mm to the edges): between buttons and display 0.86 x a button, from the edges 0.6 x a button.
+            const float buttonRadius = 0.0155f;
+            const float buttonSize = 2f * 1.3f * buttonRadius; // the chrome bezel's outer diameter
+            const float gap = 0.86f * buttonSize;
+            const float edge = 0.6f * buttonSize;
+            const float displayHeight = 0.04f;
+            const float panelWidth = 2f * buttonSize + gap + 2f * edge;
+            const float panelHeight = displayHeight + 3f * buttonSize + 3f * gap + 2f * edge;
+            const float panelTop = 1.40f;
             float copX = carHalf - 0.012f;
             float copZ = (middle + carFront) / 2f;
-            ModelUtility.CreateBox("OperatingPanel", car, new Vector3(carHalf - 0.006f, 1.2f, copZ), new Vector3(0.012f, 0.42f, 0.13f), SurfaceMaterial.DetectorWhite, false);
-            ModelUtility.CreateBox("OperatingPanel_Display", car, new Vector3(copX - 0.0005f, 1.375f, copZ), new Vector3(0.001f, 0.04f, 0.09f), SurfaceMaterial.Screen, false);
+            float displayY = panelTop - edge - displayHeight / 2f;
+            ModelUtility.CreateBox("OperatingPanel", car, new Vector3(carHalf - 0.006f, panelTop - panelHeight / 2f, copZ), new Vector3(0.012f, panelHeight, panelWidth), SurfaceMaterial.LiftPanelSteel, false);
+            ModelUtility.CreateBox("OperatingPanel_Display", car, new Vector3(copX - 0.0005f, displayY, copZ), new Vector3(0.001f, displayHeight, 2f * buttonSize + gap), SurfaceMaterial.Screen, false);
             var digitsGroup = ModelUtility.CreateGroup("OperatingPanel_Digits", car);
-            digitsGroup.localPosition = new Vector3(copX - 0.0012f, 1.375f, copZ);
+            digitsGroup.localPosition = new Vector3(copX - 0.0012f, displayY, copZ);
             digitsGroup.localRotation = Quaternion.Euler(0f, -90f, 0f);
             var carDigits = new MeshBuilder();
             AddSegmentText(carDigits, LiftFloorText, Vector3.zero, 0.026f);
             carDigits.Attach("Digits", digitsGroup, SurfaceMaterial.SafetyGreen);
-            for (int i = 0; i < 10; i++)
+            var panelBezels = new MeshBuilder();
+            var panelCaps = new MeshBuilder();
+            var halo = new MeshBuilder();
+            var towardsCar = Quaternion.FromToRotation(Vector3.up, Vector3.left);
+            for (int i = 0; i < LiftFloors.Length; i++)
             {
-                float y = 1.285f - (i / 2) * 0.055f;
-                float z = copZ + (i % 2 == 0 ? 0.03f : -0.03f);
-                var ring = ModelUtility.CreateCylinder($"OperatingPanel_Ring_{i}", car, new Vector3(copX - 0.0005f, y, z), 0.022f, 0.002f, SurfaceMaterial.StainlessSteel);
-                ring.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-                var button = ModelUtility.CreateCylinder($"OperatingPanel_Button_{i}", car, new Vector3(copX - 0.0035f, y, z), 0.016f, 0.006f, SurfaceMaterial.LightPanel);
-                button.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                string floor = LiftFloors[i];
+                bool selected = floor == LiftFloorText;
+                // The left column (as seen from the car, facing the panel) is +Z.
+                float y = panelTop - edge - displayHeight - gap - buttonSize / 2f - (i / 2) * (buttonSize + gap);
+                float z = copZ + (i % 2 == 0 ? 1f : -1f) * (buttonSize + gap) / 2f;
+                AddLiftButton(panelBezels, panelCaps, selected ? halo : null, new Vector3(copX, y, z), towardsCar, buttonRadius);
+                var label = ModelUtility.CreateGroup($"OperatingPanel_Label_{floor}", car);
+                label.localPosition = new Vector3(copX - LiftButtonHeight, y, z);
+                label.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                var text = new MeshBuilder();
+                AddSegmentText(text, floor, Vector3.zero, 0.016f, 0.0006f, 0.11f);
+                text.Attach($"Digits_{floor}", label, selected ? SurfaceMaterial.LiftDigitActive : SurfaceMaterial.LedWhite);
             }
+            panelBezels.Attach("OperatingPanel_Bezels", car, SurfaceMaterial.Chrome);
+            panelCaps.Attach("OperatingPanel_Caps", car, SurfaceMaterial.LiftButtonMetal);
+            halo.Attach("OperatingPanel_Halo", car, SurfaceMaterial.LiftDigitActive);
 
             ConfigureDoor(root, leaves, RoomContract.LiftDoorWidth / 2f, new Renderer[0],
                 // Photo cells watch the landing in front of the door and the front of the car, not where the player starts.

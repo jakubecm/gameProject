@@ -53,7 +53,7 @@ namespace ColdShutdown.Tests.EditMode
         [Test]
         public void SmallRooms_HaveOneDoorAndTurnToIt()
         {
-            foreach (var type in new[] { RoomType.Office, RoomType.SecurityOffice, RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom })
+            foreach (var type in new[] { RoomType.Office, RoomType.SecurityOffice, RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom, RoomType.MeetMeRoom })
             {
                 Assert.IsTrue(RoomRules.IsSmallRoom(type));
                 Assert.AreEqual(RoomRules.South, RoomRules.DoorSides(type), type.ToString());

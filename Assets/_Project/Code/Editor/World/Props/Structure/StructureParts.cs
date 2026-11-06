@@ -107,11 +107,11 @@ namespace ColdShutdown.Editor
         /// <paramref name="centre"/>, standing <paramref name="depth"/> proud along +Z. Seen from +Z the text reads towards -X (the
         /// viewer's right), like every sign face in these props.
         /// </summary>
-        private static void AddSegmentText(MeshBuilder builder, string text, Vector3 centre, float height, float depth = 0.001f)
+        private static void AddSegmentText(MeshBuilder builder, string text, Vector3 centre, float height, float depth = 0.001f, float stroke = 0.14f)
         {
             float w = 0.55f * height;
             float gap = 0.25f * height;
-            float t = 0.14f * height;
+            float t = stroke * height;
             float total = text.Length * w + (text.Length - 1) * gap;
             for (int i = 0; i < text.Length; i++)
             {
@@ -141,6 +141,31 @@ namespace ColdShutdown.Editor
 
         /// <summary>The floor number the lift shows, in the car and on the landing indicator.</summary>
         public const string LiftFloorText = "-4";
+
+        /// <summary>
+        /// One round lift button, its axis along +Y turned by <paramref name="rotation"/>, its back on the plate at <paramref name="position"/>: a
+        /// polished chrome bezel ring and a domed gunmetal cap (3.4 mm high). The glowing label goes on top of the cap, <see cref="LiftButtonHeight"/>
+        /// above the plate. With <paramref name="halo"/> a thin glowing ring sits between the cap and the bezel (the selected floor).
+        /// </summary>
+        private static void AddLiftButton(MeshBuilder bezel, MeshBuilder cap, MeshBuilder halo, Vector3 position, Quaternion rotation, float radius)
+        {
+            bezel.AddLathe(new[] { P(1.3f * radius, 0f, true), P(1.3f * radius, 0.0026f, true), P(1.12f * radius, 0.0026f, true), P(1.12f * radius, 0f, true) }, 28, true, position, rotation);
+            cap.AddLathe(new[] { P(radius, 0.0004f, true), P(radius, 0.0020f), P(0.9f * radius, 0.0030f), P(0f, 0.0034f, true) }, 28, true, position, rotation);
+            if (halo == null) return;
+            var ring = new List<Vector3>();
+            for (int k = 0; k < 32; k++)
+            {
+                float angle = 2f * Mathf.PI * k / 32f;
+                ring.Add(new Vector3(Mathf.Cos(angle) * 1.065f * radius, 0.0021f, Mathf.Sin(angle) * 1.065f * radius));
+            }
+            halo.AddTube(ring, 0.0007f, 6, position, rotation, true);
+        }
+
+        /// <summary>Height of the top of a lift button cap above its plate; a label lies this high.</summary>
+        private const float LiftButtonHeight = 0.0036f;
+
+        /// <summary>The six floors of the passenger lift, top to bottom, as on its operating panel.</summary>
+        public static readonly string[] LiftFloors = { "1", "0", "-1", "-2", "-3", "-4" };
 
         /// <summary>
         /// RFID access reader, 55 x 125 x 20 mm: a black rounded housing with a bevelled edge and a vertical slot near the top

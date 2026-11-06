@@ -7,6 +7,10 @@ namespace ColdShutdown.Editor
 {
     public static partial class Props
     {
+        /// <summary>Depth of a locker and the width of one of its doors (also how far an open door sticks out), from <see cref="BuildLocker"/>.</summary>
+        internal const float LockerDepth = 0.5f;
+        internal const float LockerDoorWidth = 0.6f / 2f - 0.025f - 0.025f / 2f;
+
         /// <summary>
         /// Two-door steel clothes locker 0.6 x 1.8 x 0.5 m (two 0.3 m compartments, product photo): a light grey carcass on a
         /// recessed plinth, two slate-blue doors set 4 mm back in the frame with soft edges, a name plate slot and five slanted

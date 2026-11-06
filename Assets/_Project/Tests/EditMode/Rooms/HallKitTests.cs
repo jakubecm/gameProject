@@ -23,7 +23,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         private const string KitPath = "Assets/_Project/Data/HallKit.asset";
 
         /// <summary>Walkways reach from just above the floor (painted lines are allowed) up to the opening height.</summary>
-        private const float WalkFloor = 0.01f;
+        private const float WalkFloor = 0.02f; // above the 12 mm perforated floor tiles
 
         /// <summary>The aisle doors (leaves, track, readers) stand on the pod's ends, so walkways are checked from 25 cm out.</summary>
         private const float DoorMargin = 0.25f;
@@ -128,9 +128,10 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             var map = new MapData(2, 1);
             var cell = Assemble(map, (c, r) => true, 0, 0, out var plan);
             Assert.AreEqual(HallSideKind.Open, plan.Side(Direction.East));
-            Assert.IsEmpty(cell.transform.Find("HallSide_East").GetComponentsInChildren<Renderer>(), "Something divides the hall");
+            // (Hanging cameras on the girder of the edge divide nothing.)
+            Assert.IsEmpty(cell.transform.Find("HallSide_East").GetComponentsInChildren<Renderer>().Where(r => !IsHangingCameraPart(r)), "Something divides the hall");
             var kit = AssetDatabase.LoadAssetAtPath<HallKit>(KitPath);
-            Assert.IsEmpty(kit.SidePrefab(HallSideKind.Closed).GetComponentsInChildren<Renderer>(), "The unused closed side is not open");
+            Assert.IsEmpty(kit.SidePrefab(HallSideKind.Closed).GetComponentsInChildren<Renderer>().Where(r => !IsHangingCameraPart(r)), "The unused closed side is not open");
             AssertRackSlotsFree(cell);
         }
 
@@ -361,7 +362,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 Assert.AreEqual(LightShadows.None, light.shadows, fitting.name);
                 Assert.AreEqual(LightmapBakeType.Realtime, light.lightmapBakeType, fitting.name);
                 // From the deck along a wall, from a girder between two tiles; the fitting's top is always at the same height.
-                bool girder = PrefabUtility.GetCorrespondingObjectFromSource(fitting.gameObject).name == "PendantLightGirder";
+                // (The fitting is a prefab instance inside the baked hall: its model is the original source, not the hall's own object.)
+                bool girder = PrefabUtility.GetCorrespondingObjectFromOriginalSource(fitting.gameObject).name == "PendantLightGirder";
                 Assert.AreEqual(girder ? HallContract.GirderBottom : HallContract.CeilingHeight, fitting.position.y, 0.001f, $"{fitting.name} is not mounted on the deck or a girder");
                 Assert.AreEqual(HallContract.LightTop, fitting.position.y - (girder ? GirderDrop : DeckDrop), 0.001f, $"{fitting.name} hangs at the wrong height");
 
@@ -535,10 +537,15 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             }
         }
 
+        /// <summary>Part of a camera on the girder of a cell edge (the group is called <see cref="HallKit.HangingCameraName"/>; in a kit piece it has no component yet).</summary>
+        private static bool IsHangingCameraPart(Component component) =>
+            component.GetComponentsInParent<Transform>().Any(t => t.name == HallKit.HangingCameraName) ||
+            PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(component.gameObject).EndsWith("/CameraPendant.prefab");
+
         private static IEnumerable<(string name, Bounds bounds)> ContentBounds(GameObject cell)
         {
             // A hanging camera hangs on the girder right on the cell edge (shared with the neighbour): its dome reaches over the edge by design.
-            bool IsHangingCamera(Component component) => component.GetComponentInParent<SecurityCamera>() is SecurityCamera camera && camera.name == HallKit.HangingCameraName;
+            bool IsHangingCamera(Component component) => IsHangingCameraPart(component);
             foreach (var renderer in cell.GetComponentsInChildren<Renderer>())
             {
                 if (IsHangingCamera(renderer)) continue;

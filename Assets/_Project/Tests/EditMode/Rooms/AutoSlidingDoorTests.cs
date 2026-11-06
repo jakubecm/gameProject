@@ -51,7 +51,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             bool red = false;
             foreach (var led in leds)
             {
-                if (led.name == "Led") red |= led.sharedMaterial.name == "M_LedRed";
+                // The reader LEDs are "Reader_In_Led" / "Reader_Out_Led" (the photo cells' status lights are not part of the lock display).
+                if (led.name.StartsWith("Reader_") && led.name.EndsWith("_Led")) red |= led.sharedMaterial.name == "M_LedRed";
             }
             Assert.IsTrue(red, "The reader LED is not red");
 

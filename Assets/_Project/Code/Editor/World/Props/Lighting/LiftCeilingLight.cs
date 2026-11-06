@@ -29,7 +29,7 @@ namespace ColdShutdown.Editor
 
             frame.Attach("Frame", root, SurfaceMaterial.StainlessSteel);
             diffuser.Attach("Diffuser", root, SurfaceMaterial.LightPanel);
-            AddSpotLight(root, new Vector3(0f, -0.05f, 0f), 160f, 120f, 3.5f, 2.2f, LedPanelColor);
+            AddSpotLight(root, new Vector3(0f, -0.05f, 0f), FlatSpotAngle, FlatSpotInnerAngle, 4.5f, LiftLightIntensity, FixtureColor);
         }
     }
 }

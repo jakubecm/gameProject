@@ -8,7 +8,7 @@ namespace ColdShutdown.Editor
         /// <summary>
         /// Surface-mounted LED batten 1.5 m long (along Z) for rooms without a suspended ceiling, after a tri-proof fitting: a white
         /// powder-coated tray with rounded lower edges, a curved opal diffuser along its whole length, two steel retaining clips and
-        /// rounded end caps. Pivot on the ceiling surface, hanging down. A wide downward spot without shadows.
+        /// rounded end caps. Pivot on the ceiling surface, hanging down. Three wide downward spots along its length.
         /// </summary>
         [Model(Prop.LedBatten)]
         private static void BuildLedBatten(Transform root)
@@ -68,7 +68,7 @@ namespace ColdShutdown.Editor
             }
             clips.Attach("Clips", root, SurfaceMaterial.ValveSteel);
 
-            AddSpotLight(root, new Vector3(0f, -trayDepth - lensDepth - 0.01f, 0f), 150f, 100f, 7f, 5.5f, LedPanelColor);
+            AddStripLight(root, new Vector3(0f, -trayDepth - lensDepth - 0.01f, 0f), length, 9f, RoomLightIntensity, FixtureColor);
         }
     }
 }

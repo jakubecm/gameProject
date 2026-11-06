@@ -23,8 +23,12 @@ namespace ColdShutdown.Runtime
         private float phase;
         private RackDoor door;
 
-        private void Awake()
+        private void Awake() => Prepare();
+
+        /// <summary>Reads the glow colour and picks the phase (once; also from <see cref="Refresh"/>, so it works where Awake did not run, e.g. EditMode tests).</summary>
+        private void Prepare()
         {
+            if (block != null) return;
             block = new MaterialPropertyBlock();
             if (target != null && target.sharedMaterial != null && target.sharedMaterial.HasProperty(BaseColor))
             {
@@ -43,6 +47,7 @@ namespace ColdShutdown.Runtime
         public void Refresh()
         {
             if (target == null) return;
+            Prepare();
             if (door == null) door = GetComponentInParent<RackDoor>();
             bool lit = IsLit;
             if (target.enabled != lit) target.enabled = lit;
