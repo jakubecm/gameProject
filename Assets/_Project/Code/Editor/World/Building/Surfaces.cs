@@ -96,6 +96,9 @@ namespace ColdShutdown.Editor
         SupportBlue,
         DialFace,
         PlantLabels,
+        MeetLabels,
+        RackDoor,
+        DeviceDisplays,
         CastIron,
         CabinetGrey,
         // Storage room (product photos): galvanised sheet steel of the shelving and the goods lift, chipboard shelf boards, kraft cardboard
@@ -163,6 +166,9 @@ namespace ColdShutdown.Editor
 
         // Passenger lift floor: 400 mm dark grey rubber tiles with joints (texture T_LiftFloor), darker than the corridor floor.
         LiftFloor,
+
+        // Meet-me room: the yellow single-mode patch cords.
+        FibreCord,
     }
 
     /// <summary>
@@ -289,6 +295,9 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.MotorGreen, new Look(new Color(0.1f, 0.45f, 0.36f), 0.3f, 0.5f) },
             { SurfaceMaterial.SupportBlue, new Look(new Color(0.1f, 0.3f, 0.7f), 0.2f, 0.45f) },
             { SurfaceMaterial.PlantLabels, new Look(Color.white, 0f, 0.35f) },
+            { SurfaceMaterial.MeetLabels, new Look(Color.white, 0f, 0.35f) },
+            { SurfaceMaterial.DeviceDisplays, new Look(Color.white, 0f, 0.35f, Glow(new Color(0.15f, 0.25f, 0.7f), EmissionLevels.Display)) },
+            { SurfaceMaterial.RackDoor, new Look(new Color(0.11f, 0.115f, 0.125f), 0.5f, 0.4f) },
             { SurfaceMaterial.CastIron, new Look(new Color(0.3f, 0.32f, 0.34f), 0.5f, 0.35f) },
             { SurfaceMaterial.CabinetGrey, new Look(new Color(0.52f, 0.54f, 0.56f), 0.2f, 0.35f) },
             { SurfaceMaterial.DialFace, new Look(Color.white, 0f, 0.4f) },
@@ -339,6 +348,7 @@ namespace ColdShutdown.Editor
             { SurfaceMaterial.ConduitGreen, new Look(new Color(0.2f, 0.62f, 0.3f), 0.1f, 0.5f) },
             { SurfaceMaterial.LiftCeiling, new Look(Color.white, 0.85f, 0.35f) },
             { SurfaceMaterial.Coffee, new Look(new Color(0.13f, 0.065f, 0.03f), 0f, 0.92f) },
+            { SurfaceMaterial.FibreCord, new Look(new Color(0.97f, 0.78f, 0.04f), 0f, 0.55f) },
         };
 
         public static string PathOf(SurfaceMaterial surface) => $"{Folder}/M_{surface}.mat";
@@ -360,10 +370,10 @@ namespace ColdShutdown.Editor
             AssetDatabase.CreateAsset(material, path);
             if (surface == SurfaceMaterial.SpeakerGrille || surface == SurfaceMaterial.ExtinguisherLabel || surface == SurfaceMaterial.PcVent
                 || surface == SurfaceMaterial.MonitorImage || surface == SurfaceMaterial.ChairQuilt || surface == SurfaceMaterial.PaperPage
-                || surface == SurfaceMaterial.ExitSignFace || surface == SurfaceMaterial.PhotoPicture || surface == SurfaceMaterial.DialFace || surface == SurfaceMaterial.PlantLabels || surface == SurfaceMaterial.PowerDialFace
+                || surface == SurfaceMaterial.ExitSignFace || surface == SurfaceMaterial.PhotoPicture || surface == SurfaceMaterial.DialFace || surface == SurfaceMaterial.PlantLabels || surface == SurfaceMaterial.MeetLabels || surface == SurfaceMaterial.PowerDialFace
                 || surface == SurfaceMaterial.CeilingTile600 || surface == SurfaceMaterial.RackGlow || surface == SurfaceMaterial.TrayPerforated || surface == SurfaceMaterial.FloorTilePerforated
                 || surface == SurfaceMaterial.LiftCeiling || surface == SurfaceMaterial.RackMesh || surface == SurfaceMaterial.ServerHoneycomb
-                || surface == SurfaceMaterial.ChassisVent || surface == SurfaceMaterial.UpsDisplay || surface == SurfaceMaterial.LiftFloor) ApplyTextures();
+                || surface == SurfaceMaterial.ChassisVent || surface == SurfaceMaterial.UpsDisplay || surface == SurfaceMaterial.DeviceDisplays || surface == SurfaceMaterial.LiftFloor) ApplyTextures();
             return material;
         }
 
@@ -425,6 +435,10 @@ namespace ColdShutdown.Editor
             labels.SetTexture("_BaseMap", LoadTexture($"{TextureFolder}/T_PlantLabels.png"));
             EditorUtility.SetDirty(labels);
 
+            var meetLabels = Get(SurfaceMaterial.MeetLabels);
+            meetLabels.SetTexture("_BaseMap", MeetLabelTexture());
+            EditorUtility.SetDirty(meetLabels);
+
             // The rack door: a coarse semi-transparent hex grille, drawn on both sides (the inside shows when the door is open).
             var rackMesh = Get(SurfaceMaterial.RackMesh);
             rackMesh.SetTexture("_BaseMap", HexPerforationTexture());
@@ -476,6 +490,10 @@ namespace ColdShutdown.Editor
             var chassisVent = Get(SurfaceMaterial.ChassisVent);
             chassisVent.SetTexture("_BaseMap", ChassisVentTexture());
             EditorUtility.SetDirty(chassisVent);
+
+            var deviceDisplays = Get(SurfaceMaterial.DeviceDisplays);
+            deviceDisplays.SetTexture("_BaseMap", DeviceDisplayTexture());
+            EditorUtility.SetDirty(deviceDisplays);
 
             var upsDisplay = Get(SurfaceMaterial.UpsDisplay);
             upsDisplay.SetTexture("_BaseMap", UpsDisplayTexture());
@@ -866,7 +884,7 @@ namespace ColdShutdown.Editor
         /// </summary>
         private static Texture2D UpsDisplayTexture() => GeneratedTexture("T_UpsDisplay", 96, 40, (x, y) =>
         {
-            var glyphs = LcdGlyphs;
+            var glyphs = LabelGlyphs;
             int row = 39 - y;
             float shade = 0.9f + 0.1f * (y / 39f);
             var background = new Color(0.10f * shade, 0.24f * shade, 0.92f * shade);
@@ -884,28 +902,137 @@ namespace ColdShutdown.Editor
             return background;
         });
 
-        private static readonly Dictionary<char, string[]> LcdGlyphs = new Dictionary<char, string[]>
+        /// <summary>
+        /// The stickers of the meet-me room's machines (T_MeetLabels, 2 x 8 cells of 128 x 32 px, one white sticker with a coloured band and two lines of text in a 5 x 7 pixel font each:
+        /// the name large, what it is small), so none of them borrows a label of another room.
+        /// </summary>
+        private static Texture2D MeetLabelTexture() => GeneratedTexture("T_MeetLabels", 256, 256, (x, y) =>
         {
-            { 'O', new[] { ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
-            { 'N', new[] { "#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#" } },
-            { 'L', new[] { "#....", "#....", "#....", "#....", "#....", "#....", "#####" } },
-            { 'I', new[] { ".###.", "..#..", "..#..", "..#..", "..#..", "..#..", ".###." } },
-            { 'E', new[] { "#####", "#....", "#....", "####.", "#....", "#....", "#####" } },
-            { 'M', new[] { "#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#" } },
+            var cells = MeetLabelCells;
+            int column = x / 128;
+            int row = 7 - y / 32;
+            int index = row * 2 + column;
+            int lx = x % 128;
+            int ty = 31 - y % 32;
+            var white = new Color(0.95f, 0.95f, 0.93f);
+            if (index >= cells.Length) return white;
+            var (title, subtitle, band) = cells[index];
+            if (lx < 1 || lx > 126 || ty < 1 || ty > 30) return new Color(0.2f, 0.2f, 0.22f);
+            if (lx < 9) return band;
+            var ink = new Color(0.06f, 0.06f, 0.08f);
+            bool Text(string text, int top, int scale, int left)
+            {
+                int tr = ty - top;
+                int c = lx - left;
+                if (tr < 0 || tr >= 7 * scale || c < 0) return false;
+                int advance = 6 * scale;
+                int i = c / advance;
+                if (i >= text.Length) return false;
+                int inside = c % advance;
+                if (inside >= 5 * scale) return false;
+                return LabelGlyphs[text[i]][tr / scale][inside / scale] == '#';
+            }
+            return Text(title, 5, 2, 15) || Text(subtitle, 22, 1, 15) ? ink : white;
+        });
+
+        private static readonly (string title, string subtitle, Color band)[] MeetLabelCells =
+        {
+            ("ENTRY-1", "FIBRE ENTRY 48V DC", new Color(0.95f, 0.65f, 0.1f)),
+            ("CONSOLE", "KVM CONSOLE RACK", new Color(0.15f, 0.4f, 0.85f)),
+            ("ODF-A", "LC OPTICAL FRAME", new Color(0.95f, 0.85f, 0.1f)),
+            ("ODF-B", "SFP+ OPTICAL FRAME", new Color(0.1f, 0.7f, 0.75f)),
+            ("CU-1", "CAT6A PATCH RACK", new Color(0.2f, 0.35f, 0.9f)),
+            ("FXC-1", "CROSS-CONNECT", new Color(0.15f, 0.6f, 0.25f)),
+            ("RECT 48V", "50A MODULE", new Color(0.55f, 0.57f, 0.6f)),
+            ("DC CTRL", "SYSTEM CONTROLLER", new Color(0.55f, 0.57f, 0.6f)),
+            ("12V 100AH", "VRLA BATTERY", new Color(0.15f, 0.55f, 0.25f)),
+            ("PE BAR", "EARTH BAR", new Color(0.2f, 0.65f, 0.25f)),
+            ("CAUTION", "48V DC LIVE PARTS", new Color(0.95f, 0.8f, 0.05f)),
+        };
+
+        /// <summary>The one 5 x 7 pixel font of every generated sticker and LCD.</summary>
+        private static readonly Dictionary<char, string[]> LabelGlyphs = new Dictionary<char, string[]>
+        {
+            { 'A', new[] { ".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#" } },
+            { 'B', new[] { "####.", "#...#", "#...#", "####.", "#...#", "#...#", "####." } },
+            { 'C', new[] { ".###.", "#...#", "#....", "#....", "#....", "#...#", ".###." } },
             { 'D', new[] { "####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####." } },
-            { 'U', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
-            { 'T', new[] { "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.." } },
-            { 'V', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.." } },
+            { 'E', new[] { "#####", "#....", "#....", "####.", "#....", "#....", "#####" } },
+            { 'F', new[] { "#####", "#....", "#....", "####.", "#....", "#....", "#...." } },
+            { 'G', new[] { ".###.", "#...#", "#....", "#.###", "#...#", "#...#", ".###." } },
             { 'H', new[] { "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#" } },
+            { 'I', new[] { ".###.", "..#..", "..#..", "..#..", "..#..", "..#..", ".###." } },
+            { 'J', new[] { "..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.." } },
+            { 'K', new[] { "#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#" } },
+            { 'L', new[] { "#....", "#....", "#....", "#....", "#....", "#....", "#####" } },
+            { 'M', new[] { "#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#" } },
+            { 'N', new[] { "#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#" } },
+            { 'O', new[] { ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
+            { 'P', new[] { "####.", "#...#", "#...#", "####.", "#....", "#....", "#...." } },
+            { 'Q', new[] { ".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#" } },
+            { 'R', new[] { "####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#" } },
+            { 'S', new[] { ".####", "#....", "#....", ".###.", "....#", "....#", "####." } },
+            { 'T', new[] { "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.." } },
+            { 'U', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." } },
+            { 'V', new[] { "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.." } },
+            { 'W', new[] { "#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#" } },
+            { 'X', new[] { "#...#", ".#.#.", "..#..", "..#..", "..#..", ".#.#.", "#...#" } },
+            { 'Y', new[] { "#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.." } },
             { 'Z', new[] { "#####", "....#", "...#.", "..#..", ".#...", "#....", "#####" } },
-            { ':', new[] { ".....", "..#..", "..#..", ".....", "..#..", "..#..", "....." } },
-            { '.', new[] { ".....", ".....", ".....", ".....", ".....", ".##..", ".##.." } },
             { '0', new[] { ".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###." } },
+            { '1', new[] { "..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###." } },
             { '2', new[] { ".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####" } },
             { '3', new[] { ".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###." } },
             { '4', new[] { "...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#." } },
+            { '5', new[] { "#####", "#....", "####.", "....#", "....#", "#...#", ".###." } },
+            { '6', new[] { ".###.", "#....", "#....", "####.", "#...#", "#...#", ".###." } },
+            { '7', new[] { "#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..." } },
+            { '8', new[] { ".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###." } },
             { '9', new[] { ".###.", "#...#", "#...#", ".####", "....#", "#...#", ".###." } },
+            { '-', new[] { ".....", ".....", ".....", "#####", ".....", ".....", "....." } },
+            { '/', new[] { "....#", "....#", "...#.", "..#..", ".#...", "#....", "#...." } },
+            { '+', new[] { ".....", "..#..", "..#..", "#####", "..#..", "..#..", "....." } },
+            { '.', new[] { ".....", ".....", ".....", ".....", ".....", ".##..", ".##.." } },
+            { ':', new[] { ".....", "..#..", "..#..", ".....", "..#..", "..#..", "....." } },
             { ' ', new[] { ".....", ".....", ".....", ".....", ".....", ".....", "....." } },
+        };
+
+        /// <summary>
+        /// The LCDs of the plant's machines (T_DeviceDisplays, 2 x 4 cells of 96 x 44 px, the UPS display's blue look): three lines of text in the label font each, what that machine shows
+        /// (see <see cref="Props"/> <c>DeviceDisplay</c>; same order).
+        /// </summary>
+        private static Texture2D DeviceDisplayTexture() => GeneratedTexture("T_DeviceDisplays", 192, 176, (x, y) =>
+        {
+            int column = x / 96;
+            int row = 3 - y / 44;
+            int index = row * 2 + column;
+            int lx = x % 96;
+            int ty = 43 - y % 44;
+            float shade = 0.9f + 0.1f * ((y % 44) / 43f);
+            var background = new Color(0.10f * shade, 0.24f * shade, 0.92f * shade);
+            if (index >= DeviceDisplayLines.Length) return background;
+            var lines = DeviceDisplayLines[index];
+            for (int line = 0; line < lines.Length; line++)
+            {
+                int textRow = ty - (4 + line * 13);
+                int c = lx - 3;
+                if (textRow < 0 || textRow >= 7 || c < 0) continue;
+                int i = c / 6;
+                if (i >= lines[line].Length) continue;
+                if (c % 6 < 5 && LabelGlyphs[lines[line][i]][textRow][c % 6] == '#') return new Color(0.86f, 0.92f, 1f);
+            }
+            return background;
+        });
+
+        private static readonly string[][] DeviceDisplayLines =
+        {
+            new[] { "DC SYSTEM OK", "BUS 48.2V", "LOAD 62A" },
+            new[] { "TRANSFORMER T1", "WINDING 68C", "LOAD 54 PCT" },
+            new[] { "LV SWITCHBOARD", "400V 50HZ", "118A NORMAL" },
+            new[] { "UPS ONLINE", "OUT 230V 49.9HZ", "LOAD 62 PCT" },
+            new[] { "PHE-1 RUNNING", "PRI 7.1C 12.4C", "SEC 12.6C 18.0C" },
+            new[] { "PUMP P1 RUN", "FREQ 48.2HZ", "CURRENT 5.1A" },
+            new[] { "CRAH-1 RUN", "SET 22.0C", "RET 24.8C" },
         };
 
         /// <summary>Glass panes, chrome and the black panel screens show no highlight of the room lights (they keep their smoothness).</summary>

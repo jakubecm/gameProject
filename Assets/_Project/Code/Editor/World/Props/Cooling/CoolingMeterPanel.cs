@@ -22,7 +22,8 @@ namespace ColdShutdown.Editor
             float z = r + gap;
             const float dialRadius = 0.15f;
             const float dialHeight = 1.30f;
-            const float exchangerEnd = -0.57f;
+            // The prop is turned 180 degrees on the back wall, so the exchangers' end faces (room z -0.55) are at +z here.
+            const float exchangerEnd = 0.57f;
             float[] x = { -0.95f, -0.57f, -0.19f, 0.19f, 0.57f, 0.95f };
             float[] lane = { 1.50f, 1.65f, 1.80f, 1.80f, 1.65f, 1.50f };
             float[] into = { -2.55f, -2.35f, -2.15f, 2.15f, 2.35f, 2.55f };

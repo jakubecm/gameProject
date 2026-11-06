@@ -107,6 +107,10 @@ namespace ColdShutdown.Editor
 
             var labels = new MeshBuilder();
             AddLabel(labels, new Vector3(0f, 1.50f, front), Vector3.left, Vector3.up, 0.30f, 0.15f, PlantLabel.UnitTag);
+            // The unit controller (display and buttons) on the service hatch.
+            var controller = new ControlPanelMeshes();
+            controller.Add(new Vector3(-0.08f, 0.72f, front), 0.45f, DeviceDisplay.Crah);
+            controller.Attach("Controller", root);
             AddLabel(labels, new Vector3(-0.0f, 0.40f, front), Vector3.left, Vector3.up, 0.24f, 0.12f, PlantLabel.Warning);
             labels.Attach("Labels", root, SurfaceMaterial.PlantLabels);
             AddBoxCollider(root, new Vector3(0f, (bodyTop + 0.02f) / 2f, 0f), new Vector3(2f * halfX, bodyTop + 0.02f, 2f * halfZ));

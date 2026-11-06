@@ -75,7 +75,7 @@ namespace ColdShutdown.Editor
 
         /// <summary>Technical rooms: no suspended ceiling, epoxy floor, services exposed.</summary>
         public static bool IsTechnicalRoom(RoomType type) =>
-            type == RoomType.PowerRoom || type == RoomType.CoolingPlant || type == RoomType.StorageRoom;
+            type == RoomType.PowerRoom || type == RoomType.CoolingPlant || type == RoomType.StorageRoom || type == RoomType.MeetMeRoom;
 
         private static float Wall => RoomContract.InteriorHalfSize;
 

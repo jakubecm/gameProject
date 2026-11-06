@@ -54,6 +54,7 @@ namespace ColdShutdown.Core
                 case RoomType.PowerRoom:
                 case RoomType.CoolingPlant:
                 case RoomType.StorageRoom:
+                case RoomType.MeetMeRoom:
                     return South;
                 default: return AllSides;
             }
@@ -71,7 +72,7 @@ namespace ColdShutdown.Core
         /// </summary>
         public static bool IsSmallRoom(RoomType type) =>
             type == RoomType.Office || type == RoomType.SecurityOffice || type == RoomType.PowerRoom ||
-            type == RoomType.CoolingPlant || type == RoomType.StorageRoom;
+            type == RoomType.CoolingPlant || type == RoomType.StorageRoom || type == RoomType.MeetMeRoom;
 
         /// <summary>
         /// How many fixed layouts (prefabs) a type has: one for every room; for corridors one per arm

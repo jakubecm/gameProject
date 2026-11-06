@@ -135,8 +135,9 @@ namespace ColdShutdown.Editor
         /// 24" desk monitor, after product photos: a slim matt black body 540 x 325 mm with thin bezels (a little deeper at the
         /// bottom with the small logo and power light) around a lit picture, a plain flat rear with only the logo; a tall rectangular black neck on a flat silver base. The screen faces +Z
         /// and the bottom of the picture is 0.105 m above the desk; <paramref name="position"/> is the middle of the base on the desk.
+        /// Without <paramref name="stand"/> only the panel is built (neck and base left out), for the rack-mounted console.
         /// </summary>
-        private static void BuildMonitor(Transform root, Vector3 position)
+        private static void BuildMonitor(Transform root, Vector3 position, bool stand = true)
         {
             const float width = 0.540f;
             const float height = 0.325f;
@@ -153,10 +154,13 @@ namespace ColdShutdown.Editor
 
             // Body: panel with a closed, completely plain back, and the neck that joins it.
             body.AddRoundedSlab(position + new Vector3(0f, centerY, back), width, height, 0.005f, depth, 0.0025f, 4, true);
-            body.AddBox(position + new Vector3(-0.036f, 0.010f, back - 0.032f), position + new Vector3(0.036f, bottom + 0.100f, back + 0.005f));
+            if (stand)
+            {
+                body.AddBox(position + new Vector3(-0.036f, 0.010f, back - 0.032f), position + new Vector3(0.036f, bottom + 0.100f, back + 0.005f));
 
-            // Silver base: a flat rounded plate.
-            silver.AddRoundedBlock(position + new Vector3(0f, 0f, -0.045f), 0.270f, 0.200f, 0.030f, 0.012f, 0.0025f, 5);
+                // Silver base: a flat rounded plate.
+                silver.AddRoundedBlock(position + new Vector3(0f, 0f, -0.045f), 0.270f, 0.200f, 0.030f, 0.012f, 0.0025f, 5);
+            }
 
             // The lit picture, inset by the bezels (thicker at the bottom).
             float z = face + 0.0003f;
@@ -179,7 +183,7 @@ namespace ColdShutdown.Editor
             }
 
             body.Attach("Monitor_Body", root, SurfaceMaterial.MouseBlack);
-            silver.Attach("Monitor_Base", root, SurfaceMaterial.Metal);
+            if (stand) silver.Attach("Monitor_Base", root, SurfaceMaterial.Metal);
             picture.Attach("Monitor_Picture", root, SurfaceMaterial.MonitorImage);
             marks.Attach("Monitor_Marks", root, SurfaceMaterial.KeyboardKey);
             led.Attach("Monitor_Led", root, SurfaceMaterial.SafetyGreen);

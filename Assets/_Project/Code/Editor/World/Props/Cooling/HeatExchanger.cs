@@ -100,40 +100,9 @@ namespace ColdShutdown.Editor
 
             // Control strip, everything centred on it vertically (y = 1.725): sticker, control panel in the middle, tag.
             const float stripCentre = (stripBottom + height - 0.05f) / 2f;
-            var plastic = new MeshBuilder();
-            var screen = new MeshBuilder();
-            var green = new MeshBuilder();
-            var red = new MeshBuilder();
-            var amber = new MeshBuilder();
-            var grey = new MeshBuilder();
-            plastic.AddExtrusion(RoundedRectLoop(-0.27f, 0.27f, stripCentre - 0.13f, stripCentre + 0.13f, 0.018f, 3),
-                new Vector3(0f, 0f, zf), new Vector3(0f, 0f, zf + 0.03f), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
-            screen.AddExtrusion(RoundedRectLoop(-0.245f, -0.045f, stripCentre + 0.01f, stripCentre + 0.105f, 0.006f, 2),
-                new Vector3(0f, 0f, zf + 0.03f), new Vector3(0f, 0f, zf + 0.034f), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
-            void Button(MeshBuilder b, float x, float y, float radius, float lift)
-            {
-                b.AddLathe(new[] { P(radius, 0f, true), P(radius, lift * 0.7f, true), P(radius * 0.8f, lift, true), P(0.0001f, lift, true) }, 24, true,
-                    new Vector3(x, y, zf + 0.03f), toZ);
-            }
-            for (int i = 0; i < 4; i++)
-            {
-                Button(grey, -0.225f + i * 0.055f, stripCentre - 0.07f, 0.017f, 0.008f);
-            }
-            Button(green, 0.045f, stripCentre + 0.07f, 0.028f, 0.012f);
-            Button(red, 0.125f, stripCentre + 0.07f, 0.028f, 0.012f);
-            Button(amber, 0.205f, stripCentre + 0.07f, 0.02f, 0.01f);
-            Button(amber, 0.0f - 0.0f + 0.045f, stripCentre - 0.055f, 0.012f, 0.008f);
-            Button(amber, 0.205f, stripCentre - 0.055f, 0.012f, 0.008f);
-            // Emergency stop: a yellow collar with a red mushroom head.
-            Button(amber, 0.125f, stripCentre - 0.04f, 0.045f, 0.008f);
-            red.AddLathe(new[] { P(0.0001f, 0.008f, true), P(0.032f, 0.008f, true), P(0.034f, 0.018f), P(0.026f, 0.03f), P(0.0001f, 0.032f, true) }, 24, true,
-                new Vector3(0.125f, stripCentre - 0.04f, zf + 0.03f), toZ);
-            plastic.Attach("ControlPanel", root, SurfaceMaterial.CabinetGrey);
-            screen.Attach("Display", root, SurfaceMaterial.Screen);
-            green.Attach("ButtonStart", root, SurfaceMaterial.SafetyGreen);
-            red.Attach("ButtonStop", root, SurfaceMaterial.SafetyRed);
-            amber.Attach("ButtonsAmber", root, SurfaceMaterial.SafetyYellow);
-            grey.Attach("ButtonsGrey", root, SurfaceMaterial.KeyboardKey);
+            var controlPanel = new ControlPanelMeshes();
+            controlPanel.Add(new Vector3(0f, stripCentre, zf), 1f, DeviceDisplay.Exchanger);
+            controlPanel.Attach("ControlPanel", root);
             var labels = new MeshBuilder();
             AddLabel(labels, new Vector3(-sign * 0.64f, stripCentre, zf), Vector3.left, Vector3.up, 0.32f, 0.16f, PlantLabel.Warning);
             AddLabel(labels, new Vector3(sign * 0.64f, stripCentre, zf), Vector3.left, Vector3.up, 0.40f, 0.20f, PlantLabel.ExchangerTag);

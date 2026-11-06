@@ -111,7 +111,8 @@ namespace ColdShutdown.Editor
             }
 
             // One box over the whole machine (body, tank, buttons, dispenser, tray and cup), 1 cm roomy, so looking at any part of it offers the use.
-            AddBoxCollider(root, new Vector3(0f, top / 2f, (bodyBack + trayFront) / 2f), new Vector3(2f * half + 0.02f, top + 0.01f, trayFront - bodyBack + 0.02f));
+            // From the worktop up (it stands on the counter, whose own collider must not be entered).
+            AddBoxCollider(root, new Vector3(0f, (top + 0.01f) / 2f, (bodyBack + trayFront) / 2f), new Vector3(2f * half + 0.02f, top + 0.01f, trayFront - bodyBack + 0.02f));
 
             var use = root.gameObject.AddComponent<CoffeeMachineUse>();
             var machine = root.gameObject.AddComponent<CoffeeMachine>();

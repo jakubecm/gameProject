@@ -89,6 +89,12 @@ namespace ColdShutdown.Editor
                 }
             }
 
+            /// <summary>Copies everything built here into <paramref name="target"/>, moved by <paramref name="offset"/> (a part built in another frame, e.g. a hall rack item in the meet-me racks).</summary>
+            public void AppendTo(RackParts target, Vector3 offset)
+            {
+                foreach (var pair in builders) target[pair.Key].Append(pair.Value, offset, Quaternion.identity);
+            }
+
             /// <summary>Puts every material's geometry on a child of <paramref name="parent"/>, one saved mesh each.</summary>
             public void Attach(string prefix, Transform parent)
             {

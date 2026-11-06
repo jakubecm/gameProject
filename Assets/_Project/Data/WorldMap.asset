@@ -16,7 +16,7 @@ MonoBehaviour:
 
     # C corridor, D corridor with a door into the hall, E lift end (start), O office, G security office,
 
-    # P power room, V cooling plant, S storage room, H hall, . empty.
+    # P power room, V cooling plant, S storage room, M meet-me room (at most one), H hall, . empty.
 
     . . G . . . .
 
@@ -24,7 +24,7 @@ MonoBehaviour:
 
     . . D H H D P
 
-    . . C H H C .
+    . . C H H C M
 
     C C C D C C O
 

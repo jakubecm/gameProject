@@ -96,6 +96,14 @@ namespace ColdShutdown.Editor
         ExpansionVessel,
         CoolingMeterPanel,
 
+        // Meet-me room
+        OdfRack,
+        OdfRackSfp,
+        CopperPatchRack,
+        CrossConnectCabinet,
+        FibreEntryPoint,
+        ConsoleRack,
+
         // Server hall
         Rack,
         HallSign,

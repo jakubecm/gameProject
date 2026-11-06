@@ -4,7 +4,7 @@ Every model of the project. One value of the `Prop` enum (`Code/Editor/World/Pro
 `Prefabs/Props/<Name>.prefab`, built by the method marked `[Model(Prop.Name)]` in its own file
 `Code/Editor/World/Props/<Category>/<Name>.cs` (category = the section below; a few related props share a file:
 `Storage/Boxes.cs`, `Cooling/HeatExchanger.cs`). Helpers used by several models of a category are in
-`<Category>/<Category>Parts.cs` (Structure, Safety, Services, Power, Cooling); helpers and dimensions used across categories or by the rooms in `Props/Shared/`
+`<Category>/<Category>Parts.cs` (Structure, Safety, Services, Power, Cooling, Fibre); helpers and dimensions used across categories or by the rooms in `Props/Shared/`
 (`Dimensions`, `Labels`, `Dials`, `Lights`, `Paths`, `TextureScales`). Mesh, material and texture helpers:
 `World/Building/` (`MeshBuilder`, `ModelUtility`, `Surfaces`, `RoomPipes`, `RoomInfrastructure`, `InfrastructureModels`).
 All are rebuilt in place (same GUIDs) by Tools/Cold Shutdown/Create Preview Scene; renamed or removed props are deleted.
@@ -120,24 +120,40 @@ painted floor lines and hatching; conduits (painted tube, chrome rosette).
 
 | Prop | Model | Used |
 |---|---|---|
-| `Transformer` [Power] | cast-resin transformer in enclosure 2.0 x 2.2 x 1.2: louvers, inspection window (core + 3 coils), control panel, rating plate, HV warning, cable duct to the ceiling | power room (2) |
-| `Switchgear` [Power] | LV switchgear 0.8 x 2.2 x 0.6: instrument door with control panel, 3 breaker doors (molded-case breaker, rotary knob), busbar duct up; green (on) and red (off) pilot lamps, both lit LEDs; no meters | power room (2) |
-| `UpsCabinet` [Power] | UPS 0.6 x 2.0 x 0.8 graphite: two vents, control panel, tag, green status strip, handle | power room (2) |
+| `Transformer` [Power] | cast-resin transformer in enclosure 2.0 x 2.2 x 1.2: louvers, inspection window (core + 3 coils), control panel (LCD: transformer, winding temperature, load), rating plate, HV warning, cable duct to the ceiling | power room (2) |
+| `Switchgear` [Power] | LV switchgear 0.8 x 2.2 x 0.6: instrument door with control panel (LCD: board voltage, frequency, current), 3 breaker doors (molded-case breaker, rotary knob), busbar duct up; green (on) and red (off) pilot lamps, both lit LEDs; no meters | power room (2) |
+| `UpsCabinet` [Power] | UPS 0.6 x 2.0 x 0.8 graphite: two vents, control panel (LCD: online, output voltage and frequency, load), tag, green status strip, handle | power room (2) |
 | `PowerMeterPanel` [Power] | 6 large kW dials (`T_PowerDial`) in 2 x 3 on a rounded board, trunking to the ceiling; clue display (`AnalogGauge` planned) | power room back wall |
+
+## Meet-me room
+
+All racks 0.8 x 0.6 x 2.2 m (`Props.MeetRack*`): open black 19 inch frame (`RackBlack`), finger managers, 1U panels with real plugs (duplex LC, RJ45). Cords climb in a bundle
+(`Props.FibreBundle*`) to the tray at `Props.FibreTrayBottom` (2.64 m) inside a green conduit. Shared parts (frame, managers, panels, plugs, bundles, hangers, duct): `Fibre/FibreParts.cs`.
+
+| Prop | Model | Used |
+|---|---|---|
+| `OdfRack` [Fibre] | optical distribution frame: 16 LC panels, 6 SFP+ panels (cages, transceivers), yellow and aqua cords | meet-me room |
+| `OdfRackSfp` [Fibre] | same frame, 16 SFP+ panels and 6 LC | meet-me room |
+| `CopperPatchRack` [Fibre] | 22 Cat6A panels of 24 RJ45 jacks, blue and white cords | meet-me room |
+| `CrossConnectCabinet` [Fibre] | frame closed in black panels behind a glass door (lever lock, no hinges): LC panels with status LEDs, duplex jumpers | meet-me room |
+| `FibreEntryPoint` [Fibre] | entrance cabinet 0.8 x 0.6 x 2.2, glazed door, ENTRY-1 sticker; inside a 48 V DC plant (earth bar, rectifier modules, controller with LCD `DeviceDisplay.Dc`, fuse panel, batteries) | meet-me room back wall, west |
+| `ConsoleRack` [Fibre] | rack closed at the sides and roof, no door: hall equipment around a 1U pull-out LCD console drawer (`RackConsole.cs`: slides, keyboard, folding display) | meet-me room back wall, east |
+
+Not props: the cable trays (`InfrastructureModels.CableTray`, `CableTrayBend`, `CableTrayRun`, `CableTrayEndCap`), the hangers (`FibreHangers`) and the vertical `FibreDuct` are built by `Rooms/MeetMeRoom.cs`.
 
 ## Cooling plant
 
 | Prop | Model | Used |
 |---|---|---|
-| `HeatExchanger` [Cooling] | 2.2 x 2.0 x 0.9 aluminium-clad, diamond-folded front, control panel, blue channel skid | cooling plant east |
+| `HeatExchanger` [Cooling] | 2.2 x 2.0 x 0.9 aluminium-clad, diamond-folded front, control panel (LCD: primary and secondary temperatures), blue channel skid | cooling plant east |
 | `HeatExchangerMirrored` [Cooling] | same, secondary pipes at the other end | cooling plant west |
-| `CirculationPump` [Cooling] | end-suction pump 1.0 x 0.7 x 0.5: cast-iron volute, blue ribbed motor, tapered feet, skid; pivot = discharge axis | cooling plant (2) |
+| `CirculationPump` [Cooling] | end-suction pump 1.0 x 0.7 x 0.5: cast-iron volute, blue ribbed motor, tapered feet, skid, pump controller with LCD (frequency, current) on the motor's +Z pad; pivot = discharge axis | cooling plant (2) |
 | `BufferTank` [Cooling] | Ø0.7 x 2.2 on three legs, aluminium clad, green bands, two top nozzles | cooling plant |
-| `AirHandler` [Cooling] | CRAH unit with duct to the ceiling and a damper | cooling plant |
+| `AirHandler` [Cooling] | CRAH unit with duct to the ceiling and a damper, controller with LCD (set and return temperature) on the service hatch | cooling plant |
 | `ExpansionVessel` [Cooling] | Ø0.44 x 1.1 white vessel on three legs, blue cap, yellow sticker, side nozzle | cooling plant |
 | `CoolingMeterPanel` [Cooling] | 6 narrow pipes from the floor with 3x life-size dial thermometers (`T_ThermometerDial`), into the exchangers' end faces; clue display | cooling plant back wall |
 
-Stickers and plates are quads 3 mm off the surface showing cells of `T_PlantLabels.png` (4 x 4 English atlas: plant
+LCD pictures are quads showing cells of `T_DeviceDisplays.png` (generated, 2 x 4 cells, `DeviceDisplay`), one per machine, set by `ControlPanelMeshes.Add` and sunk into the control plate. Stickers and plates are quads 3 mm off the surface showing cells of `T_PlantLabels.png` (4 x 4 English atlas: plant
 labels, transformer plate, switchgear tag, UPS tag; material `PlantLabels`).
 
 ## Server hall
@@ -171,6 +187,7 @@ most one switch (never at the top); the top unit is always a server (disk or clo
 | transformers, switchgear, UPS | power room |
 | heat exchangers, pumps, tanks, air handler, expansion vessel | cooling plant |
 | racks | hall pods, security office (2) |
+| optical frames, copper patch racks, cross-connect cabinets, entry point, fibre pipe | meet-me room |
 | coffee corner, fridge, TV, meeting table, printer, filing cabinets | office |
 | on desks | monitors, keyboard, mouse, papers, mugs, photo — never boxes, binders or laptops |
 | never anywhere | service carts, laptops, cable drums, binders, emergency lights, decorative/hinged doors, roller shutters |
@@ -191,7 +208,7 @@ DetectorMesh CeilingTile ReaderBlack ExtinguisherLabel HoseRed HoseWhite Keyboar
 MonitorImage ChairLeather ChairQuilt PaperPage ExitSignFace FloorBoxMetal StainlessSteel OfficeTopLight OfficeLegWhite
 DeskWhite StoneTop CopperTrim CoffeeGraphite CoffeePanel CabinetWhite SmokedTank CabinetPull LockerBody LockerDoor
 LockerPlate BenchWood BenchFrame PhotoPicture ValveNickel ValveSteel ValveGrip PipeClamp AluminiumClad MotorGreen
-SupportBlue DialFace PlantLabels CastIron CabinetGrey GalvanisedSteel ShelfBoard Cardboard CardboardDark CardboardEdge
+SupportBlue DialFace PlantLabels MeetLabels RackDoor DeviceDisplays CastIron CabinetGrey GalvanisedSteel ShelfBoard Cardboard CardboardDark CardboardEdge
 ElectricGrey UpsGraphite ResinCoil PowerDialFace RackBlack RackMesh ServerBlack ServerSilver DriveBay LatchRed
 LedAmber ServerHoneycomb ChassisVent ServerVoid UpsDisplay SwitchFace TrayPerforated FloorTilePerforated Concrete DuctStainless ConduitViolet
-ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen LiftCeiling Coffee LiftPanelSteel LiftButtonMetal LedWhite LiftDigitActive CoffeeButton FreightButtonMetal AisleFrame LedBlue LiftFloor
+ConduitMagenta RackHandleLight CeilingTile600 RackGlow ConduitBrown ConduitGreen LiftCeiling Coffee LiftPanelSteel LiftButtonMetal LedWhite LiftDigitActive CoffeeButton FreightButtonMetal AisleFrame LedBlue LiftFloor FibreCord

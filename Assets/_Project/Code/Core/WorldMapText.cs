@@ -8,7 +8,7 @@ namespace ColdShutdown.Core
     /// them are optional, lines starting with <c>#</c> are comments). <c>.</c> is an empty cell; the others are
     /// <see cref="RoomTypeExtensions.Symbol"/>: <c>C</c> corridor, <c>D</c> corridor with a door into the hall next to it, <c>E</c> lift
     /// end (the start), <c>O</c> office, <c>G</c> security office, <c>P</c> power room, <c>V</c> cooling plant, <c>S</c> storage room,
-    /// <c>H</c> hall.
+    /// <c>M</c> meet-me room (at most one), <c>H</c> hall.
     ///
     /// Everything else follows from the neighbours, so a map is only the arrangement of rooms:
     /// - neighbouring corridor cells connect; a corridor's shape (cross, T, straight, corner, dead end) and turn come from its
@@ -146,6 +146,12 @@ namespace ColdShutdown.Core
                 }
             }
             if (lifts != 1) result.Errors.Add($"The map needs exactly one lift end (E), it has {lifts}.");
+            int meetMeRooms = 0;
+            foreach (var placed in types)
+            {
+                if (placed == RoomType.MeetMeRoom) meetMeRooms++;
+            }
+            if (meetMeRooms > 1) result.Errors.Add($"The map may have only one meet-me room (M), it has {meetMeRooms}.");
 
             CheckHall(result, kinds, width, height);
 

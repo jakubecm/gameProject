@@ -56,7 +56,7 @@ namespace ColdShutdown.Editor
             var top = desk + Vector3.up * Props.DeskHeight;
             var turn = Quaternion.Euler(0f, 90f, 0f);
             Put(Prop.PhotoFrame, details, top + turn * new Vector3(0.66f, 0f, -0.2f), 78f, "PhotoFrame_W1");
-            Put(Prop.Mug, details, top + turn * new Vector3(-0.66f, 0f, 0.15f), 90f, "Mug_W1");
+            Put(Prop.Mug, details, top + turn * new Vector3(-0.66f, 0f, 0.15f), 90f + 196f, "Mug_W1"); // handle to the right of the desk user and a little towards the middle of the room
             DressTerminalOutlets(power, -Side, -4.97f, 90f);
 
             // East wall, from the same distance: two filing cabinets, a small gap, the printer and its socket.

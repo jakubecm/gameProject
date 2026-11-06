@@ -269,6 +269,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b0f1517debf4d4620b108c8cb356c0b3, type: 2}
   - {fileID: 11400000, guid: aacad149ccde14eac8d064a196a26330, type: 2}
   - {fileID: 11400000, guid: f457466bc67a940feb1258fdf03be17b, type: 2}
+  - {fileID: 11400000, guid: cec8aef6e6f084974a9684312c2356fb, type: 2}
   wallPlugPrefab: {fileID: 3498673069866737210, guid: b29197d90487248998c687c0637ef16c, type: 3}
   doorPrefab: {fileID: 8067425985237854123, guid: f6078d10b0db940af898b600c05399b7, type: 3}
   rackPrefab: {fileID: 7976019672909385509, guid: c3a7fffb8fd7c406b8839da978952481, type: 3}

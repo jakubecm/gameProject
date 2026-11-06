@@ -396,6 +396,8 @@ namespace ColdShutdown.Editor
             // Per pod: a power tray over the outer row and a data tray over the inner row, each with a single drop into the pod, and an inert-gas line
             // with two 360° nozzles over the aisle. All run through the tile edge to edge.
             var hangers = RoomInfrastructure.Every(-5.4f, 5.4f, 1.2f).ToList();
+            // The drops stand 0.3 m beside a hanger (hangers at x = +-3.0), never on its strut.
+            const float DropX = 2.7f;
             var power = ModelUtility.CreateGroup("Power", dressing);
             var data = ModelUtility.CreateGroup("Data", dressing);
             var gas = ModelUtility.CreateGroup("GasExtinguishing", dressing);
@@ -408,10 +410,10 @@ namespace ColdShutdown.Editor
                 float gasZ = HallContract.PodZ(pod);
                 RoomInfrastructure.Tray(power, $"PowerTray_{name}", new Vector3(-Half, 0f, powerZ), new Vector3(Half, 0f, powerZ),
                     TrayWidth, TrayBottom, SurfaceMaterial.Metal, SurfaceMaterial.HoseRed, hangers, Roof);
-                TrayDrop(power, $"PowerDrop_{name}", new Vector3(-3.0f, 0f, powerZ), SurfaceMaterial.ConduitBrown);
+                TrayDrop(power, $"PowerDrop_{name}", new Vector3(-DropX, 0f, powerZ), SurfaceMaterial.ConduitBrown);
                 RoomInfrastructure.Tray(data, $"DataTray_{name}", new Vector3(-Half, 0f, dataZ), new Vector3(Half, 0f, dataZ),
                     TrayWidth, TrayBottom, SurfaceMaterial.Metal, SurfaceMaterial.DataCable, hangers, Roof);
-                TrayDrop(data, $"DataDrop_{name}", new Vector3(3.0f, 0f, dataZ), SurfaceMaterial.ConduitGreen);
+                TrayDrop(data, $"DataDrop_{name}", new Vector3(DropX, 0f, dataZ), SurfaceMaterial.ConduitGreen);
 
                 RoomPipes.Pipe(gas, $"GasLine_{name}", new Vector3(-Half, GasY, gasZ), new Vector3(Half, GasY, gasZ), RoomPipes.NarrowRadius, SurfaceMaterial.PipeGas);
                 foreach (float x in new[] { -2.1f, 2.1f })

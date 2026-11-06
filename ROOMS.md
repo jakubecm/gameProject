@@ -17,7 +17,7 @@ of 12 x 12 m cells, **north at the top**, one character per cell, spaces optiona
 | `C` | corridor (shape and turn follow from its neighbours) |
 | `D` | corridor with a door into the hall next to it |
 | `E` | lift end, the start (exactly one) |
-| `O` `G` `P` `V` `S` | office, security office, power room, cooling plant, storage room |
+| `O` `G` `P` `V` `S` `M` | office, security office, power room, cooling plant, storage room, meet-me room |
 | `H` | hall (one filled rectangle) |
 
 Rules: neighbouring corridors connect; a room or the lift end gets one door into a neighbouring corridor (north first,
@@ -30,7 +30,7 @@ the map and rebuilds `Sandbox_B`). Current map (`Sandbox_B` shows exactly this):
 . . G . . . .
 . O C H H C V
 . . D H H D P
-. . C H H C .
+. . C H H C M
 C C C D C C O
 . S S E O . .
 ```
@@ -38,10 +38,10 @@ C C C D C C O
 The 2 x 3 hall (A1-B3) sits in a ring of corridors on its west, south and east side (the north is the outer wall) with
 three doors into it: the main one south (`D` at (3, 1)), straight ahead of the lift (`E` at (3, 0)), and one each on
 the west and east side. Off the ring: the security office at the north end of the west wing and an office
-off the same corridor cell, the technical wing on the east side next to the hall it serves (power room, cooling plant), the two storage rooms
-west of the lift (goods in), and offices east of the lift and at the east end of the south corridor. Corridor shapes: 3 crosses, 5 T,
-2 straight, 1 corner, 1 dead end (the west end of the south corridor), the lift end. Rooms: 3 offices, 2 storage
-rooms, 1 security office, power room and cooling plant.
+off the same corridor cell, the technical wing on the east side next to the hall it serves (cooling plant, power room, meet-me room), the two storage rooms
+west of the lift (goods in), and offices east of the lift and at the east end of the south corridor. Corridor shapes: 3 crosses, 6 T,
+1 straight, 1 corner, 1 dead end (the west end of the south corridor), the lift end. Rooms: 3 offices, 2 storage
+rooms, 1 security office, power room, cooling plant and meet-me room.
 
 ## Cell contract (all pieces)
 
@@ -85,6 +85,7 @@ rooms, 1 security office, power room and cooling plant.
 | 6 | `PowerRoom` | small room, technical | S | 1 | P |
 | 7 | `CoolingPlant` | small room, technical | S | 1 | V |
 | 12 | `StorageRoom` | small room, technical | S | 1 | S |
+| 14 | `MeetMeRoom` | small room, technical | S | 1 | M |
 | 3 | `Hall` | the hall (one room over its rectangle of cells) | any | 1 | H |
 
 Prefabs: layout 1 = `Room_<Type>.prefab`, others `Room_<Type>_Layout<n>.prefab` (only corner 2, T 2-4). Every room has
@@ -152,7 +153,7 @@ at z = 1.5 (`LiftWallFace`) with the 1.1 x 2.1 m door opening, `ShaftBack` block
 prop on the landing (car 1.6 x 1.5 x 2.3 m, working door; brushed-steel `LiftCeiling` with one recessed square `LiftCeilingLight` in the middle). Dressed like a dead end (fire kit in its arm); its grille and
 switch sit in the middle of the west wall of the crossing.
 
-## Small rooms (all five)
+## Small rooms (all six)
 
 - Strict 6 x 6 m square by the south door: interior x ±2.9 (`SmallRoomHalfWidth`), z -5.8 to 0 (`SmallRoomBackWall`);
   `Structure/BackWall`, `SideWall_W/E` full height; the rest of the cell is built up.
@@ -205,6 +206,17 @@ switch sit in the middle of the west wall of the crossing.
 - West: `BufferTank` (-2.28, -3.12), `AirHandler` (CRAH, duct to the ceiling, -2.48, -3.95), `ExpansionVessel`
   (-2.35, -4.57), each piped into the west exchanger's flow/return headers (valves on the flows).
 - Wide pipes are insulated aluminium with bands in the medium colour (green), blue supports. No switchgear here.
+
+### Meet-me room (`MeetMeRoom`)
+
+- Door pockets, 2.2 m walkway, technical ceiling and one `CameraDome` as in the other technical rooms; epoxy floor.
+- Back wall: `FibreEntryPoint` (west, x -0.41) and `ConsoleRack` (east, x +0.41), each with a vertical `FibreDuct` through the ceiling; a tray joins the two ducts.
+- Racks along both side walls, five per side, z -1.075 to -4.425, closed `CrossConnectCabinet` at both ends of each row. West: cabinet, `OdfRack`, `CopperPatchRack`, `OdfRackSfp`, cabinet.
+  East: cabinet, `CopperPatchRack`, `OdfRackSfp`, `OdfRack`, cabinet.
+- One cable tray per row (`InfrastructureModels.CableTray`, 0.30 m wide, floor at 2.64 m, x ±2.6) from the last rack north, round a `CableTrayBend` and across the back wall into the console rack's duct;
+  closed by `CableTrayEndCap`, hung on `FibreHangers`. Cord bundles of every rack climb in a green conduit to the middle of the tray.
+- Yellow floor lines at x ±0.91 from the door and keep-clear hatching in front of the two back units.
+- Stickers (`T_MeetLabels`: ENTRY-1, CONSOLE, ODF-A, ODF-B, CU-1, FXC-1) on every machine. No meters, desks or shelves.
 
 ### Storage room (`StorageRoom`)
 
@@ -283,7 +295,7 @@ One fixed setting (no quality levels, no adapting to the graphics card, nothing 
 
 ## Tests (run after every room change)
 
-`Tests/EditMode/Rooms`: `RoomPrefabTests` (prefab + definition per type, door frames, ceiling height, light count and
+`Tests/EditMode/Rooms`: `RoomPrefabTests` (prefab + definition per type, meet-me room contents, door frames, ceiling height, light count and
 settings, nothing in openings/walkways/pockets/slots/terminal space, inside the interior, safety counts, small rooms
 square, technical rooms without ceiling, chairs have room, props do not overlap), `HallKitTests` (walkways, aisle
 closed, door path, rack slots, services above signs, no water/outlets, cameras only hanging, one light per walkway segment
