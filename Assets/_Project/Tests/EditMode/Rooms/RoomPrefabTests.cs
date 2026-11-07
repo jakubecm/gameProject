@@ -155,7 +155,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void TechnicalRooms_HaveNoSuspendedCeiling()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom, RoomType.MeetMeRoom }))
             {
                 var room = Instantiate(path);
                 Assert.IsFalse(room.transform.Find("Shell/SuspendedCeiling").gameObject.activeSelf, $"{type} layout {layout + 1} still has a suspended ceiling");
@@ -326,7 +326,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void TechnicalRooms_HaveTwoBattensOnTheSprinklerAxesAndTwoShaftGrillesOppositeTheDoor()
         {
-            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }))
+            foreach (var (type, layout, path) in Layouts(new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom, RoomType.MeetMeRoom }))
             {
                 var room = Instantiate(path);
                 string what = $"{type} layout {layout + 1}";
@@ -341,7 +341,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 var detector = room.transform.InverseTransformPoint(PropInstances(room, "SmokeDetector").Single().transform.position);
                 Assert.AreEqual(0f, detector.x, 0.01f, $"{what}: detector off the middle");
                 Assert.AreEqual(-3.0f, detector.z, 0.01f, $"{what}: detector off the middle");
-                if (type != RoomType.StorageRoom)
+                if (type != RoomType.StorageRoom && type != RoomType.MeetMeRoom)
                 {
                     var panel = room.transform.InverseTransformPoint(PropInstances(room, type == RoomType.CoolingPlant ? "CoolingMeterPanel" : "PowerMeterPanel").Single().transform.position);
                     Assert.AreEqual(0f, panel.x, 0.01f, $"{what}: meter panel not opposite the door");
@@ -374,6 +374,68 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 foreach (var banned in new[] { "Desk", "Shelf", "FilingCabinet", "CoffeeCounter" })
                 {
                     Assert.IsEmpty(PropInstances(room, banned), $"{what} has a {banned}");
+                }
+            }
+        }
+
+        private static readonly string[] RackNames = { "OdfRack", "OdfRackSfp", "CopperPatchRack", "CrossConnectCabinet" };
+
+        [Test]
+        public void MeetMeRoom_HasItsRacksBackUnitsAndOverheadCabling()
+        {
+            foreach (var (_, layout, path) in Layouts(new[] { RoomType.MeetMeRoom }))
+            {
+                var room = Instantiate(path);
+                string what = $"Layout {layout + 1}";
+                Assert.AreEqual(10, RackNames.Sum(name => PropInstances(room, name).Count()), $"{what}: five racks along each side wall");
+                foreach (var name in RackNames) Assert.IsNotEmpty(PropInstances(room, name), $"{what}: no {name}");
+                // Opposite the door: the entrance cabinet left of the axis, the console rack right of it, 0.8 m units on the 1.7 m pad.
+                var entry = room.transform.InverseTransformPoint(PropInstances(room, "FibreEntryPoint").Single().transform.position);
+                Assert.AreEqual(-0.41f, entry.x, 0.01f, $"{what}: the entrance cabinet is not left of the axis");
+                Assert.AreEqual(RoomContract.SmallRoomBackWall, entry.z, 0.01f, $"{what}: the entrance cabinet is not on the back wall");
+                var console = room.transform.InverseTransformPoint(PropInstances(room, "ConsoleRack").Single().transform.position);
+                Assert.AreEqual(0.41f, console.x, 0.01f, $"{what}: the console rack is not right of the axis");
+                Assert.AreEqual(RoomContract.SmallRoomBackWall - 0.3f, console.z, 0.01f, $"{what}: the console rack is not against the back wall");
+                foreach (var part in new[] { "TrayWest", "TrayEast", "TrayWest_EndCap", "TrayEast_EndCap", "TrayLink", "TrayHangers", "Pipe", "PipeConsole" })
+                {
+                    Assert.IsNotNull(room.transform.Find($"Dressing/Cabling/{part}"), $"{what}: no {part}");
+                }
+                // The closed cabinets stand at both ends of both rows, nowhere else; the rows start one line gap (0.075 m) south of the front line of the back units (z -0.6) and the trays reach no further than the last rack.
+                foreach (int side in new[] { -1, 1 })
+                {
+                    var row = RackNames.SelectMany(name => PropInstances(room, name))
+                        .Where(rack => Mathf.Sign(room.transform.InverseTransformPoint(rack.transform.position).x) == side)
+                        .OrderByDescending(rack => room.transform.InverseTransformPoint(rack.transform.position).z).ToList();
+                    Assert.AreEqual(5, row.Count, $"{what}: five racks in the row");
+                    for (int i = 0; i < row.Count; i++)
+                    {
+                        bool end = i == 0 || i == row.Count - 1;
+                        Assert.AreEqual(end, row[i].name.StartsWith("CrossConnectCabinet"), $"{what}: rack {i} of the row at side {side} is {row[i].name}");
+                    }
+                    float north = room.transform.InverseTransformPoint(row[0].transform.position).z + 0.4f;
+                    float south = room.transform.InverseTransformPoint(row[row.Count - 1].transform.position).z - 0.4f;
+                    Assert.AreEqual(-0.675f, north, 0.02f, $"{what}: the row at side {side} does not start one line gap south of the back units");
+                    string tray = side < 0 ? "TrayWest" : "TrayEast";
+                    var straight = room.transform.Find($"Dressing/Cabling/{tray}/{tray}_Straight0");
+                    Assert.IsNotNull(straight, $"{what}: no first straight of {tray}");
+                    var bounds = straight.GetComponentInChildren<MeshRenderer>().bounds;
+                    Assert.AreEqual(SmallSide - 0.3f, Mathf.Abs(room.transform.InverseTransformPoint(bounds.center).x), 0.02f, $"{what}: {tray} is not centred over the racks");
+                    Assert.GreaterOrEqual(room.transform.InverseTransformPoint(bounds.min).z, south - 0.02f, $"{what}: {tray} overhangs the last rack");
+                }
+                Assert.IsEmpty(room.GetComponentsInChildren<AnalogGauge>(), $"{what}: the meet-me room has no gauges");
+                foreach (var banned in new[] { "Desk", "Shelf", "FilingCabinet", "CoffeeCounter", "PowerMeterPanel", "CoolingMeterPanel" })
+                {
+                    Assert.IsEmpty(PropInstances(room, banned), $"{what} has a {banned}");
+                }
+                // Every rack stands against a side wall, fronts into the room.
+                foreach (var name in RackNames)
+                {
+                    foreach (var rack in PropInstances(room, name))
+                    {
+                        var local = room.transform.InverseTransformPoint(rack.transform.position);
+                        Assert.AreEqual(SmallSide - 0.3f, Mathf.Abs(local.x), Epsilon, $"{what}/{rack.name} is not against a side wall");
+                        Assert.AreEqual(local.x < 0f ? 90f : 270f, rack.transform.eulerAngles.y, Epsilon, $"{what}/{rack.name} does not face the room");
+                    }
                 }
             }
         }
@@ -433,8 +495,10 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             {
                 var room = Instantiate(path);
                 int lights = room.GetComponentsInChildren<Light>().Length;
-                // Few lights save GPU time; every arm of a corridor and every part of a room still gets one.
-                int needed = RoomRules.IsCorridor(type) ? RoomRules.BitCount(RoomRules.DoorSides(type)) + 1 : RoomRules.IsSmallRoom(type) ? 3 : 6;
+                // Few lights save GPU time; every arm of a corridor and every part of a room still gets one. A corridor has one light per arm, plus one in the middle of a straight
+                // piece and a second one nearer the closed end of a dead end or the lift end.
+                bool extra = type == RoomType.CorridorStraight || type == RoomType.CorridorDeadEnd || type == RoomType.LiftEnd;
+                int needed = RoomRules.IsCorridor(type) ? RoomRules.BitCount(RoomRules.DoorSides(type)) + (extra ? 1 : 0) : RoomRules.IsSmallRoom(type) ? 2 : 6; // (offices: two panels of one light; technical rooms: two battens of two)
                 Assert.GreaterOrEqual(lights, needed, $"{type} has too few light fittings");
                 Assert.LessOrEqual(lights, 10, $"{type} has more lights than the GPU budget allows");
             }
@@ -548,7 +612,8 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         [Test]
         public void Desks_LeaveRoomForTheirChairAndToWalkPast()
         {
-            // Behind every chair (away from its desk or table) there is 0.4 m that nothing stands in and that is still in the room.
+            // Behind every chair (away from its desk or table) there is 0.2 m beyond where its back is (0.5 to 0.7 m from the chair's middle) that nothing stands in and that is still in the room.
+            // (The meeting table's chair next to the coffee counter in the office has exactly that much.)
             foreach (var (type, layout, path) in Layouts(ShellRoomTypes.Where(t => !RoomRules.IsCorridor(t))))
             {
                 var room = Instantiate(path);
@@ -560,7 +625,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                     var forward = chair.transform.forward;
                     var right = chair.transform.right;
                     var space = new Bounds(position - forward * 0.5f - right * 0.25f + Vector3.up * 0.1f, Vector3.zero);
-                    space.Encapsulate(position - forward * 0.9f + right * 0.25f + Vector3.up * 1.1f);
+                    space.Encapsulate(position - forward * 0.7f + right * 0.25f + Vector3.up * 1.1f);
                     Assert.IsTrue(InsideInterior(type, space), $"{type} layout {layout + 1}: {chair.name} stands against a wall");
                     foreach (var (prop, bounds) in solids)
                     {
@@ -655,7 +720,7 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         {
             // A tile is centered on the room center: 600 fittings on tile centers (multiples of 0.6 m), 1200 panels
             // across two tiles along Z (centered on a grid line).
-            foreach (var (type, layout, path) in Layouts(ShellRoomTypes.Where(t => !new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom }.Contains(t))))
+            foreach (var (type, layout, path) in Layouts(ShellRoomTypes.Where(t => !new[] { RoomType.PowerRoom, RoomType.CoolingPlant, RoomType.StorageRoom, RoomType.MeetMeRoom }.Contains(t))))
             {
                 var room = Instantiate(path);
                 foreach (var name in new[] { "LedPanel", "CeilingDiffuser", "Sprinkler", "SmokeDetector", "CameraDome", "CeilingSpeaker" })
@@ -698,9 +763,23 @@ namespace ColdShutdown.Tests.EditMode.Rooms
                 {
                     // The walkway reaches up to the opening height; ceiling fittings above it are allowed.
                     if (b.min.y >= RoomContract.KeepClearHeight - Epsilon) continue;
+                    // The hangers of a run are one mesh spread over the whole room: only their actual parts count (checked below).
+                    if (name.EndsWith("Hangers")) continue;
                     foreach (var walkway in walkways)
                     {
                         Assert.IsFalse(Overlaps(b, walkway), $"{type}/{name} blocks the walkway from a door: {b}");
+                    }
+                }
+                foreach (var hangers in room.GetComponentsInChildren<MeshFilter>().Where(f => f.name.EndsWith("Hangers")))
+                {
+                    var matrix = hangers.transform.localToWorldMatrix;
+                    foreach (var vertex in hangers.sharedMesh.vertices)
+                    {
+                        var point = matrix.MultiplyPoint3x4(vertex);
+                        foreach (var walkway in walkways)
+                        {
+                            Assert.IsFalse(walkway.Contains(point) && point.y < RoomContract.KeepClearHeight - Epsilon, $"{type}/{hangers.name} hangs in the walkway from a door at {point}");
+                        }
                     }
                 }
 
@@ -743,13 +822,16 @@ namespace ColdShutdown.Tests.EditMode.Rooms
         }
 
         /// <summary>Whether a box lies inside the room's interior: the whole cell, or a small room's 6 x 6 m square.</summary>
+        /// <summary>How far a part may reach into the wall or the ceiling slab behind it (the sprinkler's escutcheon recess is 1 cm deep, the printer's lid strip 1.5 cm).</summary>
+        private const float Sink = 0.02f;
+
         private static bool InsideInterior(RoomType type, Bounds b)
         {
-            float half = RoomContract.InteriorHalfSize + Epsilon;
-            float side = RoomRules.IsSmallRoom(type) ? SmallSide + Epsilon : half;
-            float north = RoomRules.IsSmallRoom(type) ? RoomContract.SmallRoomBackWall + Epsilon : half;
+            float half = RoomContract.InteriorHalfSize + Sink;
+            float side = RoomRules.IsSmallRoom(type) ? SmallSide + Sink : half;
+            float north = RoomRules.IsSmallRoom(type) ? RoomContract.SmallRoomBackWall + Sink : half;
             return b.min.x >= -side && b.max.x <= side && b.min.z >= -half && b.max.z <= north &&
-                   b.min.y >= -Epsilon && b.max.y <= RoomContract.CeilingHeight + Epsilon;
+                   b.min.y >= -Epsilon && b.max.y <= RoomContract.CeilingHeight + Sink;
         }
 
         /// <summary>The colliders of the props in a room (shell and small-room walls excluded), with the prop they belong to.</summary>

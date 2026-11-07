@@ -12,7 +12,7 @@ namespace ColdShutdown.Runtime
     public class InteractionPrompt : MonoBehaviour
     {
         private Interactor interactor;
-        private GameObject canvasObject;
+        private GameObject canvasRoot;
         private Text label;
         private GameObject barRoot;
         private RectTransform barFill;
@@ -24,10 +24,16 @@ namespace ColdShutdown.Runtime
             ShowFocus(null);
         }
 
+        /// <summary>Shows or hides the crosshair and the prompt (hidden in the menus).</summary>
+        public void SetVisible(bool visible)
+        {
+            if (canvasRoot != null) canvasRoot.SetActive(visible);
+        }
+
         private void OnEnable()
         {
             // The dot and the hint go away while the component is switched off (at a computer, the mouse pointer takes over).
-            if (canvasObject != null) canvasObject.SetActive(true);
+            if (canvasRoot != null) canvasRoot.SetActive(true);
             interactor.FocusChanged += ShowFocus;
             interactor.Interacted += Refresh;
             interactor.HoldProgressChanged += ShowProgress;
@@ -35,7 +41,7 @@ namespace ColdShutdown.Runtime
 
         private void OnDisable()
         {
-            if (canvasObject != null) canvasObject.SetActive(false);
+            if (canvasRoot != null) canvasRoot.SetActive(false);
             interactor.FocusChanged -= ShowFocus;
             interactor.Interacted -= Refresh;
             interactor.HoldProgressChanged -= ShowProgress;
@@ -64,8 +70,9 @@ namespace ColdShutdown.Runtime
 
         private void BuildUi()
         {
-            canvasObject = new GameObject("InteractionPromptCanvas", typeof(Canvas), typeof(CanvasScaler));
+            var canvasObject = new GameObject("InteractionPromptCanvas", typeof(Canvas), typeof(CanvasScaler));
             canvasObject.transform.SetParent(transform, false);
+            canvasRoot = canvasObject;
 
             var canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;

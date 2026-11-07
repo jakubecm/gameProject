@@ -24,9 +24,9 @@ namespace ColdShutdown.Editor
             float z = RoomContract.WallThickness / 2f + depth / 2f;
 
             var jambSize = new Vector3(width, openingHeight + width, depth);
-            ModelUtility.CreateStandingBox("Jamb_Left", root, new Vector3(-(halfOpening + width / 2f), 0f, z), jambSize, SurfaceMaterial.Trim, false);
-            ModelUtility.CreateStandingBox("Jamb_Right", root, new Vector3(halfOpening + width / 2f, 0f, z), jambSize, SurfaceMaterial.Trim, false);
-            ModelUtility.CreateStandingBox("Head", root, new Vector3(0f, openingHeight, z), new Vector3(halfOpening * 2f, width, depth), SurfaceMaterial.Trim, false);
+            ModelUtility.CreateStandingBox("Jamb_Left", root, new Vector3(-(halfOpening + width / 2f), 0f, z), jambSize, SurfaceMaterial.StainlessSteel, false);
+            ModelUtility.CreateStandingBox("Jamb_Right", root, new Vector3(halfOpening + width / 2f, 0f, z), jambSize, SurfaceMaterial.StainlessSteel, false);
+            ModelUtility.CreateStandingBox("Head", root, new Vector3(0f, openingHeight, z), new Vector3(halfOpening * 2f, width, depth), SurfaceMaterial.StainlessSteel, false);
         }
     }
 }

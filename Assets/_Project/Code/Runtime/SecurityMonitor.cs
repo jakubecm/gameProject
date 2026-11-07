@@ -1,3 +1,4 @@
+using ColdShutdown.Core;
 using UnityEngine;
 
 namespace ColdShutdown.Runtime
@@ -23,6 +24,9 @@ namespace ColdShutdown.Runtime
         /// <summary>The camera currently shown, or null.</summary>
         public SecurityCamera Feed { get; internal set; }
 
+        /// <summary>The camera whose picture the texture holds now, or null; the texture keeps it until the next render.</summary>
+        internal SecurityCamera RenderedFeed { get; set; }
+
         /// <summary>Creates the render texture and the screen material; called by the wall before the first feed.</summary>
         internal void Prepare(int width, int height)
         {
@@ -33,7 +37,7 @@ namespace ColdShutdown.Runtime
             material.SetTexture(BaseMap, texture);
             material.SetColor(BaseColor, Color.white);
             material.SetTexture(EmissionMap, texture);
-            material.SetColor(EmissionColor, Color.white * 0.8f);
+            material.SetColor(EmissionColor, Color.white * EmissionLevels.Display);
             material.EnableKeyword("_EMISSION");
             screen.sharedMaterial = material;
         }

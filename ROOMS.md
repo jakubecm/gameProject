@@ -17,7 +17,7 @@ of 12 x 12 m cells, **north at the top**, one character per cell, spaces optiona
 | `C` | corridor (shape and turn follow from its neighbours) |
 | `D` | corridor with a door into the hall next to it |
 | `E` | lift end, the start (exactly one) |
-| `O` `G` `P` `V` `S` | office, security office, power room, cooling plant, storage room |
+| `O` `G` `P` `V` `S` `M` | office, security office, power room, cooling plant, storage room, meet-me room |
 | `H` | hall (one filled rectangle) |
 
 Rules: neighbouring corridors connect; a room or the lift end gets one door into a neighbouring corridor (north first,
@@ -30,7 +30,7 @@ the map and rebuilds `Sandbox_B`). Current map (`Sandbox_B` shows exactly this):
 . . G . . . .
 . O C H H C V
 . . D H H D P
-. . C H H C .
+. . C H H C M
 C C C D C C O
 . S S E O . .
 ```
@@ -38,10 +38,10 @@ C C C D C C O
 The 2 x 3 hall (A1-B3) sits in a ring of corridors on its west, south and east side (the north is the outer wall) with
 three doors into it: the main one south (`D` at (3, 1)), straight ahead of the lift (`E` at (3, 0)), and one each on
 the west and east side. Off the ring: the security office at the north end of the west wing and an office
-off the same corridor cell, the technical wing on the east side next to the hall it serves (power room, cooling plant), the two storage rooms
-west of the lift (goods in), and offices east of the lift and at the east end of the south corridor. Corridor shapes: 3 crosses, 5 T,
-2 straight, 1 corner, 1 dead end (the west end of the south corridor), the lift end. Rooms: 3 offices, 2 storage
-rooms, 1 security office, power room and cooling plant.
+off the same corridor cell, the technical wing on the east side next to the hall it serves (cooling plant, power room, meet-me room), the two storage rooms
+west of the lift (goods in), and offices east of the lift and at the east end of the south corridor. Corridor shapes: 3 crosses, 6 T,
+1 straight, 1 corner, 1 dead end (the west end of the south corridor), the lift end. Rooms: 3 offices, 2 storage
+rooms, 1 security office, power room, cooling plant and meet-me room.
 
 ## Cell contract (all pieces)
 
@@ -86,6 +86,7 @@ rooms, 1 security office, power room and cooling plant.
 | 6 | `PowerRoom` | small room, technical | S | 1 | P |
 | 7 | `CoolingPlant` | small room, technical | S | 1 | V |
 | 12 | `StorageRoom` | small room, technical | S | 1 | S |
+| 14 | `MeetMeRoom` | small room, technical | S | 1 | M |
 | 3 | `Hall` | the hall (one room over its rectangle of cells) | any | 1 | H |
 
 Prefabs: layout 1 = `Room_<Type>.prefab`, others `Room_<Type>_Layout<n>.prefab` (only corner 2, T 2-4). Every room has
@@ -101,7 +102,7 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 - Every corridor gets the turn + layout whose **fire arm** leads into a room or the hall (`RoomLayout.FireArmOptions`), so
   the fire kit always stands by an entrance, off the through-corridor (a corridor without one keeps layout 1).
 - Exactly one lift end (`LiftEnd`) per map; the player starts in its car facing the door
-  (`RoomContract.LiftStartPose`: x 0, z = 1.84 + 0.75, yaw 180).
+  (`RoomContract.LiftStartPose`: x 0, z = 1.84 + 1.5 - 0.4 = 2.94, as far from the door as the body allows, yaw 180).
 - Fire arm per layout (`FireArmSide`): corner L1 East, L2 South (mirror); T L1 South (stem), L2 West, L3 South
   (mirror of L1), L4 East (mirror of L2); dead end and lift end South. Mirrored layouts (`IsMirroredCorridor`: corner
   L2, T L2-4) mirror every arm and walk the arms anticlockwise.
@@ -111,7 +112,7 @@ one layout; the corridor variants only move the fire kit and are chosen automati
 - **Suspended ceiling** (offices, security office, corridors): 600 mm exposed T-bar grid 12 mm under the 3 m plane,
   a tile centered on the room center (grid lines at odd multiples of 0.3 m); 600 fittings on tile centers. Off in
   technical rooms, which get the epoxy floor (`HallFloor`).
-- **Lights:** realtime spot per fitting, no shadows, at most 10 per room. Offices: 2 x `LedPanel`; corridors one
+- **Lights:** realtime spot per fitting, no shadows, at most 10 per room (a long fitting has several lights, see Lighting below). Offices: 2 x `LedPanel`; corridors one
   per arm; technical rooms 2 x `LedBatten`; hall `PendantLight` / `PendantLightGirder` (one per walkway segment).
 - **Services:** every pipe/trunking/conduit/tray starts and ends in a wall, floor, ceiling or device. Colours: fire
   water red, water green, gas yellow. Trunking one profile 120 x 60 mm. Outlets flush (`PowerSocket`, `DataSocket`
@@ -153,7 +154,7 @@ at z = 1.5 (`LiftWallFace`) with the 1.1 x 2.1 m door opening, `ShaftBack` block
 prop on the landing (car 1.6 x 1.5 x 2.3 m, working door; brushed-steel `LiftCeiling` with one recessed square `LiftCeilingLight` in the middle). Dressed like a dead end (fire kit in its arm); its grille and
 switch sit in the middle of the west wall of the crossing.
 
-## Small rooms (all five)
+## Small rooms (all six)
 
 - Strict 6 x 6 m square by the south door: interior x ±2.9 (`SmallRoomHalfWidth`), z -5.8 to 0 (`SmallRoomBackWall`);
   `Structure/BackWall`, `SideWall_W/E` full height; the rest of the cell is built up.
@@ -178,13 +179,12 @@ switch sit in the middle of the west wall of the crossing.
 
 ### Security office (`SecurityOffice`)
 
-- Back wall: `VideoWall` (game logic, `SecurityMonitorWall`) of 8 `VideoScreen` (2 rows at 1.3 / 2.05 m x 4 columns
-  at x ±0.625 / ±1.875), trunking behind each column up to the ceiling.
+- Back wall: `VideoWall` (game logic, `SecurityMonitorWall`: all cameras in turn, no shot twice at once, live (round robin) only while the player is inside, frozen when they leave) of 8 `VideoScreen` (2 rows at 1.32 / 2.05 m x 4 columns at x ±0.625 / ±1.875, 2 cm between screens both ways), trunking behind each column, seen between the rows and up to the ceiling.
 - Two consoles facing the video wall: `Desk` + `Workstation` + `PcTower` + `OfficeChair` + `FloorBox` at
   (±0.801, -1.9) (2 mm apart); `PaperStack` "ShiftLog" between.
 - West wall: 2 `RackSlot` (compute rack, JBOD) at z -3.95 / -4.55, fronts east (racks placed on them; one openable);
   `PowerSocket` + `DataSocket` for the racks; terminal slot (-2.5, -5.4) facing east with its outlets.
-- East wall: 2 `Locker` (z -3.95 / -4.55, centred on the racks) and `LockerBench` (1.9, -4.25).
+- East wall: 2 `Locker` (z -3.95 / -4.55, centred on the racks) and `LockerBench` (z -4.25, x so that it stands 0.45 m from the locker fronts).
 - Only these things: no coffee corner, no other furniture.
 
 ### Power room (`PowerRoom`)
@@ -208,6 +208,17 @@ switch sit in the middle of the west wall of the crossing.
   (-2.35, -4.57), each piped into the west exchanger's flow/return headers (valves on the flows).
 - Wide pipes are insulated aluminium with bands in the medium colour (green), blue supports. No switchgear here.
 
+### Meet-me room (`MeetMeRoom`)
+
+- Door pockets, 2.2 m walkway, technical ceiling and one `CameraDome` as in the other technical rooms; epoxy floor.
+- Back wall: `FibreEntryPoint` (west, x -0.41) and `ConsoleRack` (east, x +0.41), each with a vertical `FibreDuct` through the ceiling; a tray joins the two ducts.
+- Racks along both side walls, five per side, z -1.075 to -4.425, closed `CrossConnectCabinet` at both ends of each row. West: cabinet, `OdfRack`, `CopperPatchRack`, `OdfRackSfp`, cabinet.
+  East: cabinet, `CopperPatchRack`, `OdfRackSfp`, `OdfRack`, cabinet.
+- One cable tray per row (`InfrastructureModels.CableTray`, 0.30 m wide, floor at 2.64 m, x ±2.6) from the last rack north, round a `CableTrayBend` and across the back wall into the console rack's duct;
+  closed by `CableTrayEndCap`, hung on `FibreHangers`. Cord bundles of every rack climb in a green conduit to the middle of the tray.
+- Yellow floor lines at x ±0.91 from the door and keep-clear hatching in front of the two back units.
+- Stickers (`T_MeetLabels`: ENTRY-1, CONSOLE, ODF-A, ODF-B, CU-1, FXC-1) on every machine. No meters, desks or shelves.
+
 ### Storage room (`StorageRoom`)
 
 - 15 `Shelf` units with cardboard boxes (`BoxLidCube`, `BoxLidFlat`, `BoxCartonCube`, `BoxCartonFlat`, 1-2 per board
@@ -229,9 +240,9 @@ south-west cell. The level builder places it once; it never turns and gets no wa
   secondary beams along X at z -3 / 0 / 3 (bottom 5.6 m).
 - **Two pods** per tile (centers z ±2.5), each a contained cold aisle along X: 2 rows of 14 `RackSlot` (8.4 m), fronts
   facing across a 1.2 m aisle; every slot holds a rack, so an aisle is entered only by its doors. Hot aisle 1.4 m
-  between the pods' backs. Aisle floor: `PerforatedFloorTile`s only. Containment roof: solid black 4 cm panels lying on the
-  rack tops (white labels on two). `AisleDoor` at both ends (single black leaf, slides left seen from outside, reader on
-  the right rack end). 2 low-profile `AisleLight` luminaires under the roof (at a quarter and three quarters of the aisle, two spots each). Yellow outline 0.3 m round each pod. 56 rack slots/tile.
+  between the pods' backs. Aisle floor: `PerforatedFloorTile`s only. Containment roof: solid 4 cm panels (`AisleFrame` colour) lying on the
+  rack tops (white labels on two). `AisleDoor` at both ends (single stainless steel leaf like the lift, slides left seen from outside, reader on
+  the right rack end). 2 low-profile `AisleLight` luminaires under the roof (at a quarter and three quarters of the aisle, intensity 4 each, two spots along its length); the roof panels, their frame and the luminaire trays are in `AisleFrame`, between the colour of the hall columns and the floor (racks keep their own black). Yellow outline 0.3 m round each pod. 56 rack slots/tile.
 - **Walkways:** 1.6 m pod end → east/west wall (3.6 m between tiles), 1.5 m pod side → north/south wall (3.4 m between
   tiles). Nothing below 2.6 m in them.
 - **Overhead (all above the signs, which reach down to 4.2 m):** return duct over the hot aisle (4.4-4.9 m, 4 grilles in
@@ -266,12 +277,26 @@ south-west cell. The level builder places it once; it never turns and gets no wa
 
 - `Sandbox_B` (Create Preview Scene): the world map built by the `LevelBuilder` in the editor (kept at Play), the player
   prefab in the lift, F1 menu; racks on every slot (`RackPlacement`, seed `LevelBuilder.RackSeed`: one openable rack in
-  the security office, one per row of every aisle, never the first or last rack of its run); trilight ambient instead of bounce light; no scene lights.
+  the security office, one per row of every aisle, never the first or last rack of its run); trilight ambient instead of bounce light and no fog (`WorldLighting.ApplyRoomLook`); no scene lights.
 - `Main` (Create Main Scene; rewired by every Create Preview Scene): the same builder, building the map at Play.
+
+## Lighting
+
+One fixed setting (no quality levels, no adapting to the graphics card, nothing in the settings screen). Code in `Runtime/LightingDirector.cs` (installs itself when Play starts, in every scene), editor settings in `World/WorldLighting.cs`.
+
+- **Colour:** every fitting is a cold white LED, 8000 K (`Props.FixtureColor`), and its emissive diffuser uses the same colour; every light has exactly this colour (no per-light shifts); nothing is changed at runtime.
+- **Brightness** (total per fitting, `Props.*LightIntensity`, in order): corridors 4, server aisle luminaires 4, lift 6, rooms 6, every
+  hall pendant 8 (three spots). A long fitting spreads its total over a light per 0.6 m along its length (`Props.AddStripLight`): panel 1 light, batten 3,
+  aisle luminaire 2; flat fittings use a wide 170 degree cone fading smoothly from 40 degrees. There is no fog and no reflection probe: nothing in the
+  lighting depends on where the player stands, so the brightness of a view does not change as the player walks.
+- **Glow** (`EmissionLevels`): every status light (reader and photo-cell LEDs, coffee machine, printer, PCs, rack LEDs, lift digits) glows at 2 (the exit sign at 1, half), every monitor / display at 0.5, every light diffuser at 2 in its light's colour, the same everywhere.
+- **No shadows:** none anywhere, not in code, not in the pipeline asset (shadow maps are not allocated), not in the quality level. **No flicker:** no room light changes while the game runs (the rack door glow breathes slowly, as designed).
+- **Camera and volume:** ACES tonemapping, bloom (threshold 1: only the emissive panels glow), contrast, vignette, film grain; SMAA and dithering.
+- **Pipeline** (Create Preview Scene sets it in `PC_RPAsset`, `PC_Renderer`, the PC quality level): shadows off, ambient occlusion (full resolution, intensity 0.5, radius 0.3), realtime reflection probes off.
 
 ## Tests (run after every room change)
 
-`Tests/EditMode/Rooms`: `RoomPrefabTests` (prefab + definition per type, door frames, ceiling height, light count and
+`Tests/EditMode/Rooms`: `RoomPrefabTests` (prefab + definition per type, meet-me room contents, door frames, ceiling height, light count and
 settings, nothing in openings/walkways/pockets/slots/terminal space, inside the interior, safety counts, small rooms
 square, technical rooms without ceiling, chairs have room, props do not overlap), `HallKitTests` (walkways, aisle
 closed, door path, rack slots, services above signs, no water/outlets, cameras only hanging, one light per walkway segment

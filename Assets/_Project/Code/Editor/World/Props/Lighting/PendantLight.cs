@@ -20,8 +20,7 @@ namespace ColdShutdown.Editor
         /// <summary>Width of a girder's bottom flange (two tiles' halves of the I-beam), which the beam clamps grip.</summary>
         private const float GirderFlangeWidth = 0.3f;
 
-        // LED high-bay fittings, 4000 K, no shadows.
-        private static readonly Color LedColor = new Color(1f, 0.97f, 0.92f);
+        // LED high-bay fittings, 8000 K (FixtureColor), no shadows.
 
         /// <summary>
         /// The hall's luminaire: the storage room's LED batten (<see cref="BuildLedBatten"/>, 1.5 m long along Z, its light a wide downward spot without shadows)
@@ -46,12 +45,13 @@ namespace ColdShutdown.Editor
             var lamp = ModelUtility.CreateGroup("Lamp", root);
             lamp.localPosition = new Vector3(0f, top, 0f);
             BuildLedBatten(lamp);
-            var light = lamp.GetComponentInChildren<Light>();
-            light.spotAngle = 140f;
-            light.innerSpotAngle = 90f;
-            light.range = 12f;
-            light.intensity = 9f;
-            light.color = LedColor;
+            // Three spots along the fitting, as in every batten; they reach further from this height, and together they give the hall's intensity.
+            var lights = lamp.GetComponentsInChildren<Light>();
+            foreach (var light in lights)
+            {
+                light.range = 14f;
+                light.intensity = HallLightIntensity / lights.Length;
+            }
 
             var zinc = new MeshBuilder();
             var chrome = new MeshBuilder();

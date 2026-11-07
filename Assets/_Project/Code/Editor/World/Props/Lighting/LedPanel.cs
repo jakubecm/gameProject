@@ -9,7 +9,7 @@ namespace ColdShutdown.Editor
         /// <summary>
         /// Lay-in LED panel for the 600 mm ceiling grid: 0.6 m wide, <paramref name="length"/> long (along Z), a white frame
         /// 18 mm wide that covers the T-bars under it, the opal diffuser set back 1 mm into it. The light is a wide downward
-        /// spot with no shadows.
+        /// spot (several along a longer panel).
         /// </summary>
         private static void BuildLedPanel(Transform root, float length, float intensity)
         {
@@ -31,10 +31,10 @@ namespace ColdShutdown.Editor
 
             frame.Attach("Frame", root, SurfaceMaterial.DetectorWhite);
             diffuser.Attach("Diffuser", root, SurfaceMaterial.LightPanel);
-            AddSpotLight(root, new Vector3(0f, bottom - 0.03f, 0f), 150f, 100f, 6.5f, intensity, LedPanelColor);
+            AddStripLight(root, new Vector3(0f, bottom - 0.03f, 0f), length, 8f, intensity, FixtureColor);
         }
 
         [Model(Prop.LedPanel)]
-        private static void BuildLedPanel(Transform root) => BuildLedPanel(root, 0.6f, 3.0f);
+        private static void BuildLedPanel(Transform root) => BuildLedPanel(root, 0.6f, RoomLightIntensity);
     }
 }

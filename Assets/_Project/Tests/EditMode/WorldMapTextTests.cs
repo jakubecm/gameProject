@@ -91,12 +91,23 @@ namespace ColdShutdown.Tests.EditMode
         [TestCase("E C .\n. . O\n", "no corridor")]
         [TestCase("E D H\n. . .\n. H H\n", "rectangle")]
         [TestCase("E C . C C\n", "reached")]
+        [TestCase("E C M\n. C M\n", "only one meet-me room")]
         public void Parse_ReportsMistakes(string text, string expected)
         {
             var result = WorldMapText.Parse(text);
             Assert.IsFalse(result.IsValid);
             Assert.IsNull(result.Layout);
             Assert.IsTrue(result.Errors.Any(error => error.Contains(expected)), $"Expected '{expected}' in: {string.Join("; ", result.Errors)}");
+        }
+
+        [Test]
+        public void Parse_MeetMeRoomIsASmallRoomWithOneDoor()
+        {
+            var result = WorldMapText.Parse("E C M\n");
+            Assert.IsTrue(result.IsValid, string.Join("; ", result.Errors));
+            Assert.AreEqual(RoomType.MeetMeRoom, result.Layout.GetRoom(2, 0).Type);
+            Assert.AreEqual('M', RoomType.MeetMeRoom.Symbol());
+            Assert.IsTrue(RoomRules.IsSmallRoom(RoomType.MeetMeRoom));
         }
 
         [Test]

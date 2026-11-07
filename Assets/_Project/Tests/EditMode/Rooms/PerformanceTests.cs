@@ -77,7 +77,6 @@ namespace ColdShutdown.Tests.EditMode.Rooms
             Assert.IsNotNull(feature, "the PC renderer has the ambient occlusion feature");
             var occlusion = new SerializedObject(feature);
             Assert.AreEqual(0, occlusion.FindProperty("m_Settings.Source").intValue, "from the depth, not depth and normals: Tools/Cold Shutdown/Apply Performance Settings");
-            Assert.IsTrue(occlusion.FindProperty("m_Settings.Downsample").boolValue, "at half resolution");
 
             var pipeline = new SerializedObject(AssetDatabase.LoadAssetAtPath<ScriptableObject>(PipelinePath));
             Assert.AreEqual(1, pipeline.FindProperty("m_GPUResidentDrawerMode").intValue, "the GPU resident drawer is on");

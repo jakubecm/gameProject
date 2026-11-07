@@ -48,6 +48,12 @@ namespace ColdShutdown.Core
         /// is also the evacuation lift. The player starts in the lift car.
         /// </summary>
         LiftEnd = 13,
+
+        /// <summary>
+        /// Meet-me room (small room, technical, at most one per map): where the fibre and copper trunks of the whole building come
+        /// together, with optical distribution frames, copper patch racks, the cross-connect cabinets and the entry point of the outside cables.
+        /// </summary>
+        MeetMeRoom = 14,
     }
 
     public static class RoomTypeExtensions
@@ -55,7 +61,7 @@ namespace ColdShutdown.Core
         /// <summary>
         /// The character of a room type in the world map text (<see cref="WorldMapText"/>) and the debug menu: every corridor shape is
         /// <c>C</c> (the shape follows from its neighbours), <c>E</c> lift end, <c>O</c> office, <c>G</c> security office, <c>P</c> power
-        /// room, <c>V</c> cooling plant, <c>S</c> storage room, <c>H</c> hall.
+        /// room, <c>V</c> cooling plant, <c>S</c> storage room, <c>M</c> meet-me room, <c>H</c> hall.
         /// </summary>
         public static char Symbol(this RoomType type)
         {
@@ -73,6 +79,7 @@ namespace ColdShutdown.Core
                 case RoomType.PowerRoom: return 'P';
                 case RoomType.CoolingPlant: return 'V';
                 case RoomType.StorageRoom: return 'S';
+                case RoomType.MeetMeRoom: return 'M';
                 case RoomType.LiftEnd: return 'E';
                 default: return '?';
             }

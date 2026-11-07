@@ -63,7 +63,7 @@ namespace ColdShutdown.Editor
             panel.Attach("Window", root, SurfaceMaterial.SignFace);
             black.Attach("Symbol", root, SurfaceMaterial.BlackHousing);
             white.Attach("Pictogram", root, SurfaceMaterial.DetectorWhite);
-            lens.Attach("Lens", root, SurfaceMaterial.BulbClear);
+            lens.Attach("Lens", root, SurfaceMaterial.ClearGlass);
         }
     }
 }

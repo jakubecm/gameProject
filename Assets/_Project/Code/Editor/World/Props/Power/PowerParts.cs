@@ -14,21 +14,36 @@ namespace ColdShutdown.Editor
         private sealed class ControlPanelMeshes
         {
             private readonly MeshBuilder plastic = new MeshBuilder();
-            private readonly MeshBuilder screen = new MeshBuilder();
+            private readonly MeshBuilder lcd = new MeshBuilder();
             private readonly MeshBuilder green = new MeshBuilder();
             private readonly MeshBuilder red = new MeshBuilder();
             private readonly MeshBuilder amber = new MeshBuilder();
             private readonly MeshBuilder grey = new MeshBuilder();
 
-            public void Add(Vector3 c, float k)
+            public void Add(Vector3 c, float k, DeviceDisplay display)
             {
                 var toZ = Quaternion.Euler(90f, 0f, 0f);
                 float t = 0.03f * k;
                 float z = c.z;
-                plastic.AddExtrusion(RoundedRectLoop(c.x - 0.27f * k, c.x + 0.27f * k, c.y - 0.13f * k, c.y + 0.13f * k, 0.018f * k, 3),
-                    new Vector3(0f, 0f, z), new Vector3(0f, 0f, z + t), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
-                screen.AddExtrusion(RoundedRectLoop(c.x - 0.245f * k, c.x - 0.045f * k, c.y + 0.01f * k, c.y + 0.105f * k, 0.006f * k, 2),
-                    new Vector3(0f, 0f, z + t), new Vector3(0f, 0f, z + t + 0.004f * k), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
+                // The plate: a rounded back layer and a front layer with the display sunk into it (12 mm x k deep), its corners rounded; the picture is the floor of the pocket.
+                float d = 0.012f * k;
+                float px0 = c.x - 0.27f * k;
+                float px1 = c.x + 0.27f * k;
+                float py0 = c.y - 0.13f * k;
+                float py1 = c.y + 0.13f * k;
+                float r = 0.018f * k;
+                float dx0 = c.x - 0.245f * k;
+                float dx1 = c.x - 0.045f * k;
+                float dy0 = c.y + 0.01f * k;
+                float dy1 = c.y + 0.105f * k;
+                float zf0 = z + t - d;
+                plastic.AddExtrusion(RoundedRectLoop(px0, px1, py0, py1, r, 3), new Vector3(0f, 0f, z), new Vector3(0f, 0f, zf0), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
+                plastic.AddExtrusion(RoundedRectLoop(px0, px1, py0, dy0, new[] { r, r, 0f, 0f }, 3), new Vector3(0f, 0f, zf0), new Vector3(0f, 0f, z + t), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
+                plastic.AddExtrusion(RoundedRectLoop(px0, px1, dy1, py1, new[] { 0f, 0f, r, r }, 3), new Vector3(0f, 0f, zf0), new Vector3(0f, 0f, z + t), Vector3.right, Vector3.up, Vector3.back, Vector3.forward);
+                plastic.AddBox(new Vector3(px0, dy0, zf0), new Vector3(dx0, dy1, z + t));
+                plastic.AddBox(new Vector3(dx1, dy0, zf0), new Vector3(px1, dy1, z + t));
+                AddOpeningFillets(plastic, dx0, dx1, dy0, dy1, zf0, z + t, 0.012f * k);
+                AddDisplayPicture(lcd, dx0, dy0, dx1, dy1, zf0 + 0.0004f, display);
                 void Button(MeshBuilder b, float x, float y, float radius, float lift)
                 {
                     radius *= k;
@@ -50,7 +65,7 @@ namespace ColdShutdown.Editor
             public void Attach(string prefix, Transform parent)
             {
                 plastic.Attach($"{prefix}_Plate", parent, SurfaceMaterial.CabinetGrey);
-                screen.Attach($"{prefix}_Display", parent, SurfaceMaterial.Screen);
+                lcd.Attach($"{prefix}_Picture", parent, SurfaceMaterial.DeviceDisplays);
                 green.Attach($"{prefix}_Start", parent, SurfaceMaterial.SafetyGreen);
                 red.Attach($"{prefix}_Stop", parent, SurfaceMaterial.SafetyRed);
                 amber.Attach($"{prefix}_Amber", parent, SurfaceMaterial.SafetyYellow);

@@ -134,7 +134,10 @@ namespace ColdShutdown.Editor
 
             var labels = new MeshBuilder();
             // Nameplates on both sides, upright for someone standing at either side (+Z and -Z).
-            AddLabel(labels, new Vector3(0.41f, axisHeight, 0.172f), Vector3.left, Vector3.up, 0.17f, 0.085f, PlantLabel.MotorPlate);
+            // The +Z pad carries the pump controller (display and buttons) instead of the plate.
+            var controller = new ControlPanelMeshes();
+            controller.Add(new Vector3(0.41f, axisHeight, 0.172f), 0.30f, DeviceDisplay.Pump);
+            controller.Attach("Controller", root);
             AddLabel(labels, new Vector3(0.41f, axisHeight, -0.172f), Vector3.right, Vector3.up, 0.17f, 0.085f, PlantLabel.MotorPlate);
             AddLabel(labels, new Vector3(0.385f, axisHeight + 0.20f, 0f), Vector3.left, Vector3.back, 0.12f, 0.06f, PlantLabel.Warning);
             AddLabel(labels, new Vector3(0.135f, baseTop / 2f, 0.235f), Vector3.left, Vector3.up, 0.20f, 0.075f, PlantLabel.PumpPlate);

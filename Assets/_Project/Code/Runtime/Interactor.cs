@@ -19,6 +19,7 @@ namespace ColdShutdown.Runtime
         private InputAction interactAction;
         private InputAction secondaryAction;
         private IInteractable focused;
+        private readonly RaycastHit[] hits = new RaycastHit[32];
         private bool holding;
         private float holdTime;
 
@@ -32,6 +33,11 @@ namespace ColdShutdown.Runtime
         public event Action<IInteractable> Interacted;
 
         public IInteractable Focused => focused;
+
+        /// <summary>The collider the view ray meets first (not the player's own), interactable or not; for the debug menu. Null when it meets nothing.</summary>
+        public Collider LookedAt { get; private set; }
+
+        public float LookedDistance { get; private set; }
 
         /// <summary>Display name of the interact key, for on-screen hints (for example "E").</summary>
         public string KeyLabel => interactAction.GetBindingDisplayString();
@@ -116,15 +122,42 @@ namespace ColdShutdown.Runtime
             var cameraTransform = viewCamera.transform;
             var ray = new Ray(cameraTransform.position, cameraTransform.forward);
 
-            // Everything blocks the ray, so a wall between the player and a terminal hides it.
-            if (Physics.Raycast(ray, out var hit, maxDistance, layerMask, QueryTriggerInteraction.Ignore))
+            // Everything blocks the ray, so a wall between the player and a terminal hides it. If the thin ray finds nothing to use, a fat one
+            // (3 cm) is tried, so the edges and gaps between the parts of a small object (a coffee machine) do not let the crosshair slip off it.
+            LookedAt = null;
+            return FromHit(ray, 0f) ?? FromHit(ray, 0.03f);
+        }
+
+        // The nearest thing the ray (or fat ray) meets, not counting the player's own colliders: a ray that starts at the edge of the player's
+        // capsule, as when standing against a counter, must not be stopped by it.
+        private IInteractable FromHit(Ray ray, float radius)
+        {
+            int count = radius <= 0f
+                ? Physics.RaycastNonAlloc(ray, hits, maxDistance, layerMask, QueryTriggerInteraction.Ignore)
+                : Physics.SphereCastNonAlloc(ray, radius, hits, maxDistance, layerMask, QueryTriggerInteraction.Ignore);
+            var self = transform.root;
+            int nearest = -1;
+            for (int i = 0; i < count; i++)
             {
-                // A disabled component (a closed rack's door) is not interactable.
-                foreach (var candidate in hit.collider.GetComponentsInParent<IInteractable>())
-                {
-                    if (candidate is Behaviour behaviour && !behaviour.isActiveAndEnabled) continue;
-                    return candidate;
-                }
+                if (hits[i].collider.transform.IsChildOf(self)) continue;
+                if (nearest < 0 || hits[i].distance < hits[nearest].distance) nearest = i;
+            }
+            if (nearest < 0) return null;
+
+            var collider = hits[nearest].collider;
+            if (radius <= 0f)
+            {
+                LookedAt = collider;
+                LookedDistance = hits[nearest].distance;
+            }
+
+            // A disabled component (a closed rack's door) is not interactable.
+            foreach (var candidate in collider.GetComponentsInParent<IInteractable>())
+            {
+                if (candidate is Behaviour behaviour && !behaviour.isActiveAndEnabled) continue;
+                // Too far for this one (it has a shorter reach than the ray).
+                if (candidate.MaxReach > 0f && hits[nearest].distance > candidate.MaxReach) return null;
+                return candidate;
             }
             return null;
         }

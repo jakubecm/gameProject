@@ -68,7 +68,7 @@ namespace ColdShutdown.Editor
                 if (i == 0) IconHealth(p, right + 0.0072f, ly, zp, 0.0026f);
                 else if (i == 1) IconNic(p, right + 0.0072f, ly, zp, 0.0026f);
                 else IconUid(p, right + 0.0072f, ly, zp, 0.0026f);
-                LedBox(p, i == 2 ? SurfaceMaterial.SupportBlue : (i == 1 && index % 4 == 3 ? SurfaceMaterial.LedAmber : SurfaceMaterial.SafetyGreen), right + 0.0168f, ly, zp);
+                LedBox(p, i == 2 ? SurfaceMaterial.LedBlue : (i == 1 && index % 4 == 3 ? SurfaceMaterial.LedAmber : SurfaceMaterial.SafetyGreen), right + 0.0168f, ly, zp);
             }
 
             // The drive cage: a black void with three silver-outlined groups of eight separate trays.

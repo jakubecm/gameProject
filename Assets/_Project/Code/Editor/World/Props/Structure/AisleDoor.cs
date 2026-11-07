@@ -30,9 +30,9 @@ namespace ColdShutdown.Editor
             // The jamb on the right (-X) beside the leaf, and the header over the opening and the track to the left, where the leaf parks.
             black.AddBox(new Vector3(-aisleHalf, 0f, 0f), new Vector3(-aisleHalf + 0.03f, top, offset));
             black.AddBox(new Vector3(-aisleHalf, headerBottom, 0f), new Vector3(aisleHalf + travel + 0.06f, top, offset + 0.07f));
-            black.Attach("Surround", root, SurfaceMaterial.RackBlack);
+            black.Attach("Surround", root, SurfaceMaterial.StainlessSteel);
 
-            var leaf = BuildLeaves(root, leafWidth, headerBottom - 0.003f, offset, true, SurfaceMaterial.RackBlack)[0];
+            var leaf = BuildLeaves(root, leafWidth, headerBottom - 0.003f, offset, true, SurfaceMaterial.StainlessSteel)[0];
             // The reader on the end of the right-hand rack row, the same distance from the door's edge as at a room door; the leaf slides away from it.
             var led = BuildReader(root, "Reader", new Vector3(-(aisleHalf + ReaderEdgeGap), ReaderHeight, 0f), 0f);
             ConfigureDoor<AisleDoor>(root, new[] { null, leaf }, travel, new[] { led }, new Vector3(0f, 1f, 0.5f), new Vector3(1.6f, 2f, 3.2f));

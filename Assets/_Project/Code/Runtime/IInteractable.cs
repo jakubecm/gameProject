@@ -23,5 +23,8 @@ namespace ColdShutdown.Runtime
 
         /// <summary>The key that uses this object (E by default).</summary>
         InteractKey Key => InteractKey.Primary;
+
+        /// <summary>How far away (metres, along the view ray) it can be used; 0 means as far as the <see cref="Interactor"/> reaches.</summary>
+        float MaxReach => 0f;
     }
 }

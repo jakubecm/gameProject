@@ -80,7 +80,7 @@ namespace ColdShutdown.Editor
             glass.AddPanel(new Vector3(-width / 2f + border - 0.003f, border - 0.003f, glassZ), new Vector3(width / 2f - border + 0.003f, border - 0.003f, glassZ),
                 new Vector3(width / 2f - border + 0.003f, height - border + 0.003f, glassZ), new Vector3(-width / 2f + border - 0.003f, height - border + 0.003f, glassZ), Vector3.forward,
                 Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
-            glass.Attach("Glass", frame, SurfaceMaterial.DomeClear);
+            glass.Attach("Glass", frame, SurfaceMaterial.ClearGlass);
 
             // Hinge on the back panel near the top and the flat leg, in the desk's frame: the leg runs down and back to the desk.
             float c = Mathf.Cos(lean * Mathf.Deg2Rad);

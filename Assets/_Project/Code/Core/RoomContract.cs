@@ -114,9 +114,13 @@ namespace ColdShutdown.Core
         public const float LiftCarFront = LiftWallFace + 0.34f;
 
         /// <summary>
-        /// Where the player starts a run: the middle of the lift car, facing its door (room-local, yaw 180 = facing -Z).
+        /// Where the player starts a run: in the middle of the lift car's width, as far from its door as the player body allows
+        /// (<see cref="LiftStartBackClearance"/> from the back wall), facing the door (room-local, yaw 180 = facing -Z).
         /// </summary>
-        public static SlotPose LiftStartPose => new SlotPose(0f, LiftCarFront + LiftCarDepth / 2f, 180f);
+        public static SlotPose LiftStartPose => new SlotPose(0f, LiftCarFront + LiftCarDepth - LiftStartBackClearance, 180f);
+
+        /// <summary>Distance of the start position from the car's back wall: the player's radius (0.3 m) and a little room.</summary>
+        public const float LiftStartBackClearance = 0.4f;
 
         /// <summary>World X of the room pivot for a grid column.</summary>
         public static float CellOriginX(int column) => column * CellSize;

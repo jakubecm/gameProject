@@ -19,6 +19,28 @@ namespace ColdShutdown.Runtime
 
         public Camera FeedCamera => feedCamera;
 
+        /// <summary>
+        /// Identifies the shot: the room type (all offices look alike) or the hall, and the camera's pose in that room or hall tile, rounded.
+        /// Two cameras with the same key show the same picture.
+        /// </summary>
+        public string ShotKey
+        {
+            get
+            {
+                var anchor = transform;
+                for (var t = transform; t != null; t = t.parent)
+                {
+                    if (t.name.StartsWith("Room_") || t.name.StartsWith("Cell_")) { anchor = t; break; }
+                }
+                var view = feedCamera != null ? feedCamera.transform : transform;
+                var position = anchor.InverseTransformPoint(view.position);
+                var angles = (Quaternion.Inverse(anchor.rotation) * view.rotation).eulerAngles;
+                string place = anchor.name.StartsWith("Room_") ? anchor.name.Replace("(Clone)", "") : "Hall";
+                return $"{place}|{Mathf.RoundToInt(position.x * 10f)},{Mathf.RoundToInt(position.y * 10f)},{Mathf.RoundToInt(position.z * 10f)}|" +
+                       $"{Mathf.RoundToInt(angles.x / 10f) % 36},{Mathf.RoundToInt(angles.y / 10f) % 36}";
+            }
+        }
+
         private void OnEnable()
         {
             if (feedCamera != null) feedCamera.enabled = false;

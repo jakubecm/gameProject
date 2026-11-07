@@ -133,7 +133,7 @@ namespace ColdShutdown.Editor
             float total = widths[0] + widths[1] + widths[2] + 2f * gap;
             float cursor = -total / 2f;
             var panel = new ControlPanelMeshes();
-            panel.Add(new Vector3(cursor + widths[0] / 2f, rowY, front), 0.75f);
+            panel.Add(new Vector3(cursor + widths[0] / 2f, rowY, front), 0.75f, DeviceDisplay.Transformer);
             cursor += widths[0] + gap;
             var labels = new MeshBuilder();
             AddLabel(labels, new Vector3(cursor + widths[1] / 2f, rowY, front), Vector3.left, Vector3.up, widths[1], 0.15f, PlantLabel.TransformerPlate);
@@ -149,7 +149,7 @@ namespace ColdShutdown.Editor
             grooves.Attach("CoilRings", root, SurfaceMaterial.BlackHousing);
             copper.Attach("Taps", root, SurfaceMaterial.CopperTrim);
             laminations.Attach("CoreYokes", root, SurfaceMaterial.Steel);
-            glass.Attach("Window", root, SurfaceMaterial.DomeClear);
+            glass.Attach("Window", root, SurfaceMaterial.ClearGlass);
             chrome.Attach("Lock", root, SurfaceMaterial.Chrome);
             rings.Attach("LiftingEyes", root, SurfaceMaterial.Chrome);
             duct.Attach("CableDuct", root, SurfaceMaterial.Trunking);
