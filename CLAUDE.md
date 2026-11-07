@@ -163,7 +163,8 @@ built, not this desktop). The code and the prefab are still named `Terminal` (`T
   constant `TerminalTool.ActiveMonitor`), and on `Monitor_Right` a second canvas (`Terminal.secondScreen`) that is black, shows the
   same wallpaper only while the computer is **on** (not while booting or shutting down) and goes black again when it goes off.
   The prop's own box collider is what the interaction ray hits. **Create Preview Scene** rebuilds the models (which start the
-  workstation prefab from scratch) and then rewires it (`TerminalTool.BuildTerminalPrefab`); `Create Terminal Prefab` only rewires.
+  workstation prefab from scratch) and then rewires it (`TerminalTool.BuildTerminalPrefab`); `Create Terminal Prefab` only rewires (and adds the
+  collider if the prefab has none), which is enough after a merge that took the other side's Workstation prefab.
   `Prefabs/Terminals/Terminal.prefab` is a desk with a workstation on it, for `Create Terminal Sandbox` (`Scenes/Sandbox_C.unity`,
   two computers on a plain floor, both off). The `TerminalSlot` markers in the rooms are not used for a computer for now.
 

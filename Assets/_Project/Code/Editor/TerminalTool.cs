@@ -97,6 +97,15 @@ namespace ColdShutdown.Editor
                     return false;
                 }
 
+                // The interaction ray needs a collider on the prop. The model builder makes one (Workstation.cs); if the prefab was made
+                // without it (an older build, or a merge that took the other side's prefab), make the same box here, so rewiring alone is enough.
+                if (root.GetComponentInChildren<Collider>() == null)
+                {
+                    var box = root.AddComponent<BoxCollider>();
+                    box.center = new Vector3(0f, 0.225f, 0f);
+                    box.size = new Vector3(1.14f, 0.45f, 0.55f);
+                }
+
                 var screen = BuildScreen(root.transform, "Screen", active, true);
                 var secondScreen = BuildScreen(root.transform, "SecondScreen", other, false);
 
