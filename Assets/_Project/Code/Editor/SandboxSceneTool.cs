@@ -15,7 +15,7 @@ namespace ColdShutdown.Editor
         [MenuItem("Tools/Cold Shutdown/Create Sandbox Scene")]
         public static void CreateSandboxScene()
         {
-            if (File.Exists(ScenePath) &&
+            if (File.Exists(ScenePath) && !Application.isBatchMode &&
                 !EditorUtility.DisplayDialog("Create Sandbox Scene", $"{ScenePath} already exists. Replace it?", "Replace", "Cancel"))
             {
                 return;

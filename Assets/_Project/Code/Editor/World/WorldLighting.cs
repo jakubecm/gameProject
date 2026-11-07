@@ -47,6 +47,10 @@ namespace ColdShutdown.Editor
                 Set(serialized, "m_MainLightShadowsSupported", 0);
                 Set(serialized, "m_AdditionalLightShadowsSupported", 0);
                 Set(serialized, "m_SoftShadowsSupported", 0);
+                // The GPU resident drawer draws the world's thousands of meshes in a few calls; its occlusion culling leaves out what is
+                // hidden behind walls and racks. No baked occlusion data: the world is built at run time. Measured: PERFORMANCE.md.
+                Set(serialized, "m_GPUResidentDrawerMode", 1);
+                Set(serialized, "m_GPUResidentDrawerEnableOcclusionCullingInCameras", 1);
                 Save(serialized, pipeline);
             }
 
@@ -60,6 +64,8 @@ namespace ColdShutdown.Editor
             {
                 var serialized = new SerializedObject(occlusion);
                 Set(serialized, "m_Settings.Downsample", 0);
+                // From the depth, not from depth and normals: the second needs every mesh of the world drawn once more before the real pass.
+                Set(serialized, "m_Settings.Source", 0);
                 Set(serialized, "m_Settings.Intensity", 0.5f);
                 Set(serialized, "m_Settings.Radius", 0.3f);
                 Set(serialized, "m_Settings.DirectLightingStrength", 0.25f);

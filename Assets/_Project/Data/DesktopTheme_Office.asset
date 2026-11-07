@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd67f24abb7bacb4ca2074fbbe0473ae, type: 3}
+  m_Name: DesktopTheme_Office
+  m_EditorClassIdentifier: ColdShutdown.Runtime::ColdShutdown.Runtime.DesktopTheme
+  wallpaper: {r: 0.09, g: 0.33, b: 0.58, a: 1}
+  wallpaperBand: {r: 0.13, g: 0.44, b: 0.72, a: 1}
+  iconLabel: {r: 1, g: 1, b: 1, a: 1}
+  wallpapers:
+  - {fileID: 2800000, guid: 9d02cc14eee43b14d871e7fbf51f92cf, type: 3}
+  - {fileID: 2800000, guid: 702ee0a89b2913c43abfbde816490c2a, type: 3}
+  - {fileID: 2800000, guid: caa00dcdf2c96344f9b66fafb3d9d254, type: 3}
+  - {fileID: 2800000, guid: 94d7dc74f65e0614096a65fcbcdc8c5d, type: 3}
+  - {fileID: 2800000, guid: 35299d9047eb58841bb1b8a15dc31ab4, type: 3}
+  - {fileID: 2800000, guid: 669574ff2fd52fd4da585dfd1afd689a, type: 3}
+  wallpaperTint: {r: 0, g: 0, b: 0, a: 0.22}
+  icons:
+  - appId: browser
+    icon: {fileID: 2800000, guid: 6f0ba68681dfd6e4c85d858b8c7e2329, type: 3}
+  - appId: knowledge
+    icon: {fileID: 2800000, guid: de186775212a0bd46a2bf22f9669e307, type: 3}
+  - appId: password
+    icon: {fileID: 2800000, guid: 380eab5bafd644e44a90fd06a0c1c343, type: 3}
+  webImages:
+  - key: bakery
+    image: {fileID: 2800000, guid: fa4ca19b462c8c547bfc7003db4b280d, type: 3}
+  - key: chips
+    image: {fileID: 2800000, guid: 30856f4efba5ce7429ffa5b3a18e94b7, type: 3}
+  - key: city
+    image: {fileID: 2800000, guid: 5eca97bd68753084da446af2fc030ec1, type: 3}
+  - key: comet
+    image: {fileID: 2800000, guid: c27f97052f0cc824696ad28b09679ee5, type: 3}
+  - key: concert
+    image: {fileID: 2800000, guid: b8a068ab3a27a01479dd14ec6deaf2ac, type: 3}
+  - key: datacenter
+    image: {fileID: 2800000, guid: 43a4b60a2c2bdcf4bba043f3a6040c2f, type: 3}
+  - key: deepsea
+    image: {fileID: 2800000, guid: 1507988452c4c664cb15da814f7d415e, type: 3}
+  - key: football
+    image: {fileID: 2800000, guid: 94c76788a4ef1bd42a562fbc27bd4e66, type: 3}
+  - key: ghost
+    image: {fileID: 2800000, guid: 398a2057860a3fb43a922b21580cf8a9, type: 3}
+  - key: grid
+    image: {fileID: 2800000, guid: 951f7fe4e35082b46929d98ccc5bffbb, type: 3}
+  - key: heat
+    image: {fileID: 2800000, guid: d2ae56efe6fd47d4eb167f7274192031, type: 3}
+  - key: law
+    image: {fileID: 2800000, guid: 353234ae6f0f44045b56613d807914ad, type: 3}
+  - key: lighthouse
+    image: {fileID: 2800000, guid: a6d61298628decb46ae6627a2e54bf6e, type: 3}
+  - key: marathon
+    image: {fileID: 2800000, guid: 0873689bfc345f74fb499dda6c594e8c, type: 3}
+  - key: ports
+    image: {fileID: 2800000, guid: 0d34f6560bd6d96429a43387ed856565, type: 3}
+  - key: reservoir
+    image: {fileID: 2800000, guid: 4209e86a83e24d34081f85e8c92b03f0, type: 3}
+  - key: scoreboard
+    image: {fileID: 2800000, guid: 1d897c9d9b686b349a251d02ab556052, type: 3}
+  - key: talks
+    image: {fileID: 2800000, guid: 0c0ec813ddf9f02439e1113f8e31cd11, type: 3}
+  - key: tennis
+    image: {fileID: 2800000, guid: 0e9bf6d6729b85a4284afd55fe8704d7, type: 3}
+  headlineFont: {fileID: 0}
+  taskbar: {r: 0.07, g: 0.09, b: 0.13, a: 0.97}
+  taskbarText: {r: 1, g: 1, b: 1, a: 1}
+  accent: {r: 0.2, g: 0.52, b: 0.88, a: 1}
+  windowBackground: {r: 0.96, g: 0.97, b: 0.98, a: 1}
+  titleBar: {r: 0.16, g: 0.19, b: 0.26, a: 1}
+  titleText: {r: 1, g: 1, b: 1, a: 1}
+  closeButton: {r: 0.78, g: 0.22, b: 0.22, a: 1}
+  panel: {r: 0.9, g: 0.92, b: 0.95, a: 1}
+  bodyText: {r: 0.12, g: 0.14, b: 0.18, a: 1}
+  mutedText: {r: 0.4, g: 0.44, b: 0.52, a: 1}
+  success: {r: 0.1, g: 0.52, b: 0.26, a: 1}
+  danger: {r: 0.76, g: 0.16, b: 0.16, a: 1}
+  button: {r: 0.84, g: 0.88, b: 0.94, a: 1}
+  buttonHover: {r: 0.72, g: 0.81, b: 0.94, a: 1}
+  buttonPressed: {r: 0.58, g: 0.71, b: 0.9, a: 1}
+  buttonDisabled: {r: 0.82, g: 0.83, b: 0.85, a: 1}
+  titleSize: 20
+  headingSize: 24
+  bodySize: 18
+  smallSize: 14

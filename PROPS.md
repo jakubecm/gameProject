@@ -90,7 +90,7 @@ painted floor lines and hatching; conduits (painted tube, chrome rosette).
 |---|---|---|
 | `Desk` [Office] | white panel desk 1.6 x 0.75 x 0.8, 25 mm top, side panels, modesty panel | office (1), security office (2) |
 | `OfficeChair` [Office] | black swivel chair, five-star base, quilted lower backrest (`T_ChairQuilt`), loop armrests; 0.58 wide, seat 0.47, 1.05 tall | at every desk and meeting table |
-| `Workstation` [Office] | two 24" monitors 0.55 m apart angled in, keyboard (~100 keys, numpad), mouse; monitor = slim body, lit picture `T_MonitorScreen`, neck, silver base | every desk |
+| `Workstation` [Office] | two 24" monitors 0.55 m apart angled in, keyboard (~100 keys, numpad), mouse; monitor = slim body, lit picture `T_MonitorScreen`, neck, silver base; one box collider. **It is the office workstation, a computer with a desktop** (the *terminal*, with another interface, will be a separate prop later): `TerminalTool` adds the `Terminal` component and two canvases over the pictures of `Monitor_Left` (the desktop) and `Monitor_Right` (wallpaper only), so keep the groups `Monitor_Left` / `Monitor_Right` and the part `Monitor_Picture` | every desk |
 | `PcTower` [Office] | mid-tower 0.2 x 0.45 x 0.45, Dell OptiPlex-like front, diamond mesh `T_PcVent`, green status LED on the right of the front | beside every desk |
 | `MeetingTable` [Office] | 1.8 x 0.75 x 0.9, light 30 mm top on two T-legs | office |
 | `FilingCabinet` [Office] | five-drawer 0.45 x 1.32 x 0.6, white steel, finger pockets | office (2) |

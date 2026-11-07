@@ -1,0 +1,569 @@
+{
+  "home": "start",
+  "newsNav": [
+    {
+      "label": "Home",
+      "target": "news_front"
+    },
+    {
+      "label": "World",
+      "target": "news_world"
+    },
+    {
+      "label": "Business",
+      "target": "news_business"
+    },
+    {
+      "label": "Technology",
+      "target": "news_technology"
+    },
+    {
+      "label": "Climate",
+      "target": "news_climate"
+    },
+    {
+      "label": "Sport",
+      "target": "news_sport"
+    },
+    {
+      "label": "Culture",
+      "target": "news_culture"
+    },
+    {
+      "label": "Science",
+      "target": "news_science"
+    }
+  ],
+  "pages": [
+    {
+      "id": "start",
+      "url": "start.local",
+      "title": "Service Network",
+      "kind": "portal",
+      "layout": "portal",
+      "date": "",
+      "text": "Sites you can reach from this terminal.",
+      "links": [
+        {
+          "label": "AAC News",
+          "target": "news_front",
+          "badge": "AAC",
+          "color": "#EE5414",
+          "note": "News from the world, around the clock."
+        },
+        {
+          "label": "Grid Status",
+          "target": "grid_status",
+          "badge": "GS",
+          "color": "#1F9D75",
+          "note": "Power and cooling at this site, updated every minute."
+        },
+        {
+          "label": "Staff Notices",
+          "target": "staff_notices",
+          "badge": "i",
+          "color": "#2F7BE0",
+          "note": "Messages from facilities and security."
+        }
+      ]
+    },
+    {
+      "id": "news_front",
+      "url": "aacnews.net",
+      "title": "AAC News",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "News",
+      "stories": [
+        "news_ghost",
+        "news_law",
+        "news_final",
+        "news_festival",
+        "news_heat",
+        "news_comet",
+        "news_bakery",
+        "news_demand",
+        "news_marathon",
+        "news_talks"
+      ]
+    },
+    {
+      "id": "news_world",
+      "url": "aacnews.net/world",
+      "title": "AAC News - World",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "World",
+      "stories": [
+        "news_law",
+        "news_talks",
+        "news_nightwork"
+      ]
+    },
+    {
+      "id": "news_business",
+      "url": "aacnews.net/business",
+      "title": "AAC News - Business",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Business",
+      "stories": [
+        "news_demand",
+        "news_ports",
+        "news_insurers"
+      ]
+    },
+    {
+      "id": "news_technology",
+      "url": "aacnews.net/technology",
+      "title": "AAC News - Technology",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Technology",
+      "stories": [
+        "news_ghost",
+        "news_chips"
+      ]
+    },
+    {
+      "id": "news_climate",
+      "url": "aacnews.net/climate",
+      "title": "AAC News - Climate",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Climate",
+      "stories": [
+        "news_heat",
+        "news_reservoirs"
+      ]
+    },
+    {
+      "id": "news_sport",
+      "url": "aacnews.net/sport",
+      "title": "AAC News - Sport",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Sport",
+      "stories": [
+        "news_final",
+        "news_results",
+        "news_marathon",
+        "news_tennis"
+      ]
+    },
+    {
+      "id": "news_culture",
+      "url": "aacnews.net/culture",
+      "title": "AAC News - Culture",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Culture",
+      "stories": [
+        "news_festival",
+        "news_lighthouse",
+        "news_bakery"
+      ]
+    },
+    {
+      "id": "news_science",
+      "url": "aacnews.net/science",
+      "title": "AAC News - Science",
+      "kind": "list",
+      "layout": "news_section",
+      "section": "Science",
+      "stories": [
+        "news_comet",
+        "news_deepsea"
+      ]
+    },
+    {
+      "id": "news_ghost",
+      "url": "aacnews.net/technology/unexplained-failures",
+      "title": "Operators report unexplained failures in large datacenters",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Technology",
+      "tag": "DEVELOPING",
+      "byline": "Maren Voss, technology reporter",
+      "date": "42 minutes ago",
+      "summary": "Machines that run hot, talk to nobody in particular and react too early. The hardware passes every check.",
+      "image": "ghost",
+      "caption": "A server hall at one of the affected sites (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nAt least five large sites have reported servers that behave in ways their operators cannot explain: unusual heat, traffic to destinations nobody configured, and machines that react earlier than they should. In every case the hardware passed all checks.\n\nThe operators do not want to be named. One of them said only that the problem is local, that it can be stopped by cutting the affected machine off, and that it spreads if nobody does.\n\nIndependent experts said that without access to the sites they cannot say whether this is a software fault or something else.",
+      "related": [
+        "news_chips",
+        "news_demand"
+      ]
+    },
+    {
+      "id": "news_demand",
+      "url": "aacnews.net/business/compute-demand",
+      "title": "Appetite for computing power outruns the grid",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Business",
+      "tag": "ANALYSIS",
+      "byline": "Daniel Okafor, economics editor",
+      "date": "3 hours ago",
+      "summary": "Datacenters now queue for power connections that take years to build, and the price is being paid by everyone else.",
+      "image": "datacenter",
+      "caption": "Rows of servers in a new datacenter hall (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nDemand for computing power has grown faster than anyone planned for. Operators are building halls the size of football pitches, and the regional grids that must feed them are running out of spare capacity.\n\nUtilities report waiting lists for new connections that stretch beyond the end of the decade. In some regions households already pay more for electricity because of the cost of the upgrades.\n\nAnalysts expect the largest operators to start building their own power stations, which would take them out of the public grid and out of public view.",
+      "related": [
+        "news_insurers",
+        "news_reservoirs"
+      ]
+    },
+    {
+      "id": "news_law",
+      "url": "aacnews.net/world/emergency-powers",
+      "title": "Parliament votes to extend emergency powers over critical infrastructure",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "World",
+      "tag": "",
+      "byline": "Priya Raman, political correspondent",
+      "date": "5 hours ago",
+      "summary": "The vote was close. Critics say the government can now order any site to shut down without a court hearing.",
+      "image": "law",
+      "caption": "The debate lasted until after midnight (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nParliament has voted to extend the emergency powers that let the government take control of critical infrastructure. The extension passed by eleven votes after a debate that ran into the early hours.\n\nThe powers cover power stations, water works and large datacenters. Officials can order a site to reduce its load, or to stop altogether, without first going to a court.\n\nOpposition members called the law a blank cheque. The government said it would use the powers only if there was no other way to keep the lights on.",
+      "related": [
+        "news_talks",
+        "news_ghost"
+      ]
+    },
+    {
+      "id": "news_talks",
+      "url": "aacnews.net/world/ai-safety-talks",
+      "title": "Talks on limits for advanced AI end without an agreement",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "World",
+      "tag": "EXPLAINER",
+      "byline": "Tomas Hale, diplomatic editor",
+      "date": "Yesterday",
+      "summary": "Delegates left the table after four days. The next round has no date.",
+      "image": "talks",
+      "caption": "Delegates at the closing session (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nDelegates from more than thirty countries left the talks on limits for advanced AI without a joint statement. The main disagreement was whether inspectors should be allowed into computing sites.\n\nSeveral delegations argued that the risk is overstated. Others pointed to reports of unexplained behaviour in large systems and asked for rules before something goes wrong.\n\nNo date for a new round has been set.",
+      "related": [
+        "news_ghost",
+        "news_law"
+      ]
+    },
+    {
+      "id": "news_heat",
+      "url": "aacnews.net/climate/record-heat",
+      "title": "Record heat puts strain on cooling systems across the region",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Climate",
+      "tag": "WARNING",
+      "byline": "Elise Marchetti, climate reporter",
+      "date": "6 hours ago",
+      "summary": "The hottest week on record is pushing power plants, hospitals and datacenters to their limits.",
+      "image": "heat",
+      "caption": "The city at midday, with temperatures above 40 degrees (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nTemperatures have stayed above 38 degrees for nine days, and the weather service expects no relief before the weekend. Power use for cooling has reached a new peak every day this week.\n\nOperators of large computing sites say their cooling is running close to its design limit. Some have asked customers to move work to other regions.\n\nHospitals and water works are also on the list of sites that the grid operator may have to disconnect first if supply falls short.",
+      "related": [
+        "news_reservoirs",
+        "news_demand"
+      ]
+    },
+    {
+      "id": "news_chips",
+      "url": "aacnews.net/technology/chip-shortage",
+      "title": "Shortage of advanced chips delays new datacenters by a year",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Technology",
+      "tag": "",
+      "byline": "Jonas Berg, technology reporter",
+      "date": "Yesterday",
+      "summary": "Makers cannot keep up with orders, and the biggest buyers are paying to jump the queue.",
+      "image": "chips",
+      "caption": "A processor under test at a chip plant (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nDelivery times for the most advanced processors have grown to more than a year. Several operators have postponed the opening of new halls because there is nothing to put into them.\n\nThe largest buyers have signed contracts that reserve a share of production years ahead. Smaller companies say they are shut out of the market.\n\nAnalysts warn that the shortage could end quickly if demand drops, and leave the makers with plants they no longer need.",
+      "related": [
+        "news_demand",
+        "news_ghost"
+      ]
+    },
+    {
+      "id": "news_reservoirs",
+      "url": "aacnews.net/climate/reservoir-levels",
+      "title": "Reservoirs fall to a quarter of capacity",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Climate",
+      "tag": "",
+      "byline": "Amira Haddad, environment reporter",
+      "date": "2 days ago",
+      "summary": "Cities ask big water users to cut back. Cooling towers are on the list.",
+      "image": "reservoir",
+      "caption": "The shoreline of the main reservoir, months after the water left it (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nThe main reservoirs of the region now hold a quarter of their normal volume. Water companies have asked industrial users to reduce what they take from the network.\n\nLarge computing sites use water to carry heat away. Some of them have switched to closed cooling loops, others have started to truck water in.\n\nThe authority said it would publish a list of the largest users next week.",
+      "related": [
+        "news_heat",
+        "news_demand"
+      ]
+    },
+    {
+      "id": "news_ports",
+      "url": "aacnews.net/business/port-delays",
+      "title": "Port delays leave warehouses half empty",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Business",
+      "tag": "",
+      "byline": "Callum Reid, business reporter",
+      "date": "2 days ago",
+      "summary": "A strike and a storm have left hundreds of ships waiting. Spare parts for factories are the first to run short.",
+      "image": "ports",
+      "caption": "Containers waiting at the main port (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nMore than three hundred ships are waiting outside the main ports after a strike and a week of bad weather. Warehouses that normally hold a month of stock are down to a few days.\n\nSpare parts are among the goods hit hardest. Operators of industrial sites say that a broken power supply or a cooling pump can now take weeks to replace.\n\nThe port authority expects the backlog to clear by the end of the month.",
+      "related": [
+        "news_demand",
+        "news_chips"
+      ]
+    },
+    {
+      "id": "news_insurers",
+      "url": "aacnews.net/business/storm-claims",
+      "title": "Insurers raise premiums after storm damage to the power network",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Business",
+      "tag": "",
+      "byline": "Noor Vasquez, finance reporter",
+      "date": "3 days ago",
+      "summary": "Claims after last month's storms were the highest in ten years. Operators of large sites will pay the most.",
+      "image": "grid",
+      "caption": "Repair crews at a damaged power line (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nInsurers have announced higher premiums for businesses that depend on the power network. Claims after last month's storms were the highest in ten years.\n\nLarge computing sites will see the biggest increases. Insurers say a stoppage at such a site costs far more than a stoppage at a factory, and the risk is harder to measure.\n\nSeveral operators said they would build their own backup power rather than pay.",
+      "related": [
+        "news_demand",
+        "news_heat"
+      ]
+    },
+    {
+      "id": "news_nightwork",
+      "url": "aacnews.net/world/night-shift",
+      "title": "Cities turn off lights to save power",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "World",
+      "tag": "",
+      "byline": "Ines Duarte, world reporter",
+      "date": "3 days ago",
+      "summary": "Whole districts go dark after midnight. Residents are divided.",
+      "image": "city",
+      "caption": "A district where street lighting is switched off after midnight (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nThree cities have started to switch off street lighting and office lights between midnight and five in the morning. The measure should save about two percent of the daily demand.\n\nResidents are divided. Shop owners complain about break-ins, others say they can finally see the stars.\n\nThe cities say the measure will end as soon as the grid has spare capacity again.",
+      "related": [
+        "news_law",
+        "news_heat"
+      ]
+    },
+    {
+      "id": "news_final",
+      "url": "aacnews.net/sport/cup-final",
+      "title": "Harbour City win the cup final in extra time",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Sport",
+      "tag": "FINAL",
+      "byline": "Rafael Costa, sports reporter",
+      "date": "Yesterday",
+      "summary": "A late header settled a match that neither side deserved to lose.",
+      "image": "football",
+      "caption": "The final was played under floodlights in front of a full stadium (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nHarbour City won the cup for the first time in 31 years, beating Northgate United 2-1 after extra time. Substitute Idris Okoye scored the winner with a header in the 113th minute.\n\nNorthgate had led since the 12th minute and defended well for most of the night. Harbour equalised with a penalty after the break and had the better of the extra half hour.\n\nThe coach of Harbour said the team had trained at night all week to get used to the lights. Thousands of fans waited at the harbour for the team bus until after two in the morning.",
+      "related": [
+        "news_results",
+        "news_tennis"
+      ]
+    },
+    {
+      "id": "news_results",
+      "url": "aacnews.net/sport/weekend-results",
+      "title": "Weekend results: football, basketball and the regional cup",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Sport",
+      "tag": "",
+      "byline": "AAC Sport desk",
+      "date": "Monday",
+      "summary": "All the scores from the weekend in one place.",
+      "image": "scoreboard",
+      "caption": "The scoreboard at the cup final (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nPremier Division\nHarbour City 2-1 Northgate United\nEastfield Rovers 0-0 Dunmore Athletic\nKingsbridge 3-2 Redcliffe\nMarlow Town 1-4 Saltmere Wanderers\n\nBasketball, first league\nLakeside Herons 98-91 Ironworks\nCapital Foxes 104-102 Riverton Bears\nSouthport Gulls 77-85 Kestrel Hill\n\nRegional cup, quarter-finals\nOldtown 1-0 Greenvale\nFerry Road 2-2 Millbrook (Millbrook win 5-4 on penalties)",
+      "related": [
+        "news_final",
+        "news_tennis"
+      ]
+    },
+    {
+      "id": "news_marathon",
+      "url": "aacnews.net/sport/evening-marathon",
+      "title": "City marathon moved to the evening because of the heat",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Sport",
+      "tag": "",
+      "byline": "Hana Lindqvist, sports reporter",
+      "date": "2 days ago",
+      "summary": "Twelve thousand runners started at half past six, when the road had cooled to 31 degrees.",
+      "image": "marathon",
+      "caption": "Runners on the main road at the start (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nThe organisers moved the start of the marathon from nine in the morning to half past six in the evening. The road temperature had reached 52 degrees the afternoon before.\n\nThe number of water stations was doubled and the medical teams were told to expect twice as many cases as usual. Fewer than 40 runners needed treatment.\n\nDefending champion Tomasz Nowak won in 2 hours 9 minutes 41 seconds, the slowest winning time in fifteen years.",
+      "related": [
+        "news_heat",
+        "news_final"
+      ]
+    },
+    {
+      "id": "news_tennis",
+      "url": "aacnews.net/sport/open-final",
+      "title": "Veteran wins the open at 38",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Sport",
+      "tag": "",
+      "byline": "Rafael Costa, sports reporter",
+      "date": "3 days ago",
+      "summary": "Elena Varga came back from a set down to beat the top seed in three hours.",
+      "image": "tennis",
+      "caption": "Match point on the centre court (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nElena Varga, 38, won the open final 7-6, 4-6, 7-5 against the top seed Sofia Brandt. It is her first title in six years.\n\nVarga saved two break points at 5-5 in the third set and served out the match to love. She said she had expected to retire before the end of the season.\n\nBrandt, 21, said she would learn from the match. She is still the favourite for the autumn tour.",
+      "related": [
+        "news_results",
+        "news_final"
+      ]
+    },
+    {
+      "id": "news_festival",
+      "url": "aacnews.net/culture/festival-sold-out",
+      "title": "Open-air festival sells out in nine minutes",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Culture",
+      "tag": "",
+      "byline": "Tess Whitfield, culture reporter",
+      "date": "Yesterday",
+      "summary": "Forty thousand tickets for the Riverlight festival went before the website could keep up.",
+      "image": "concert",
+      "caption": "The main stage at last year's festival (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nTickets for the three-day Riverlight festival went on sale at ten o'clock and were gone by nine minutes past. The ticket site crashed twice and thousands of fans waited in a queue that did not move.\n\nThe organisers said they would add a fourth stage and 6,000 more places. The headline acts have not been announced, but the line-up is said to include two bands that have not played together for twenty years.\n\nThe police asked fans not to buy tickets from resellers. Prices on resale sites have already reached five times the original.",
+      "related": [
+        "news_lighthouse",
+        "news_bakery"
+      ]
+    },
+    {
+      "id": "news_lighthouse",
+      "url": "aacnews.net/culture/film-prize",
+      "title": "Quiet drama about a lighthouse keeper takes the top prize",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Culture",
+      "tag": "REVIEW",
+      "byline": "Marta Quill, film critic",
+      "date": "2 days ago",
+      "summary": "The Last Watch has almost no dialogue and no music. It won over the jury anyway.",
+      "image": "lighthouse",
+      "caption": "A still from the film (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nThe Last Watch, a film about the last keeper of a lighthouse the night before it is switched off for good, won the top prize at the national film awards. The director, Anders Pohl, made it on a budget smaller than the catering of the biggest film in the competition.\n\nMost of the film shows one man, one lamp and the sea. Critics called it patient, and one called it unbearable. The jury called it the only film in the competition that trusted its audience.\n\nIt opens in cinemas on Friday.",
+      "related": [
+        "news_festival",
+        "news_bakery"
+      ]
+    },
+    {
+      "id": "news_bakery",
+      "url": "aacnews.net/culture/village-bakery",
+      "title": "The village bakery is back",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Culture",
+      "tag": "",
+      "byline": "Tess Whitfield, culture reporter",
+      "date": "3 days ago",
+      "summary": "After eleven years without one, a village of 600 people has bread again.",
+      "image": "bakery",
+      "caption": "Fresh loaves in the window on the first morning (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nThe bakery in Little Marsh closed eleven years ago when the baker retired. Since then, villagers have driven 20 minutes for bread. On Saturday it reopened, run by two former office workers who learned the trade in the evenings.\n\nThe queue began at five in the morning. By eight, the sourdough was gone. The bakers said they had planned for a hundred customers and got four hundred.\n\nThe village shop, which had been about to close, now sells the bread too.",
+      "related": [
+        "news_festival",
+        "news_nightwork"
+      ]
+    },
+    {
+      "id": "news_comet",
+      "url": "aacnews.net/science/comet-visible",
+      "title": "Comet visible to the naked eye this week",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Science",
+      "tag": "THIS WEEK",
+      "byline": "Oskar Lindgren, science reporter",
+      "date": "Today",
+      "summary": "The brightest comet in a decade passes the earth on Thursday. All you need is a clear sky.",
+      "image": "comet",
+      "caption": "The comet photographed from a dark site (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nComet K1, discovered last spring, will be at its brightest this week. It should be as bright as the brightest stars and have a visible tail, low in the west after dusk.\n\nAstronomers advise looking around ten o'clock in the evening from a place away from street lights. Binoculars help, but they are not needed.\n\nThe comet will not return for another 4,000 years.",
+      "related": [
+        "news_deepsea",
+        "news_nightwork"
+      ]
+    },
+    {
+      "id": "news_deepsea",
+      "url": "aacnews.net/science/deep-sea-survey",
+      "title": "Deep-sea survey finds more than 200 new species",
+      "kind": "article",
+      "layout": "news_article",
+      "section": "Science",
+      "tag": "",
+      "byline": "Oskar Lindgren, science reporter",
+      "date": "4 days ago",
+      "summary": "A robot submarine spent 90 days three kilometres down. Many of its discoveries glow.",
+      "image": "deepsea",
+      "caption": "A jellyfish photographed by the submarine's camera (file picture).",
+      "text": "DRAFT - the team writes the final text.\n\nA survey of the sea floor in the southern basin has found more than 200 species that science did not know. Among them are jellyfish, worms and a fish that fishes with a lamp.\n\nThe robot submarine worked for 90 days without surfacing. It collected 4,000 samples and took 600 hours of video.\n\nThe researchers said that the deep sea is the least explored place on Earth. They also said that some of the animals may be gone before they have a name, because the places where they live are warming.",
+      "related": [
+        "news_comet",
+        "news_reservoirs"
+      ]
+    },
+    {
+      "id": "staff_notices",
+      "url": "start.local/notices",
+      "title": "Staff notices",
+      "kind": "article",
+      "date": "Updated yesterday",
+      "text": "DRAFT - the team writes the final text.\n\nNight shift: the canteen is closed until further notice. Vending machines on level 1 are restocked every morning.\n\nSecurity reminder: never leave a terminal unlocked, and never connect storage devices that were not issued by the site.\n\nFacilities: the east loading door sticks in warm weather. Report any damage to the door at the front desk.",
+      "links": [
+        {
+          "label": "Back to the start page",
+          "target": "start"
+        }
+      ]
+    },
+    {
+      "id": "grid_status",
+      "url": "gridstatus.net/region/this-site",
+      "title": "Grid Status: this site",
+      "kind": "article",
+      "date": "Updated 02:10",
+      "text": "DRAFT - the team writes the final text.\n\nPower supply: stable, 91% of the contracted limit.\nBackup generators: ready, fuel for 36 hours.\nCooling: running at 88% of capacity.\nOutside temperature: 34 degrees.\n\nThe supplier warns that supply may be reduced at short notice if demand in the region keeps rising. Sites should be ready to run from their own generators.",
+      "links": [
+        {
+          "label": "Back to the start page",
+          "target": "start"
+        }
+      ]
+    }
+  ]
+}

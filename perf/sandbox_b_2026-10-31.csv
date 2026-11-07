@@ -1,0 +1,33 @@
+label,view,avg_frame_ms,worst_frame_ms,triangles,draw_calls,batches,setpass_calls,configured_target_fps,configured_vsync,renderers
+1 before,scene (mesh triangles of every active renderer),0.00,0.00,25516155,0,0,0,60,0,10000
+1 before,lift start,62.94,69.91,49903430,4693,0,157,60,0,10000
+1 before,hall spot 1 looking north,20.90,25.60,10858148,1190,0,48,60,0,10000
+1 before,hall spot 1 looking east,45.44,52.71,30780054,2897,0,97,60,0,10000
+1 before,hall spot 2 looking north,29.31,33.87,18962550,1336,0,63,60,0,10000
+1 before,hall spot 2 looking east,23.01,28.42,12451052,2362,0,52,60,0,10000
+1 before,hall spot 3 looking north,24.56,28.31,13681002,1030,0,43,60,0,10000
+1 before,hall spot 3 looking east,15.42,19.37,3621420,1928,0,28,60,0,10000
+2 +rack LOD,scene (mesh triangles of every active renderer),0.00,0.00,25516155,0,0,0,60,0,10000
+2 +rack LOD,lift start,12.85,16.53,3072048,4669,0,152,60,0,10000
+2 +rack LOD,hall spot 1 looking north,12.74,16.20,3517648,1190,0,48,60,0,10000
+2 +rack LOD,hall spot 1 looking east,19.21,23.45,7235054,2897,0,97,60,0,10000
+2 +rack LOD,hall spot 2 looking north,11.46,15.37,3173550,1336,0,63,60,0,10000
+2 +rack LOD,hall spot 2 looking east,16.18,20.76,6634052,2362,0,52,60,0,10000
+2 +rack LOD,hall spot 3 looking north,14.48,18.53,4817002,1030,0,43,60,0,10000
+2 +rack LOD,hall spot 3 looking east,14.49,19.89,3621420,1928,0,28,60,0,10000
+3 +cheaper SSAO,scene (mesh triangles of every active renderer),0.00,0.00,25516155,0,0,0,60,0,10000
+3 +cheaper SSAO,lift start,11.53,16.47,3096696,4670,0,152,60,0,10000
+3 +cheaper SSAO,hall spot 1 looking north,11.01,15.32,3517648,1190,0,48,60,0,10000
+3 +cheaper SSAO,hall spot 1 looking east,17.78,22.19,7235054,2897,0,97,60,0,10000
+3 +cheaper SSAO,hall spot 2 looking north,10.56,15.13,3173550,1336,0,63,60,0,10000
+3 +cheaper SSAO,hall spot 2 looking east,15.10,19.22,6634052,2362,0,52,60,0,10000
+3 +cheaper SSAO,hall spot 3 looking north,12.79,17.62,4817002,1030,0,43,60,0,10000
+3 +cheaper SSAO,hall spot 3 looking east,12.77,16.19,3621420,1928,0,28,60,0,10000
+4 +occlusion culling,scene (mesh triangles of every active renderer),0.00,0.00,25516155,0,0,0,60,0,10000
+4 +occlusion culling,lift start,9.70,15.26,25226,6778,0,163,60,0,10000
+4 +occlusion culling,hall spot 1 looking north,9.21,12.66,1710,1734,0,52,60,0,10000
+4 +occlusion culling,hall spot 1 looking east,16.55,20.55,1754,4206,0,105,60,0,10000
+4 +occlusion culling,hall spot 2 looking north,10.69,14.41,1726,1921,0,67,60,0,10000
+4 +occlusion culling,hall spot 2 looking east,14.31,18.76,1706,3480,0,58,60,0,10000
+4 +occlusion culling,hall spot 3 looking north,9.34,13.07,1726,1484,0,47,60,0,10000
+4 +occlusion culling,hall spot 3 looking east,12.54,16.47,1690,2866,0,33,60,0,10000

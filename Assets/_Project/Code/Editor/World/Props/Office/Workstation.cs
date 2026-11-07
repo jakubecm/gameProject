@@ -202,6 +202,8 @@ namespace ColdShutdown.Editor
             }
             BuildKeyboard(root, new Vector3(0f, 0f, 0.18f));
             BuildMouse(root, new Vector3(-0.3f, 0f, 0.19f));
+            // One box over the monitors, keyboard and mouse: the interaction ray hits it (the terminal component sits on this prop).
+            AddBoxCollider(root, new Vector3(0f, 0.225f, 0f), new Vector3(1.14f, 0.45f, 0.55f));
         }
     }
 }
